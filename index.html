@@ -250,6 +250,7 @@ details.setup-more[open] > summary::before{content:"− "}
 .dl-row:first-child{padding-top:0}
 .dl-row dt{font-family:var(--mono);font-size:11px;color:var(--faint);letter-spacing:.1em;padding-top:2px}
 .dl-row dd{margin:0;font-size:14.5px;white-space:pre-wrap;color:var(--ink-2)}
+.panel .dl-row dd{font-size:13.5px}
 
 /* 스탯 */
 .stat-wrap{display:grid;gap:30px;grid-template-columns:minmax(0,1fr) minmax(0,246px)}
@@ -385,6 +386,23 @@ details.setup-more[open] > summary::before{content:"− "}
 .sheet-memo .txt{margin:0;font-family:var(--ui);font-size:13.5px;color:var(--muted);
   white-space:pre-wrap;line-height:1.85}
 
+
+/* ─────────────── 공지 ─────────────── */
+.notice{
+  background:var(--paper);border:1px solid var(--hair);border-left:2px solid var(--teal);
+  border-radius:var(--r);padding:16px 18px;margin:22px 0 0;box-shadow:var(--lift);
+}
+.notice .top{display:flex;align-items:center;gap:8px;margin-bottom:9px}
+.notice .top .spacer{flex:1}
+.notice .txt{white-space:pre-wrap;font-size:14px;line-height:1.82;color:var(--ink-2)}
+.notice-add{margin:20px 0 0}
+
+/* ─────────────── 서식 ─────────────── */
+.preset-bar{display:flex;gap:7px;flex-wrap:wrap}
+.type-lock{font-family:var(--serif);font-size:16px;color:var(--ink);
+  background:var(--warm);border:1px solid var(--hair);border-radius:var(--r);
+  padding:9px 12px;margin:0 0 10px;user-select:all}
+
 /* ─────────────── 반응형 ─────────────── */
 @media (max-width:880px){
   .shell{padding:0 18px 110px}
@@ -479,7 +497,13 @@ const SDK_VERSIONS = ['10.13.2', '10.12.2', '9.23.0'];
 
 let A = null, F = null;              // auth / firestore 모듈
 let auth = null, db = null;
-let uid = null, profile = { nickname: '' };
+let uid = null, profile = { nickname: '', notice: '', formPreset: null };
+
+/* 프로필·세부 묘사 기본 서식 — 제목만 채워요 */
+const BASE_PRESET = {
+  fields: ['이름', '나이', '성별', '키 · 체형', '소속', '직업', '성격', '말투', '좋아하는 것', '싫어하는 것'],
+  details: ['외모', '성격', '과거', '인간관계', '기타'],
+};
 
 const state = {
   view: 'gallery',       // gallery | character
@@ -556,6 +580,34 @@ document.addEventListener('keydown', e => {
   if ($('#modal-root').children.length) closeModal();
   else if ($('#sheet-root').children.length) closeSheet();
 });
+
+/* 이름을 그대로 입력해야 지워지는 확인창 */
+function confirmTypeDialog(title, msg, phrase, okLabel = '삭제') {
+  return new Promise(res => {
+    const m = openModal({
+      title,
+      body: `<p class="hint" style="margin:0 0 16px">${esc(msg)}</p>
+        <p class="hint" style="margin:0 0 7px">지우려면 아래 이름을 그대로 입력해 주세요.</p>
+        <div class="type-lock">${esc(phrase)}</div>
+        <input class="input" id="ct-input" placeholder="이름을 그대로 입력" autocomplete="off" spellcheck="false">`,
+      foot: `<button class="btn btn-ghost" data-no>취소</button>
+             <button class="btn btn-danger" data-yes disabled style="opacity:.45">${esc(okLabel)}</button>`,
+    });
+    const input = m.querySelector('#ct-input');
+    const ok = m.querySelector('[data-yes]');
+    const check = () => {
+      const good = input.value.trim() === String(phrase).trim();
+      ok.disabled = !good;
+      ok.style.opacity = good ? '1' : '.45';
+      return good;
+    };
+    input.oninput = check;
+    input.onkeydown = e => { if (e.key === 'Enter' && check()) { closeModal(); res(true); } };
+    m.querySelector('[data-no]').onclick = () => { closeModal(); res(false); };
+    ok.onclick = () => { if (check()) { closeModal(); res(true); } };
+    setTimeout(() => input.focus(), 60);
+  });
+}
 
 function confirmDialog(title, msg, okLabel = '삭제') {
   return new Promise(res => {
@@ -800,9 +852,12 @@ async function bootUser(u) {
     const uref = F.doc(db, 'users', uid);
     const snap = await F.getDoc(uref);
     if (!snap.exists()) {
-      profile = { nickname: (u.displayName || '나') + '의 아카이브' };
+      profile = { nickname: (u.displayName || '나') + '의 아카이브', notice: '', formPreset: null };
       await F.setDoc(uref, { ...profile, createdAt: Date.now() });
-    } else profile = { nickname: snap.data().nickname || '내 아카이브' };
+    } else {
+      const d = snap.data();
+      profile = { nickname: d.nickname || '내 아카이브', notice: d.notice || '', formPreset: d.formPreset || null };
+    }
     $('#brand-sub').textContent = profile.nickname;
     await Promise.all([loadStatSets(), loadChars()]);
     renderGallery();
@@ -917,6 +972,7 @@ function renderGallery() {
       <div class="eyebrow">아카이브 · 캐릭터 ${total}명</div>
       <h1>${esc(profile.nickname)}</h1>
     </div>
+    ${noticeHTML()}
     <div class="toolbar">
       <div class="search">
         <span style="color:var(--dim)">⌕</span>
@@ -940,9 +996,49 @@ function renderGallery() {
     bindCards();
   };
   $$('[data-sort]').forEach(b => b.onclick = () => { state.sort = b.dataset.sort; renderGallery(); });
+  $('#edit-notice')?.addEventListener('click', openNotice);
   $('#add-char').onclick = () => openCharEditor(null);
   $$('[data-new]').forEach(b => b.onclick = () => openCharEditor(null));
   bindCards();
+}
+
+function noticeHTML() {
+  if (!profile.notice) return `<div class="notice-add"><button class="linkish" id="edit-notice">＋ 공지 추가</button></div>`;
+  return `<section class="notice">
+    <div class="top"><span class="eyebrow">공지</span><div class="spacer"></div>
+      <button class="btn btn-sm btn-ghost" id="edit-notice">수정</button></div>
+    <div class="txt">${esc(profile.notice)}</div>
+  </section>`;
+}
+
+function openNotice() {
+  const m = openModal({
+    title: '공지사항',
+    body: `<p class="hint" style="margin:0 0 14px">목록 맨 위에 붙여두는 메모예요. 작업 계획이나 규칙을 적어두면 좋아요.</p>
+      <label class="field" style="margin:0">
+        <span>내용</span>
+        <textarea class="textarea" id="nt-body" style="min-height:150px"
+          placeholder="예: 이번 달은 북부 편 캐릭터부터 정리하는 중" maxlength="1200">${esc(profile.notice)}</textarea>
+        <p class="hint">줄바꿈은 그대로 유지돼요. 내용을 모두 지우고 저장하면 공지가 사라져요.</p>
+      </label>`,
+    foot: `<button class="btn btn-ghost" id="nt-cancel">취소</button>
+           <button class="btn btn-key" id="nt-save">저장</button>`,
+  });
+  m.querySelector('#nt-cancel').onclick = closeModal;
+  m.querySelector('#nt-save').onclick = async () => {
+    const btn = m.querySelector('#nt-save');
+    btn.disabled = true; btn.textContent = '저장하는 중…';
+    const text = m.querySelector('#nt-body').value.replace(/\s+$/, '');
+    try {
+      await F.setDoc(F.doc(db, 'users', uid), { notice: text }, { merge: true });
+      profile.notice = text;
+      closeModal(); renderGallery();
+      toast(text ? '공지를 저장했어요' : '공지를 지웠어요');
+    } catch (e) {
+      btn.disabled = false; btn.textContent = '저장';
+      toast('저장하지 못했어요: ' + (e.code || e.message), 1);
+    }
+  };
 }
 
 function cardHTML(c) {
@@ -1069,13 +1165,13 @@ function renderCharacter() {
 
         <section class="panel">
           <div class="panel-head"><h2>세부 묘사</h2><div class="spacer"></div>
-            <span class="eyebrow">${details.length ? details.length + '편' : '카드 이미지에 미포함'}</span></div>
+            ${details.length ? `<span class="eyebrow">${details.length}편</span>` : ''}</div>
           ${details.length
             ? details.map(d => `<article class="detail-item">
                 <h3>${esc(d.t || '제목 없음')}</h3>
                 <div class="txt">${esc(d.v)}</div></article>`).join('')
             : `<p class="hint" style="margin:0">외모, 습관, 과거처럼 길게 풀어 쓸 이야기를 제목과 함께 적어두는 칸이에요.
-                프로필 수정에서 추가할 수 있고, 카드 이미지에는 들어가지 않아요.</p>`}
+                프로필 수정에서 추가할 수 있어요.</p>`}
         </section>
 
         <section class="panel">
@@ -1158,8 +1254,9 @@ function bindStatSliders(labels, max) {
 }
 
 async function removeCharacter(c) {
-  if (!await confirmDialog('캐릭터를 삭제할까요?',
-    `${c.name || '이름 없음'} 의 프로필·스탯·발췌 ${state.excerpts.length}개가 모두 지워져요. 되돌릴 수 없어요.`)) return;
+  const name = c.name || '이름 없음';
+  if (!await confirmTypeDialog('캐릭터를 삭제할까요?',
+    `프로필과 세부 묘사, 스탯, 발췌 ${state.excerpts.length}개가 모두 지워져요. 되돌릴 수 없어요.`, name)) return;
   try {
     for (const e of state.excerpts) await F.deleteDoc(ref('characters', c.id, 'excerpts', e.id));
     if (c.imageId) await F.deleteDoc(ref('images', c.imageId)).catch(() => {});
@@ -1207,6 +1304,15 @@ function openCharEditor(c) {
         <select class="select" id="f-set">
           ${state.statSets.map(s => `<option value="${s.id}" ${s.id === draft.statSetId ? 'selected' : ''}>${esc(s.name)}</option>`).join('')}
         </select></label>
+      <div class="field"><span>서식</span>
+        <div class="preset-bar">
+          <button class="btn btn-sm" id="ps-base">기본 서식 불러오기</button>
+          <button class="btn btn-sm" id="ps-mine">내 서식 불러오기</button>
+          <button class="btn btn-sm btn-ghost" id="ps-save">지금 제목을 내 서식으로</button>
+        </div>
+        <p class="hint">아래 프로필 항목과 세부 묘사의 <b>제목만</b> 채워요.
+          이미 있는 제목과 적어둔 내용은 그대로 두고, 없는 제목만 새로 붙습니다.</p>
+      </div>
       <div class="field"><span>프로필 항목</span>
         <div id="kv-wrap"></div>
         <button class="btn btn-sm btn-ghost" id="add-kv" style="margin-top:4px">＋ 항목 추가</button>
@@ -1240,6 +1346,35 @@ function openCharEditor(c) {
   }
   drawDet();
   m.querySelector('#add-det').onclick = () => { draft.details.push({ t: '', v: '' }); drawDet(); };
+
+  /* 서식 적용 — 제목만 채우고 기존 내용은 건드리지 않아요 */
+  function applyPreset(preset) {
+    const has = (arr, k, key) => arr.some(o => (o[key] || '').trim() === k);
+    (preset.fields || []).forEach(k => { if (k && !has(draft.fields, k, 'k')) draft.fields.push({ k, v: '' }); });
+    (preset.details || []).forEach(t => { if (t && !has(draft.details, t, 't')) draft.details.push({ t, v: '' }); });
+    draft.fields = draft.fields.filter(f => f.k.trim() || f.v.trim());
+    if (!draft.fields.length) draft.fields.push({ k: '', v: '' });
+    draft.details = draft.details.filter(d => d.t.trim() || d.v.trim());
+    drawKV(); drawDet();
+    toast('서식을 불러왔어요');
+  }
+  m.querySelector('#ps-base').onclick = () => applyPreset(BASE_PRESET);
+  m.querySelector('#ps-mine').onclick = () => {
+    if (!profile.formPreset) return toast('저장해둔 서식이 없어요. 제목을 채운 뒤 "내 서식으로"를 눌러 보세요');
+    applyPreset(profile.formPreset);
+  };
+  m.querySelector('#ps-save').onclick = async () => {
+    const preset = {
+      fields: draft.fields.map(f => f.k.trim()).filter(Boolean),
+      details: draft.details.map(d => d.t.trim()).filter(Boolean),
+    };
+    if (!preset.fields.length && !preset.details.length) return toast('저장할 제목이 없어요', 1);
+    try {
+      await F.setDoc(F.doc(db, 'users', uid), { formPreset: preset }, { merge: true });
+      profile.formPreset = preset;
+      toast(`내 서식으로 저장했어요 · 프로필 ${preset.fields.length} · 묘사 ${preset.details.length}`);
+    } catch (e) { toast('저장하지 못했어요: ' + (e.code || e.message), 1); }
+  };
 
   const kvWrap = m.querySelector('#kv-wrap');
   function drawKV() {
@@ -1597,7 +1732,7 @@ function openSheet(id) {
       ${meta ? `<div class="sheet-meta">${meta}</div>` : '<div class="sheet-meta"></div>'}
       <div class="sheet-body" id="sheet-body"
         style="font-size:${readPrefs.size}px;line-height:${readPrefs.lh}">${bodyHTML(e)}</div>
-      ${e.memo ? `<div class="sheet-memo"><span class="eyebrow">메모 · 이미지에는 포함되지 않아요</span>
+      ${e.memo ? `<div class="sheet-memo"><span class="eyebrow">메모</span>
         <div class="txt">${esc(e.memo)}</div></div>` : ''}
     </article>`;
 
@@ -1693,7 +1828,7 @@ async function exportExcerpt(e) {
   x.fillStyle = INK;
   x.fillText(fit(x, e.title || '제목 없음', W - PAD * 2), PAD, y);
   y += 46;
-  const meta = [state.current.name, folderName(e.folderId), e.d1 || e.source, e.d2].filter(Boolean).join('   ·   ');
+  const meta = [folderName(e.folderId), e.d1 || e.source, e.d2].filter(Boolean).join('   ·   ');
   x.font = '400 19px "IBM Plex Mono", monospace';
   x.fillStyle = FAINT;
   x.fillText(fit(x, meta, W - PAD * 2), PAD, y);
