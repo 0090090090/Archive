@@ -330,7 +330,13 @@ details.setup-more[open] > summary::before{content:"− "}
 .drop:hover{border-color:var(--teal);background:var(--teal-soft);color:var(--teal)}
 .drop img{max-height:190px;margin:0 auto 12px;border-radius:var(--r);border:1px solid var(--hair)}
 
-.kv-row{display:grid;grid-template-columns:116px minmax(0,1fr) 30px 30px;gap:8px;margin-bottom:8px;align-items:start}
+.kv-row{display:grid;grid-template-columns:116px minmax(0,1fr) 22px 30px 30px;gap:8px;margin-bottom:8px;align-items:start}
+.det-top{align-items:start}
+.ord{display:grid;gap:2px;padding-top:2px}
+.ord button{width:22px;height:16px;font-size:7px;line-height:1;color:var(--muted);
+  border:1px solid var(--hair);border-radius:2px;background:var(--paper);display:grid;place-items:center}
+.ord button:hover:not([disabled]){border-color:var(--teal);color:var(--teal)}
+.ord button[disabled]{opacity:.3;cursor:default}
 .img-toggle{color:var(--teal)}
 .img-toggle[aria-pressed="true"]{color:var(--faint)}
 .kv-row .input{padding:8px 11px;font-size:13.5px}
@@ -350,13 +356,27 @@ details.setup-more[open] > summary::before{content:"− "}
 
 
 /* ─────────────── 세부 묘사 ─────────────── */
-.detail-item{padding:18px 0;border-bottom:1px solid var(--hair)}
+.detail-item{padding:16px 0;border-bottom:1px solid var(--hair)}
 .detail-item:first-child{padding-top:0}
 .detail-item:last-child{border-bottom:none;padding-bottom:0}
-.detail-item h3{font-family:var(--serif);font-weight:500;font-size:16.5px;margin-bottom:9px}
-.detail-item .txt{white-space:pre-wrap;font-size:14.5px;line-height:1.92;color:var(--ink-2)}
+.detail-item > summary{display:flex;align-items:center;gap:10px;cursor:pointer;list-style:none}
+.detail-item > summary::-webkit-details-marker{display:none}
+.det-title{font-family:var(--serif);font-weight:500;font-size:16.5px;flex:1}
+.detail-item > summary .arrow,.sub-item > summary .arrow{font-size:9px;color:var(--faint);transition:transform .2s}
+.detail-item[open] > summary .arrow,.sub-item[open] > summary .arrow{transform:rotate(180deg)}
+.sub-count{font-family:var(--mono);font-size:10px;color:var(--teal);background:var(--teal-soft);
+  border-radius:2px;padding:1px 6px}
+.detail-item .txt{white-space:pre-wrap;font-size:14.5px;line-height:1.92;color:var(--ink-2);margin-top:11px}
+.sub-list{margin-top:14px;padding-left:15px;border-left:1px solid var(--hair)}
+.sub-item{padding:2px 0}
+.sub-item > summary{display:flex;align-items:center;gap:8px;cursor:pointer;list-style:none;
+  font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;color:var(--teal);padding:7px 0}
+.sub-item > summary::-webkit-details-marker{display:none}
+.sub-item > summary:hover{color:var(--teal-2)}
+.sub-item .txt{font-size:13.5px;margin-top:6px;padding-bottom:9px}
+.sub-edit{border-top:1px dashed var(--line);margin-top:11px;padding-top:11px}
 .det-row{border:1px solid var(--hair);border-radius:var(--r);padding:13px;margin-bottom:10px;background:var(--warm)}
-.det-row .det-top{display:grid;grid-template-columns:minmax(0,1fr) 30px;gap:8px;margin-bottom:8px}
+.det-row .det-top{display:grid;grid-template-columns:minmax(0,1fr) 22px 30px;gap:8px;margin-bottom:8px}
 
 /* ─────────────── 발췌 도구 ─────────────── */
 .ex-tools{display:grid;gap:11px;margin-bottom:18px}
@@ -420,6 +440,19 @@ details.setup-more[open] > summary::before{content:"− "}
 .notice-row .txt{white-space:pre-wrap;font-size:13.5px;line-height:1.85;color:var(--ink-2);
   margin-top:11px;padding-top:12px;border-top:1px solid var(--hair)}
 
+/* 공지 댓글 */
+.cmt-count{font-family:var(--mono);font-size:10px;color:var(--teal);
+  background:var(--teal-soft);border-radius:2px;padding:2px 7px;letter-spacing:.04em}
+.cmt-box{margin-top:14px;padding-top:14px;border-top:1px dashed var(--line)}
+.cmt-box > .eyebrow{display:block;margin-bottom:10px}
+.cmt{padding:9px 0;border-bottom:1px solid var(--hair)}
+.cmt-txt{font-size:13.5px;line-height:1.75;color:var(--ink-2);white-space:pre-wrap}
+.cmt-meta{display:flex;align-items:center;gap:10px;margin-top:5px}
+.cmt-meta .mono{font-family:var(--mono);font-size:10px;color:var(--faint);letter-spacing:.06em}
+.cmt-meta .linkish{margin-left:auto;font-size:10.5px}
+.cmt-add{display:flex;gap:8px;margin-top:12px}
+.cmt-add .input{flex:1;padding:7px 11px;font-size:13.5px}
+
 /* ─────────────── 서식 ─────────────── */
 .preset-bar{display:flex;gap:7px;flex-wrap:wrap}
 .type-lock{font-family:var(--serif);font-size:16px;color:var(--ink);
@@ -444,21 +477,19 @@ details.setup-more[open] > summary::before{content:"− "}
 .side-actions{display:flex;gap:8px;margin-top:20px;flex-wrap:wrap;justify-content:flex-start}
 
 /* 초상 · 그래프 좌우 이동 */
-.portrait-wrap{position:relative}
-.char-side .portrait-wrap{max-width:100%}
+.portrait-wrap{display:flex;align-items:center;gap:9px}
+.portrait-wrap .portrait{flex:1;min-width:0}
 .port-nav,.set-nav{
-  position:absolute;top:50%;transform:translateY(-50%);border-radius:50%;
-  background:rgba(255,255,255,.94);border:1px solid var(--hair);box-shadow:var(--lift);
-  display:grid;place-items:center;color:var(--ink-2);z-index:2;line-height:1;
+  border:1px solid var(--hair);border-radius:var(--r);background:var(--paper);
+  display:grid;place-items:center;color:var(--muted);line-height:1;flex:none;
 }
-.port-nav{width:36px;height:36px;font-size:20px;padding-bottom:3px}
-.port-nav.left{left:-16px}
-.port-nav.right{right:-16px}
-.set-nav{width:30px;height:30px;font-size:17px;padding-bottom:2px}
-.set-nav.left{left:2px}
-.set-nav.right{right:2px}
+.port-nav{width:24px;height:56px;font-size:17px;padding-bottom:2px}
+.set-nav{position:absolute;top:50%;transform:translateY(-50%);
+  width:22px;height:44px;font-size:15px;padding-bottom:2px;z-index:2}
+.set-nav.left{left:0}
+.set-nav.right{right:0}
 .port-nav:hover:not([disabled]),.set-nav:hover{border-color:var(--teal);color:var(--teal)}
-.port-nav[disabled]{opacity:.3;cursor:default;box-shadow:none}
+.port-nav[disabled]{opacity:.3;cursor:default}
 
 /* 관계 */
 .rel-list{display:grid;gap:10px}
@@ -550,9 +581,8 @@ details.setup-more[open] > summary::before{content:"− "}
   .topbar-in{padding:12px 18px}
   .detail{grid-template-columns:1fr;gap:28px}
   .portrait{max-width:280px}
-  .char-side .portrait-wrap{max-width:280px;margin:0 auto}
-  .port-nav.left{left:-8px}
-  .port-nav.right{right:-8px}
+  .char-side .portrait-wrap{max-width:330px;margin:0 auto}
+  .portrait-wrap .portrait{max-width:none}
   .stat-wrap,.cmp-wrap{grid-template-columns:1fr;gap:20px}
   .ex-row .ex-search{flex:1 0 100%}
   .sheet{padding:40px 26px 48px}
@@ -563,6 +593,7 @@ details.setup-more[open] > summary::before{content:"− "}
   .panel{padding:22px 20px}
   .fab{right:18px;bottom:18px}
   .dl-row{grid-template-columns:96px minmax(0,1fr)}
+  .kv-row{grid-template-columns:88px minmax(0,1fr) 20px 26px 26px;gap:6px}
   .rel-row{grid-template-columns:minmax(0,1fr) 30px}
   .rel-row .select{grid-column:1/-1}
   .sheet-tools{gap:5px;padding:7px 8px}
@@ -697,6 +728,11 @@ const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c =>
   ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const uidgen = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+const move = (arr, i, d) => {
+  const j = i + d;
+  if (j < 0 || j >= arr.length) return;
+  [arr[i], arr[j]] = [arr[j], arr[i]];
+};
 const fmtDate = ms => {
   if (!ms) return '—';
   const d = new Date(ms);
@@ -1261,16 +1297,65 @@ function openTagLevels(scope, tags, after) {
   };
 }
 
+/* 공지 댓글 */
+function commentsHTML(n) {
+  const list = n.comments || [];
+  return `<div class="cmt-box" data-cbox="${n.id}">
+    <span class="eyebrow">댓글 ${list.length}</span>
+    ${list.map(cm => `<div class="cmt">
+      <div class="cmt-txt">${esc(cm.text)}</div>
+      <div class="cmt-meta"><span class="mono">${fmtDate(cm.createdAt)}</span>
+        <button class="linkish" data-cdel="${n.id}|${cm.id}">지우기</button></div>
+    </div>`).join('')}
+    <div class="cmt-add">
+      <input class="input" data-cinput="${n.id}" placeholder="댓글 남기기" maxlength="400">
+      <button class="btn btn-sm" data-cadd="${n.id}">등록</button>
+    </div>
+  </div>`;
+}
+
+function bindComments(root, redraw) {
+  root.querySelectorAll('[data-cadd]').forEach(b => b.onclick = async () => {
+    const id = b.dataset.cadd;
+    const input = root.querySelector(`[data-cinput="${id}"]`);
+    const text = input.value.trim();
+    if (!text) return toast('내용을 적어주세요', 1);
+    const n = state.notices.find(x => x.id === id); if (!n) return;
+    b.disabled = true;
+    try {
+      const list = [...(n.comments || []), { id: uidgen(), text, createdAt: Date.now() }];
+      await F.updateDoc(ref('notices', id), { comments: list });
+      n.comments = list;
+      redraw();
+    } catch (e) { b.disabled = false; toast('저장하지 못했어요: ' + (e.code || e.message), 1); }
+  });
+  root.querySelectorAll('[data-cinput]').forEach(el => el.onkeydown = e => {
+    if (e.key === 'Enter') root.querySelector(`[data-cadd="${el.dataset.cinput}"]`)?.click();
+  });
+  root.querySelectorAll('[data-cdel]').forEach(b => b.onclick = async () => {
+    const [id, cid] = b.dataset.cdel.split('|');
+    const n = state.notices.find(x => x.id === id); if (!n) return;
+    try {
+      const list = (n.comments || []).filter(x => x.id !== cid);
+      await F.updateDoc(ref('notices', id), { comments: list });
+      n.comments = list;
+      redraw();
+    } catch (e) { toast('지우지 못했어요: ' + (e.code || e.message), 1); }
+  });
+}
+
 function noticeHTML() {
   const n = state.notices[0];
   if (!n) return `<div class="notice-add"><button class="linkish" id="add-notice">＋ 공지 추가</button></div>`;
+  const cn = (n.comments || []).length;
   return `<section class="notice">
     <div class="top"><span class="eyebrow">공지</span><div class="spacer"></div>
       <button class="btn btn-sm btn-ghost" id="all-notices">전체 ${state.notices.length}</button></div>
     <button class="notice-title" id="notice-toggle" aria-expanded="${state.noticeOpen}">
       <span style="flex:1">${esc(n.title || '제목 없음')}</span>
+      ${cn ? `<span class="cmt-count">댓글 ${cn}</span>` : ''}
       <span class="arrow">▾</span></button>
-    ${state.noticeOpen && n.body ? `<div class="txt">${esc(n.body)}</div>` : ''}
+    ${state.noticeOpen ? `${n.body ? `<div class="txt">${esc(n.body)}</div>` : ''}${commentsHTML(n)}` : ''}
   </section>`;
 }
 
@@ -1278,19 +1363,11 @@ function bindNotice() {
   $('#add-notice')?.addEventListener('click', () => openNoticeEditor(null));
   $('#all-notices')?.addEventListener('click', openNotices);
   $('#notice-toggle')?.addEventListener('click', () => {
-    const n = state.notices[0];
-    if (!n?.body) return toast('본문이 비어 있는 공지예요');
     state.noticeOpen = !state.noticeOpen;
-    const sec = $('.notice');
-    const btn = $('#notice-toggle');
-    btn.setAttribute('aria-expanded', state.noticeOpen);
-    const old = sec.querySelector('.txt');
-    if (state.noticeOpen) {
-      const d = document.createElement('div');
-      d.className = 'txt'; d.textContent = n.body;
-      sec.append(d);
-    } else old?.remove();
+    renderGallery();
   });
+  const nb = $('.notice');
+  if (nb) bindComments(nb, renderGallery);
 }
 
 /* 공지 전체 목록 */
@@ -1313,6 +1390,7 @@ function openNotices() {
       <div class="notice-row">
         <button class="notice-title" data-open="${n.id}" aria-expanded="${open.has(n.id)}">
           <span style="flex:1">${esc(n.title || '제목 없음')}</span>
+          ${(n.comments || []).length ? `<span class="cmt-count">댓글 ${n.comments.length}</span>` : ''}
           <span class="arrow">▾</span></button>
         <div class="row-meta">
           <span class="mono">${fmtDate(n.createdAt)}${i === 0 ? ' · 홈에 표시 중' : ''}</span>
@@ -1320,8 +1398,9 @@ function openNotices() {
           <button class="btn btn-sm btn-ghost" data-edit="${n.id}">수정</button>
           <button class="btn btn-sm btn-ghost" data-del="${n.id}" style="color:var(--danger)">삭제</button>
         </div>
-        ${open.has(n.id) && n.body ? `<div class="txt">${esc(n.body)}</div>` : ''}
+        ${open.has(n.id) ? `${n.body ? `<div class="txt">${esc(n.body)}</div>` : ''}${commentsHTML(n)}` : ''}
       </div>`).join('');
+    bindComments(wrap, () => { draw(); renderGallery(); });   // 홈 카드의 댓글 수도 같이 갱신
     wrap.querySelectorAll('[data-open]').forEach(el => el.onclick = () => {
       const id = el.dataset.open;
       open.has(id) ? open.delete(id) : open.add(id);
@@ -1735,8 +1814,7 @@ async function exportSets(c, sets, fields = []) {
   const INK = '#14161A', INK2 = '#3E434B', FAINT = '#A6ABB2', HAIR = '#E5E7E8', LINE = '#D2D6D9', TEAL = '#0F4C47';
   const rows = sets.reduce((n, st) => n + st.labels.length, 0);
   const probe = document.createElement('canvas').getContext('2d');
-  probe.font = '400 21px "Pretendard Variable", Pretendard, sans-serif';
-  const flines = fieldLines(probe, fields, W - PAD * 2);
+  const flines = layoutFields(probe, fields, W - PAD * 2);
   const H = 128 + 74 + flines.length * 34 + sets.length * 92 + rows * 56 + 116;
 
   const cv = document.createElement('canvas');
@@ -1755,14 +1833,11 @@ async function exportSets(c, sets, fields = []) {
   x.font = '300 46px "Noto Serif KR", serif';
   x.fillStyle = INK;
   x.fillText(fit(x, c.name || '이름 없음', W - PAD * 2), PAD, y);
-  y += 12;
   if (flines.length) {
-    x.font = '400 21px "Pretendard Variable", Pretendard, sans-serif';
-    x.fillStyle = INK2;
-    flines.forEach(l => { y += 34; x.fillText(l, PAD, y); });
+    y = drawFieldLines(x, flines, PAD, y + 34, 34, FAINT, INK2) - 34;
     y += 10;
   }
-  y += 44;
+  y += 56;
 
   const trackL = PAD + 220, trackR = W - PAD - 76, trackW = trackR - trackL;
   sets.forEach(st => {
@@ -1812,8 +1887,7 @@ async function exportRank(c, info, fields = []) {
   const W = 1080, PAD = 84;
   const INK = '#14161A', INK2 = '#3E434B', FAINT = '#A6ABB2', HAIR = '#E5E7E8', LINE = '#D2D6D9', TEAL = '#0F4C47';
   const probe = document.createElement('canvas').getContext('2d');
-  probe.font = '400 21px "Pretendard Variable", Pretendard, sans-serif';
-  const flines = fieldLines(probe, fields, W - PAD * 2);
+  const flines = layoutFields(probe, fields, W - PAD * 2);
   const H = 128 + 176 + flines.length * 34 + info.rows.length * 70 + 130;
 
   const cv = document.createElement('canvas');
@@ -1841,11 +1915,7 @@ async function exportRank(c, info, fields = []) {
   x.font = '400 19px "IBM Plex Mono", monospace';
   x.fillStyle = FAINT;
   x.fillText(`${info.set?.name || ''} 비교 · 표본 ${info.pool.length}명`, PAD, y);
-  if (flines.length) {
-    x.font = '400 21px "Pretendard Variable", Pretendard, sans-serif';
-    x.fillStyle = INK2;
-    flines.forEach(l => { y += 34; x.fillText(l, PAD, y); });
-  }
+  if (flines.length) y = drawFieldLines(x, flines, PAD, y + 34, 34, FAINT, INK2) - 34;
   y += 30;
   x.strokeStyle = LINE; x.lineWidth = 1.5;
   x.beginPath(); x.moveTo(PAD, y + .5); x.lineTo(W - PAD, y + .5); x.stroke();
@@ -1895,19 +1965,50 @@ async function exportRank(c, info, fields = []) {
   }, 'image/png');
 }
 
-/* 이미지에 넣을 프로필 항목을 줄 단위로 */
-function fieldLines(x, fields, maxW, limit = 3) {
-  const items = fields.map(f => `${f.k} ${f.v}`.trim()).filter(Boolean);
-  if (!items.length) return [];
+/* 이미지에 넣을 프로필 항목 — 라벨은 모노 회색, 내용은 본문색, 구분은 | */
+const FL_LABEL = '400 18px "IBM Plex Mono", monospace';
+const FL_VALUE = '400 21px "Pretendard Variable", Pretendard, sans-serif';
+const FL_GAP = 9, FL_SEP = 30;
+
+function layoutFields(x, fields, maxW, limit = 3) {
+  const items = fields.filter(f => (f.k || '').trim() || (f.v || '').trim());
   const lines = [];
-  let cur = '';
-  items.forEach(it => {
-    const t = cur ? cur + '   ·   ' + it : it;
-    if (cur && x.measureText(t).width > maxW) { lines.push(cur); cur = it; }
-    else cur = t;
+  let cur = [], w = 0;
+  items.forEach(f => {
+    x.font = FL_LABEL; const kw = x.measureText(f.k || '').width;
+    x.font = FL_VALUE; const vw = x.measureText(f.v || '').width;
+    const itemW = kw + (kw && vw ? FL_GAP : 0) + vw;
+    if (cur.length && w + FL_SEP + itemW > maxW) { lines.push(cur); cur = []; w = 0; }
+    w += (cur.length ? FL_SEP : 0) + itemW;
+    cur.push(f);
   });
-  if (cur) lines.push(cur);
+  if (cur.length) lines.push(cur);
   return lines.slice(0, limit);
+}
+
+function drawFieldLines(x, lines, left, y, lineH, faint, ink) {
+  lines.forEach(line => {
+    let cx = left;
+    line.forEach((f, i) => {
+      if (i) {
+        x.font = FL_LABEL; x.fillStyle = '#C3C8CB';
+        x.fillText('|', cx + (FL_SEP - x.measureText('|').width) / 2, y);
+        cx += FL_SEP;
+      }
+      if (f.k) {
+        x.font = FL_LABEL; x.fillStyle = faint;
+        x.fillText(f.k, cx, y);
+        cx += x.measureText(f.k).width + (f.v ? FL_GAP : 0);
+      }
+      if (f.v) {
+        x.font = FL_VALUE; x.fillStyle = ink;
+        x.fillText(f.v, cx, y);
+        cx += x.measureText(f.v).width;
+      }
+    });
+    y += lineH;
+  });
+  return y;
 }
 
 /* 공통 판면 */
@@ -1942,7 +2043,7 @@ async function exportCompare(set, labels, max, series) {
   const INK = '#14161A', INK2 = '#3E434B', FAINT = '#A6ABB2', HAIR = '#E5E7E8', LINE = '#D2D6D9', TEAL = '#0F4C47';
   const R = 224;
   const legendH = series.length * 44 + 18;
-  const tableH = labels.length * 46 + 74;
+  const tableH = labels.length * 46 + 104;
   const H = 128 + 78 + (R * 2 + 130) + legendH + tableH + 116;
 
   const cv = document.createElement('canvas');
@@ -2021,9 +2122,9 @@ async function exportCompare(set, labels, max, series) {
     x.textAlign = 'left';
     y += 44;
   });
-  y += 18;
+  y += 48;
 
-  // 표 — 굵은 선 아래 여백을 넉넉히
+  // 표 — 굵은 선 위아래 여백을 넉넉히
   const colW = (W - PAD * 2 - 300) / series.length;
   x.strokeStyle = LINE; x.lineWidth = 1.5;
   x.beginPath(); x.moveTo(PAD, y - 52.5); x.lineTo(W - PAD, y - 52.5); x.stroke();
@@ -2164,9 +2265,17 @@ function renderCharacter() {
           <div class="panel-head"><h2>세부 묘사</h2><div class="spacer"></div>
             ${details.length ? `<span class="eyebrow">${details.length}편</span>` : ''}</div>
           ${details.length
-            ? details.map(d => `<article class="detail-item">
-                <h3>${esc(d.t || '제목 없음')}</h3>
-                <div class="txt">${esc(d.v)}</div></article>`).join('')
+            ? details.map(d => `<details class="detail-item" open>
+                <summary><span class="det-title">${esc(d.t || '제목 없음')}</span>
+                  ${(d.subs || []).length ? `<span class="sub-count">${d.subs.length}</span>` : ''}
+                  <span class="arrow">▾</span></summary>
+                ${d.v ? `<div class="txt">${esc(d.v)}</div>` : ''}
+                ${(d.subs || []).length ? `<div class="sub-list">${d.subs.map(sb => `
+                  <details class="sub-item">
+                    <summary><span style="flex:1">${esc(sb.t || '세부 제목')}</span><span class="arrow">▾</span></summary>
+                    <div class="txt">${esc(sb.v)}</div>
+                  </details>`).join('')}</div>` : ''}
+              </details>`).join('')
             : `<p class="hint" style="margin:0">외모, 습관, 과거처럼 길게 풀어 쓸 이야기를 제목과 함께 적어두는 칸이에요.
                 프로필 수정에서 추가할 수 있어요.</p>`}
         </section>
@@ -2298,7 +2407,7 @@ function openCharEditor(c) {
     name: c?.name || '', subtitle: c?.subtitle || '',
     tags: (c?.tags || []).join(' '),
     fields: (c?.fields || []).map(f => ({ ...f })),
-    details: (c?.details || []).map(d => ({ ...d })),
+    details: (c?.details || []).map(d => ({ ...d, subs: (d.subs || []).map(sb => ({ ...sb })) })),
     statSetId: c?.statSetId || state.statSets[0]?.id || '',
     thumb: c?.thumb || null, imageId: c?.imageId || null,
     newFull: null, removedImg: false,
@@ -2327,7 +2436,9 @@ function openCharEditor(c) {
       <label class="field"><span>스탯 세트</span>
         <select class="select" id="f-set">
           ${state.statSets.map(s => `<option value="${s.id}" ${s.id === draft.statSetId ? 'selected' : ''}>${esc(s.name)}</option>`).join('')}
-        </select></label>
+        </select>
+        <p class="hint">이 캐릭터의 스탯을 어떤 항목 묶음으로 기록할지 고르는 칸이에요.
+          값은 저장 후 스탯 패널에서 넣고, 세트는 거기서도 바꿀 수 있어요.</p></label>
       <div class="field"><span>서식</span>
         <div class="preset-bar">
           <button class="btn btn-sm" id="ps-base">기본 서식 불러오기</button>
@@ -2357,20 +2468,61 @@ function openCharEditor(c) {
     detWrap.innerHTML = draft.details.map((d, i) => `
       <div class="det-row">
         <div class="det-top">
-          <input class="input" data-dt="${i}" value="${esc(d.t)}" placeholder="소제목 (예: 외모 · 말버릇 · 과거)" maxlength="40">
+          <input class="input" data-dt="${i}" value="${esc(d.t)}" placeholder="제목 (예: 외모 · 말버릇 · 과거)" maxlength="40">
+          <span class="ord">
+            <button data-dup="${i}" title="위로" ${i === 0 ? 'disabled' : ''}>▲</button>
+            <button data-ddn="${i}" title="아래로" ${i === draft.details.length - 1 ? 'disabled' : ''}>▼</button>
+          </span>
           <button class="icon-btn" data-drm="${i}" title="이 묘사 지우기">✕</button>
         </div>
         <textarea class="textarea" data-dv="${i}" style="min-height:110px;font-size:14px"
           placeholder="길게 풀어 써도 괜찮아요.">${esc(d.v)}</textarea>
+        ${(d.subs || []).map((sb, j) => `
+          <div class="sub-edit">
+            <div class="det-top">
+              <input class="input" data-st="${i}.${j}" value="${esc(sb.t)}" placeholder="세부 제목" maxlength="40">
+              <span class="ord">
+                <button data-sup="${i}.${j}" title="위로" ${j === 0 ? 'disabled' : ''}>▲</button>
+                <button data-sdn="${i}.${j}" title="아래로" ${j === d.subs.length - 1 ? 'disabled' : ''}>▼</button>
+              </span>
+              <button class="icon-btn" data-srm="${i}.${j}" title="세부 제목 지우기">✕</button>
+            </div>
+            <textarea class="textarea" data-sv="${i}.${j}" style="min-height:80px;font-size:13.5px"
+              placeholder="이 세부 제목 안에 들어갈 내용.">${esc(sb.v)}</textarea>
+          </div>`).join('')}
+        <button class="btn btn-sm btn-ghost" data-addsub="${i}" style="margin-top:2px">＋ 세부 제목</button>
       </div>`).join('');
+    const pair = v => v.split('.').map(Number);
     detWrap.querySelectorAll('[data-dt]').forEach(el => el.oninput = ev => draft.details[+el.dataset.dt].t = ev.target.value);
     detWrap.querySelectorAll('[data-dv]').forEach(el => el.oninput = ev => draft.details[+el.dataset.dv].v = ev.target.value);
+    detWrap.querySelectorAll('[data-st]').forEach(el => el.oninput = ev => {
+      const [i, j] = pair(el.dataset.st); draft.details[i].subs[j].t = ev.target.value;
+    });
+    detWrap.querySelectorAll('[data-sv]').forEach(el => el.oninput = ev => {
+      const [i, j] = pair(el.dataset.sv); draft.details[i].subs[j].v = ev.target.value;
+    });
+    detWrap.querySelectorAll('[data-srm]').forEach(el => el.onclick = () => {
+      const [i, j] = pair(el.dataset.srm); draft.details[i].subs.splice(j, 1); drawDet();
+    });
+    detWrap.querySelectorAll('[data-addsub]').forEach(el => el.onclick = () => {
+      const i = +el.dataset.addsub;
+      draft.details[i].subs = [...(draft.details[i].subs || []), { t: '', v: '' }];
+      drawDet();
+    });
     detWrap.querySelectorAll('[data-drm]').forEach(el => el.onclick = () => {
       draft.details.splice(+el.dataset.drm, 1); drawDet();
     });
+    detWrap.querySelectorAll('[data-dup]').forEach(el => el.onclick = () => { move(draft.details, +el.dataset.dup, -1); drawDet(); });
+    detWrap.querySelectorAll('[data-ddn]').forEach(el => el.onclick = () => { move(draft.details, +el.dataset.ddn, 1); drawDet(); });
+    detWrap.querySelectorAll('[data-sup]').forEach(el => el.onclick = () => {
+      const [i, j] = pair(el.dataset.sup); move(draft.details[i].subs, j, -1); drawDet();
+    });
+    detWrap.querySelectorAll('[data-sdn]').forEach(el => el.onclick = () => {
+      const [i, j] = pair(el.dataset.sdn); move(draft.details[i].subs, j, 1); drawDet();
+    });
   }
   drawDet();
-  m.querySelector('#add-det').onclick = () => { draft.details.push({ t: '', v: '' }); drawDet(); };
+  m.querySelector('#add-det').onclick = () => { draft.details.push({ t: '', v: '', subs: [] }); drawDet(); };
 
   /* 서식 적용 — 제목만 채우고 기존 내용은 건드리지 않아요 */
   function applyPreset(preset) {
@@ -2407,10 +2559,16 @@ function openCharEditor(c) {
       <div class="kv-row">
         <input class="input" data-k="${i}" value="${esc(f.k)}" placeholder="항목" maxlength="24">
         <input class="input" data-v="${i}" value="${esc(f.v)}" placeholder="내용" maxlength="300">
+        <span class="ord">
+          <button data-kup="${i}" title="위로" ${i === 0 ? 'disabled' : ''}>▲</button>
+          <button data-kdn="${i}" title="아래로" ${i === draft.fields.length - 1 ? 'disabled' : ''}>▼</button>
+        </span>
         <button class="icon-btn img-toggle" data-hide="${i}" aria-pressed="${f.hide ? 'true' : 'false'}"
           title="${f.hide ? '카드 이미지에서 숨김' : '카드 이미지에 표시'}">${f.hide ? '◌' : '◉'}</button>
         <button class="icon-btn" data-rm="${i}" title="이 항목 지우기">✕</button>
       </div>`).join('');
+    kvWrap.querySelectorAll('[data-kup]').forEach(el => el.onclick = () => { move(draft.fields, +el.dataset.kup, -1); drawKV(); });
+    kvWrap.querySelectorAll('[data-kdn]').forEach(el => el.onclick = () => { move(draft.fields, +el.dataset.kdn, 1); drawKV(); });
     kvWrap.querySelectorAll('[data-hide]').forEach(el => el.onclick = () => {
       const f = draft.fields[+el.dataset.hide];
       f.hide = !f.hide; drawKV();
@@ -2457,7 +2615,12 @@ function openCharEditor(c) {
         tags: m.querySelector('#f-tags').value.trim().split(/\s+/).filter(Boolean).slice(0, 20),
         fields: draft.fields.filter(f => f.k.trim() || f.v.trim())
           .map(f => ({ k: f.k.trim(), v: f.v.trim(), hide: !!f.hide })),
-        details: draft.details.filter(d => d.t.trim() || d.v.trim()).map(d => ({ t: d.t.trim(), v: d.v.replace(/\s+$/, '') })),
+        details: draft.details.filter(d => d.t.trim() || d.v.trim() || (d.subs || []).some(sb => sb.t.trim() || sb.v.trim()))
+          .map(d => ({
+            t: d.t.trim(), v: d.v.replace(/\s+$/, ''),
+            subs: (d.subs || []).filter(sb => sb.t.trim() || sb.v.trim())
+              .map(sb => ({ t: sb.t.trim(), v: sb.v.replace(/\s+$/, '') })),
+          })),
         statSetId: m.querySelector('#f-set').value,
         thumb: draft.thumb || null,
         updatedAt: now,
