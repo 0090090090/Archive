@@ -254,6 +254,8 @@ details.setup-more[open] > summary::before{content:"− "}
 
 /* 스탯 */
 .stat-wrap{display:grid;gap:30px;grid-template-columns:minmax(0,1fr) minmax(0,246px)}
+.stat-wrap.solo{grid-template-columns:1fr}
+.btn[aria-pressed="true"]{background:var(--teal);color:#fff;border-color:var(--teal)}
 .radar-box{display:grid;place-items:center;padding:6px 0}
 .radar-box svg{width:100%;max-width:340px;height:auto;overflow:visible}
 .stat-list{display:grid;gap:14px;align-content:start}
@@ -428,6 +430,29 @@ details.setup-more[open] > summary::before{content:"− "}
 .select.ex-sort{width:auto;min-width:104px;padding:7px 10px;font-size:13px}
 .excerpt-item .tag{pointer-events:none}
 
+/* 캐릭터 좌측 열 — 가운데 정렬 */
+.char-side{text-align:center}
+.char-side .portrait{margin:0 auto}
+.char-side .tags,.char-side .side-actions{justify-content:center}
+.side-actions{display:flex;gap:8px;margin-top:20px;flex-wrap:wrap}
+
+/* 태그 중요도 */
+.adv-group{display:flex;align-items:flex-start;gap:11px;padding:7px 0}
+.adv-group + .adv-group{border-top:1px solid var(--hair);margin-top:4px;padding-top:11px}
+.lv-badge{flex:none;width:22px;height:22px;border-radius:var(--r);display:grid;place-items:center;
+  font-size:11px;font-weight:500;margin-top:1px}
+.lv-high{background:var(--teal);color:#fff}
+.lv-mid{background:var(--teal-soft);color:var(--teal);border:1px solid rgba(15,76,71,.2)}
+.lv-low{background:var(--paper);color:var(--faint);border:1px solid var(--hair)}
+.lv-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--hair)}
+.lv-row:last-child{border-bottom:none}
+.lv-name{flex:1;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lv-name .mono{font-family:var(--mono);font-size:11px;color:var(--faint)}
+.seg{display:flex;border:1px solid var(--line);border-radius:var(--r);overflow:hidden;flex:none}
+.seg button{padding:5px 13px;font-size:12.5px;color:var(--muted);background:var(--paper)}
+.seg button + button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"]{background:var(--teal);color:#fff}
+
 /* ─────────────── 이어 읽기 · 서체 ─────────────── */
 .tool.wide{width:auto;padding:0 9px;font-size:11.5px}
 .nav-short{display:none}
@@ -548,7 +573,11 @@ const SDK_VERSIONS = ['10.13.2', '10.12.2', '9.23.0'];
 
 let A = null, F = null;              // auth / firestore 모듈
 let auth = null, db = null;
-let uid = null, profile = { nickname: '', notice: '', formPreset: null };
+let uid = null, profile = { nickname: '', notice: '', formPreset: null, tagLevels: { char: {}, ex: {} } };
+
+/* 태그 중요도 */
+const LEVELS = [['high', '상'], ['mid', '중'], ['low', '하']];
+const tagLevel = (scope, t) => (profile.tagLevels?.[scope] || {})[t] || 'mid';
 
 /* 프로필·세부 묘사 기본 서식 — 제목만 채워요 */
 const BASE_PRESET = {
@@ -567,6 +596,7 @@ const state = {
   sort: 'recent',        // recent | old | name
   exQ: '',               // 발췌 검색어
   exFolder: null,        // null = 전체 폴더
+  statEdit: false,       // 스탯 슬라이더 펼침 (기본은 닫힘 — 스크롤 중 오터치 방지)
   exSort: 'recent',      // recent | old | title
   exTags: [],            // 발췌 태그 필터
   exAdv: false,          // 발췌 고급 검색 열림
@@ -910,11 +940,13 @@ async function bootUser(u) {
     const uref = F.doc(db, 'users', uid);
     const snap = await F.getDoc(uref);
     if (!snap.exists()) {
-      profile = { nickname: (u.displayName || '나') + '의 아카이브', notice: '', formPreset: null };
+      profile = { nickname: (u.displayName || '나') + '의 아카이브', notice: '', formPreset: null,
+                  tagLevels: { char: {}, ex: {} } };
       await F.setDoc(uref, { ...profile, createdAt: Date.now() });
     } else {
       const d = snap.data();
-      profile = { nickname: d.nickname || '내 아카이브', notice: d.notice || '', formPreset: d.formPreset || null };
+      profile = { nickname: d.nickname || '내 아카이브', notice: d.notice || '', formPreset: d.formPreset || null,
+                  tagLevels: { char: {}, ex: {}, ...(d.tagLevels || {}) } };
     }
     $('#brand-sub').textContent = profile.nickname;
     await Promise.all([loadStatSets(), loadChars(), loadNotices()]);
@@ -1028,8 +1060,7 @@ function visibleChars() {
   const q = state.q.trim().toLowerCase();
   if (q) list = list.filter(c =>
     (c.name || '').toLowerCase().includes(q) ||
-    (c.subtitle || '').toLowerCase().includes(q) ||
-    (c.tags || []).some(t => t.toLowerCase().includes(q)));
+    (c.subtitle || '').toLowerCase().includes(q));
   if (state.tagFilter.length)
     list = list.filter(c => state.tagFilter.every(t => (c.tags || []).includes(t)));
   const by = { recent: (a, b) => (b.updatedAt || 0) - (a.updatedAt || 0),
@@ -1054,12 +1085,12 @@ function renderGallery() {
     <div class="toolbar">
       <div class="search">
         <span style="color:var(--faint)">⌕</span>
-        <input id="q" placeholder="이름 · 부제 · 태그로 찾기" value="${esc(state.q)}" />
+        <input id="q" placeholder="이름 · 부제로 찾기" value="${esc(state.q)}" />
       </div>
       <button class="btn btn-sm" id="adv-toggle" aria-pressed="${state.adv}">
         고급 검색${state.tagFilter.length ? ` · ${state.tagFilter.length}` : ''}</button>
     </div>
-    ${state.adv ? advPanelHTML(tagCounts(state.chars), state.tagFilter, '캐릭터에 붙인 태그') : ''}
+    ${state.adv ? advPanelHTML(tagCounts(state.chars), state.tagFilter, '캐릭터에 붙인 태그', 'char') : ''}
     <div class="chipbar">
       ${[['recent', '최근 수정순'], ['old', '오래된순'], ['name', '이름순']].map(([k, l]) =>
         `<button class="chip" data-sort="${k}" aria-pressed="${state.sort === k}">${l}</button>`).join('')}
@@ -1086,22 +1117,73 @@ function renderGallery() {
   });
   const gclr = $('#adv-clear');
   if (gclr) gclr.onclick = () => { state.tagFilter = []; renderGallery(); };
+  const gmg = $('#adv-manage');
+  if (gmg) gmg.onclick = () => openTagLevels('char', tagCounts(state.chars), renderGallery);
   bindNotice();
   $('#add-char').onclick = () => openCharEditor(null);
   $$('[data-new]').forEach(b => b.onclick = () => openCharEditor(null));
   bindCards();
 }
 
-function advPanelHTML(tags, picked, label) {
+function advPanelHTML(tags, picked, label, scope) {
+  const groups = LEVELS.map(([lv, name]) => [lv, name, tags.filter(([t]) => tagLevel(scope, t) === lv)]);
   return `<div class="adv" id="adv-panel">
     <div class="adv-head"><span class="eyebrow">${esc(label)}</span><div class="spacer"></div>
-      ${picked.length ? `<button class="linkish" id="adv-clear">선택 해제</button>` : ''}</div>
+      ${picked.length ? `<button class="linkish" id="adv-clear">선택 해제</button>` : ''}
+      <button class="linkish" id="adv-manage">중요도 정리</button></div>
     ${tags.length
-      ? `<div class="chipbar" style="margin:0">${tags.map(([t, n]) =>
-          `<button class="chip" data-tag="${esc(t)}" aria-pressed="${picked.includes(t)}">#${esc(t)} ${n}</button>`).join('')}</div>`
+      ? groups.filter(g => g[2].length).map(([lv, name, list]) => `
+          <div class="adv-group">
+            <span class="lv-badge lv-${lv}">${name}</span>
+            <div class="chipbar" style="margin:0">${list.map(([t, n]) =>
+              `<button class="chip" data-tag="${esc(t)}" aria-pressed="${picked.includes(t)}">#${esc(t)} ${n}</button>`).join('')}</div>
+          </div>`).join('')
       : `<p class="hint" style="margin:0">아직 붙인 태그가 없어요. 수정 창의 태그 칸에 띄어쓰기로 적으면 여기에 모여요.</p>`}
     ${picked.length > 1 ? `<p class="hint">고른 태그를 <b>모두</b> 가진 것만 보여줘요.</p>` : ''}
   </div>`;
+}
+
+/* 태그 중요도 정리 */
+function openTagLevels(scope, tags, after) {
+  const draft = { ...(profile.tagLevels?.[scope] || {}) };
+  const m = openModal({
+    title: '태그 중요도',
+    wide: true,
+    body: `<p class="hint" style="margin:0 0 16px">자주 쓰는 태그를 <b>상</b>으로 올려두면
+        고급 검색에서 위쪽에 모여 나와요. 정하지 않은 태그는 <b>중</b>이에요.</p>
+      <div id="lv-list"></div>`,
+    foot: `<button class="btn btn-ghost" id="lv-cancel">취소</button>
+           <button class="btn btn-key" id="lv-save">저장</button>`,
+  });
+  function draw() {
+    m.querySelector('#lv-list').innerHTML = tags.length
+      ? tags.map(([t, n]) => `
+        <div class="lv-row">
+          <span class="lv-name">#${esc(t)}<span class="mono"> ${n}</span></span>
+          <div class="seg">${LEVELS.map(([lv, name]) =>
+            `<button data-set="${esc(t)}|${lv}" aria-pressed="${(draft[t] || 'mid') === lv}">${name}</button>`).join('')}</div>
+        </div>`).join('')
+      : `<p class="hint" style="margin:0">정리할 태그가 없어요.</p>`;
+    m.querySelectorAll('[data-set]').forEach(b => b.onclick = () => {
+      const [t, lv] = b.dataset.set.split('|');
+      draft[t] = lv; draw();
+    });
+  }
+  draw();
+  m.querySelector('#lv-cancel').onclick = closeModal;
+  m.querySelector('#lv-save').onclick = async () => {
+    const btn = m.querySelector('#lv-save');
+    btn.disabled = true; btn.textContent = '저장하는 중…';
+    try {
+      const next = { ...(profile.tagLevels || { char: {}, ex: {} }), [scope]: draft };
+      await F.setDoc(F.doc(db, 'users', uid), { tagLevels: next }, { merge: true });
+      profile.tagLevels = next;
+      closeModal(); after?.(); toast('중요도를 저장했어요');
+    } catch (e) {
+      btn.disabled = false; btn.textContent = '저장';
+      toast('저장하지 못했어요: ' + (e.code || e.message), 1);
+    }
+  };
 }
 
 function noticeHTML() {
@@ -1339,7 +1421,8 @@ function openCompare() {
         <div class="radar-box" id="cmp-radar"></div>
         <div id="cmp-legend"></div>
       </div>`,
-    foot: `<button class="btn" id="cmp-close">닫기</button>`,
+    foot: `<button class="btn btn-ghost" id="cmp-close">닫기</button>
+           <button class="btn btn-key" id="cmp-img">이미지 저장</button>`,
   });
 
   function draw() {
@@ -1375,6 +1458,131 @@ function openCompare() {
   }
   draw();
   m.querySelector('#cmp-close').onclick = closeModal;
+  m.querySelector('#cmp-img').onclick = () => exportCompare(set, labels, max, picked.map(id => {
+    const c = state.chars.find(x => x.id === id);
+    return { name: c?.name || '이름 없음', vals: c?.stats || {} };
+  }));
+}
+
+async function exportCompare(set, labels, max, series) {
+  if (labels.length < 3) return toast('항목이 3개 이상일 때 저장할 수 있어요');
+  toast('이미지를 그리는 중…');
+  try { await document.fonts.ready; } catch {}
+  const W = 1080, PAD = 84;
+  const INK = '#14161A', INK2 = '#3E434B', FAINT = '#A6ABB2', HAIR = '#E5E7E8', LINE = '#D2D6D9', TEAL = '#0F4C47';
+  const R = 224;
+  const legendH = series.length * 44 + 18;
+  const tableH = labels.length * 46 + 46;
+  const H = 128 + 78 + (R * 2 + 130) + legendH + tableH + 116;
+
+  const cv = document.createElement('canvas');
+  cv.width = W; cv.height = H;
+  const x = cv.getContext('2d');
+
+  x.fillStyle = '#FFFFFF'; x.fillRect(0, 0, W, H);
+  const warm = x.createLinearGradient(0, 0, 0, H);
+  warm.addColorStop(0, 'rgba(251,250,247,0)'); warm.addColorStop(1, 'rgba(247,246,242,.9)');
+  x.fillStyle = warm; x.fillRect(0, 0, W, H);
+  x.strokeStyle = HAIR; x.lineWidth = 1.5;
+  x.strokeRect(30.5, 30.5, W - 61, H - 61);
+  x.strokeStyle = TEAL; x.lineWidth = 1.5;
+  const T = 26, o = 30.5;
+  [[o, o, 1, 1], [W - o, o, -1, 1], [o, H - o, 1, -1], [W - o, H - o, -1, -1]].forEach(([px, py, sx, sy]) => {
+    x.beginPath(); x.moveTo(px + sx * T, py); x.lineTo(px, py); x.lineTo(px, py + sy * T); x.stroke();
+  });
+
+  let y = 100;
+  x.font = '500 19px "IBM Plex Mono", monospace';
+  x.fillStyle = FAINT; x.textAlign = 'left';
+  x.fillText('S T A T   C O M P A R I S O N', PAD, y);
+  x.textAlign = 'right'; x.fillStyle = INK2;
+  x.fillText(fit(x, profile.nickname, 400), W - PAD, y);
+  y += 62;
+  x.textAlign = 'left';
+  x.font = '300 44px "Noto Serif KR", serif';
+  x.fillStyle = INK;
+  x.fillText(fit(x, set?.name || '스탯', W - PAD * 2), PAD, y);
+  y += 40;
+
+  // 그래프
+  const cx = W / 2, cy = y + R + 46;
+  x.save(); x.translate(cx, cy);
+  const base = radarGeom(labels, {}, max, R);
+  const path = k => { x.beginPath(); base.forEach((p, i) => {
+    const px = Math.cos(p.a) * R * k, py = Math.sin(p.a) * R * k;
+    i ? x.lineTo(px, py) : x.moveTo(px, py); }); x.closePath(); };
+  x.setLineDash([2, 5]);
+  [0.25, 0.5, 0.75].forEach(k => { path(k); x.strokeStyle = LINE; x.lineWidth = 1; x.stroke(); });
+  x.setLineDash([]);
+  path(1); x.strokeStyle = '#C3C8CB'; x.lineWidth = 1.2; x.stroke();
+  base.forEach(p => { x.beginPath(); x.moveTo(0, 0); x.lineTo(p.ax, p.ay);
+    x.strokeStyle = HAIR; x.lineWidth = 1; x.stroke(); });
+  series.forEach((sr, i) => {
+    const g = radarGeom(labels, sr.vals, max, R);
+    const col = CMP_COLORS[i % CMP_COLORS.length];
+    x.beginPath();
+    g.forEach((p, k) => k ? x.lineTo(p.x, p.y) : x.moveTo(p.x, p.y));
+    x.closePath();
+    x.fillStyle = col + '1F'; x.fill();
+    x.strokeStyle = col; x.lineWidth = 2.4; x.lineJoin = 'round'; x.stroke();
+    g.forEach(p => { x.beginPath(); x.arc(p.x, p.y, 5, 0, 7); x.fillStyle = col; x.fill(); });
+  });
+  base.forEach(p => {
+    const lx = Math.cos(p.a) * (R + 42), ly = Math.sin(p.a) * (R + 42);
+    x.textAlign = Math.abs(lx) < 14 ? 'center' : (lx > 0 ? 'left' : 'right');
+    x.font = '400 22px "Pretendard Variable", Pretendard, sans-serif';
+    x.fillStyle = INK2; x.fillText(p.label, lx, ly + 6);
+  });
+  x.restore();
+  x.textAlign = 'left';
+  y = cy + R + 84;
+
+  // 범례
+  series.forEach((sr, i) => {
+    const col = CMP_COLORS[i % CMP_COLORS.length];
+    x.fillStyle = col; x.fillRect(PAD, y - 14, 16, 16);
+    x.font = '400 26px "Pretendard Variable", Pretendard, sans-serif';
+    x.fillStyle = INK;
+    x.fillText(fit(x, sr.name, W - PAD * 2 - 200), PAD + 30, y);
+    x.textAlign = 'right';
+    x.font = '500 22px "IBM Plex Mono", monospace';
+    x.fillStyle = FAINT;
+    x.fillText('합계 ' + labels.reduce((n, l) => n + Number(sr.vals[l] || 0), 0), W - PAD, y);
+    x.textAlign = 'left';
+    y += 44;
+  });
+  y += 18;
+
+  // 표
+  const colW = (W - PAD * 2 - 300) / series.length;
+  x.strokeStyle = LINE; x.lineWidth = 1;
+  x.beginPath(); x.moveTo(PAD, y - 24.5); x.lineTo(W - PAD, y - 24.5); x.stroke();
+  labels.forEach(l => {
+    x.font = '400 21px "IBM Plex Mono", monospace';
+    x.fillStyle = FAINT;
+    x.fillText(fit(x, l, 280), PAD, y);
+    x.textAlign = 'right';
+    series.forEach((sr, i) => {
+      x.font = '500 23px "IBM Plex Mono", monospace';
+      x.fillStyle = CMP_COLORS[i % CMP_COLORS.length];
+      x.fillText(String(Number(sr.vals[l] || 0)), PAD + 300 + colW * (i + 1), y);
+    });
+    x.textAlign = 'left';
+    x.strokeStyle = HAIR;
+    x.beginPath(); x.moveTo(PAD, y + 16.5); x.lineTo(W - PAD, y + 16.5); x.stroke();
+    y += 46;
+  });
+
+  x.font = '400 18px "IBM Plex Mono", monospace';
+  x.fillStyle = FAINT;
+  x.fillText(`${set?.name || ''} · MAX ${max}`, PAD, H - 60);
+  x.textAlign = 'right';
+  x.fillText(fmtDate(Date.now()), W - PAD, H - 60);
+
+  cv.toBlob(b => {
+    if (!b) return toast('이미지를 만들지 못했어요', 1);
+    showImageModal(b, `스탯비교_${series.map(s => s.name).join('-').replace(/[\/:*?"<>|\s]/g, '')}.png`, '스탯 비교');
+  }, 'image/png');
 }
 
 /* ════════ 캐릭터 상세 ════════ */
@@ -1406,7 +1614,7 @@ function renderCharacter() {
     </div>
 
     <div class="detail">
-      <div>
+      <div class="char-side">
         <div class="portrait">
           ${img ? `<img src="${img}" alt="${esc(c.name)}">`
                 : `<div class="ph"><svg width="52" height="52" viewBox="0 0 32 32"><polygon points="16,4 27,11 23,26 9,26 5,11" fill="none" stroke="#A6ABB2" stroke-width="1"/></svg></div>`}
@@ -1416,7 +1624,7 @@ function renderCharacter() {
           ${c.subtitle ? `<div class="sub">${esc(c.subtitle)}</div>` : ''}
         </div>
         ${(c.tags || []).length ? `<div class="tags">${c.tags.map(t => `<span class="tag">#${esc(t)}</span>`).join('')}</div>` : ''}
-        <div style="display:flex;gap:8px;margin-top:20px;flex-wrap:wrap">
+        <div class="side-actions">
           <button class="btn btn-key btn-sm" id="export-card">카드 이미지 저장</button>
           <button class="btn btn-sm btn-danger" id="del-char">삭제</button>
         </div>
@@ -1445,6 +1653,7 @@ function renderCharacter() {
 
         <section class="panel">
           <div class="panel-head"><h2>스탯</h2><div class="spacer"></div>
+            <button class="btn btn-sm" id="toggle-stat" aria-pressed="${state.statEdit}">값 조절</button>
             <button class="btn btn-sm btn-ghost" id="compare-stats">비교</button>
             <button class="btn btn-sm btn-ghost" id="manage-sets">세트 관리</button></div>
           <div class="set-bar">
@@ -1452,9 +1661,9 @@ function renderCharacter() {
               ${state.statSets.map(s => `<option value="${s.id}" ${s.id === set?.id ? 'selected' : ''}>${esc(s.name)} · ${s.labels.length}항목 · 최대 ${s.max}</option>`).join('')}
             </select>
           </div>
-          <div class="stat-wrap">
+          <div class="stat-wrap${state.statEdit ? '' : ' solo'}">
             <div class="radar-box" id="radar-box">${radarSVG(labels, vals, max)}</div>
-            <div class="stat-list" id="stat-list">
+            <div class="stat-list${state.statEdit ? '' : ' hidden'}" id="stat-list">
               ${labels.map((l, i) => {
                 const v = Number(vals[l] ?? 0);
                 return `<div class="stat-row">
@@ -1476,7 +1685,7 @@ function renderCharacter() {
             <div class="ex-row">
               <div class="ex-search">
                 <span style="color:var(--faint)">⌕</span>
-                <input id="ex-q" placeholder="제목 · 본문 · 메모 · 태그에서 찾기" value="${esc(state.exQ)}">
+                <input id="ex-q" placeholder="제목 · 본문 · 메모에서 찾기" value="${esc(state.exQ)}">
               </div>
               <select class="select ex-sort" id="ex-sort">
                 ${[['recent', '최근순'], ['old', '오래된순'], ['title', '제목순']].map(([k, l]) =>
@@ -1486,7 +1695,7 @@ function renderCharacter() {
                 고급 검색${state.exTags.length ? ` · ${state.exTags.length}` : ''}</button>
             </div>
             <div id="ex-adv-wrap">${state.exAdv
-              ? advPanelHTML(tagCounts(state.excerpts), state.exTags, '발췌에 붙인 태그') : ''}</div>
+              ? advPanelHTML(tagCounts(state.excerpts), state.exTags, '발췌에 붙인 태그', 'ex') : ''}</div>
             <div class="chipbar folders" id="folder-chips">${folderChipsHTML()}</div>
           </div>
           <div class="excerpt-list" id="excerpt-list">${excerptListHTML()}</div>
@@ -1499,6 +1708,7 @@ function renderCharacter() {
   $('#del-char').onclick = () => removeCharacter(c);
   $('#export-card').onclick = () => exportCard(c, set);
   $('#manage-sets').onclick = openStatSets;
+  $('#toggle-stat').onclick = () => { state.statEdit = !state.statEdit; renderCharacter(); };
   $('#compare-stats').onclick = () => state.chars.length > 1 ? openCompare() : toast('비교하려면 캐릭터가 2명 이상 필요해요');
   $('#add-excerpt').onclick = () => openExcerptEditor(null);
   $('#manage-folders').onclick = openFolders;
@@ -1762,8 +1972,7 @@ function visibleExcerpts() {
   if (state.exTags.length) l = l.filter(e => state.exTags.every(t => (e.tags || []).includes(t)));
   const q = state.exQ.trim().toLowerCase();
   if (q) l = l.filter(e => [e.title, e.body, e.memo, e.d1, e.d2, e.source]
-    .some(t => (t || '').toLowerCase().includes(q))
-    || (e.tags || []).some(t => t.toLowerCase().includes(q)));
+    .some(t => (t || '').toLowerCase().includes(q)));
   const by = {
     recent: (a, b) => (b.createdAt || 0) - (a.createdAt || 0),
     old: (a, b) => (a.createdAt || 0) - (b.createdAt || 0),
@@ -1806,6 +2015,8 @@ function bindExcerptTools() {
   });
   const clr = $('#adv-clear');
   if (clr) clr.onclick = () => { state.exTags = []; renderCharacter(); };
+  const mg = $('#adv-manage');
+  if (mg) mg.onclick = () => openTagLevels('ex', tagCounts(state.excerpts), renderCharacter);
   $$('[data-folder]').forEach(b => b.onclick = () => {
     const v = b.dataset.folder;
     state.exFolder = v === '__all' ? null : v;
@@ -2431,17 +2642,19 @@ async function exportCard(c, set) {
     y += photoH + 52;
   } else y += 16;
 
-  // 이름
+  // 이름 · 부제 — 오른쪽 맞춤
+  x.textAlign = 'right';
   x.fillStyle = INK;
   x.font = '300 66px "Noto Serif KR", serif';
-  x.fillText(fit(x, c.name || '이름 없음', W - PAD * 2), PAD, y + 46);
+  x.fillText(fit(x, c.name || '이름 없음', W - PAD * 2), W - PAD, y + 46);
   y += 84;
   if (c.subtitle) {
     x.font = '400 22px "IBM Plex Mono", monospace';
     x.fillStyle = TEAL;
-    x.fillText(fit(x, c.subtitle, W - PAD * 2), PAD, y + 14);
+    x.fillText(fit(x, c.subtitle, W - PAD * 2), W - PAD, y + 14);
     y += 42;
   }
+  x.textAlign = 'left';
   y += 30;
 
   // 프로필 — 가는 괘선으로 나눈 표
@@ -2628,6 +2841,7 @@ async function exportBackup(withImages) {
     const data = {
       app: 'chararchive', v: 1, exportedAt: Date.now(),
       nickname: profile.nickname, formPreset: profile.formPreset || null,
+      tagLevels: profile.tagLevels || { char: {}, ex: {} },
       statSets: state.statSets.map(x => ({ ...x })),
       notices: state.notices.map(x => ({ ...x })),
       characters: [], images: {},
@@ -2710,9 +2924,12 @@ async function importBackup(file) {
         tick('발췌');
       }
     }
-    if (data.formPreset) {
-      await F.setDoc(F.doc(db, 'users', uid), { formPreset: data.formPreset }, { merge: true });
-      profile.formPreset = data.formPreset;
+    const userPatch = {};
+    if (data.formPreset) userPatch.formPreset = data.formPreset;
+    if (data.tagLevels) userPatch.tagLevels = { char: {}, ex: {}, ...data.tagLevels };
+    if (Object.keys(userPatch).length) {
+      await F.setDoc(F.doc(db, 'users', uid), userPatch, { merge: true });
+      Object.assign(profile, userPatch);
     }
     tick('마무리');
 
