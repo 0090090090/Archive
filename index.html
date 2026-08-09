@@ -413,13 +413,20 @@ details.setup-more[open] > summary::before{content:"− "}
 
 /* 여기에 firebaseConfig 를 직접 넣어두면 설정 화면을 건너뜁니다.
    비워두면 앱 안에서 붙여넣기로 설정할 수 있어요. */
-const HARDCODED_CONFIG = null;
-/* 예:
 const HARDCODED_CONFIG = {
-  apiKey:"...", authDomain:"...", projectId:"...",
-  storageBucket:"...", messagingSenderId:"...", appId:"..."
+  apiKey: "AIzaSyCNa7wsEpV9hvSrMLKJn46atqL7Sat0vHE",
+  authDomain: "project-8111910159099640434.firebaseapp.com",
+  projectId: "project-8111910159099640434",
+  storageBucket: "project-8111910159099640434.firebasestorage.app",
+  messagingSenderId: "543598340828",
+  appId: "1:543598340828:web:61a670a48fc19f91882219",
+  measurementId: "G-R79Q4NK9GS"
 };
-*/
+
+/* 나만 쓰는 아카이브로 잠그려면, 로그인 후 계정 메뉴에 표시되는
+   '내 계정 ID'를 여기에 붙여넣으세요. (예: OWNER_UID = "a1b2c3...")
+   비워두면 로그인한 누구나 각자의 갤러리를 만들 수 있어요. */
+const OWNER_UID = null;
 
 const CFG_KEY = 'chararchive.config';
 const SDK_VERSIONS = ['10.13.2', '10.12.2', '9.23.0'];
@@ -564,6 +571,7 @@ async function initFirebase(cfg) {
   db = F.getFirestore(fbApp);
   A.setPersistence(auth, A.browserLocalPersistence).catch(() => {});
   A.onAuthStateChanged(auth, async u => {
+    if (u && OWNER_UID && u.uid !== OWNER_UID) return showPrivate();
     if (u) { uid = u.uid; await bootUser(u); }
     else { uid = null; showLogin(); }
   });
@@ -579,17 +587,21 @@ function showGate(html, onMount) {
 
 /* 설정은 주인장이 한 번만 하는 일이라 로그인 화면 뒤로 숨겨둬요 */
 function openSetup(err) {
+  const baked = !!HARDCODED_CONFIG;
   const m = openModal({
-    title: 'Firebase 연결',
+    title: baked ? 'Firebase' : 'Firebase 연결',
     body: `
-      <p class="hint" style="margin:0 0 16px">이 아카이브가 쓸 Firebase 프로젝트를 연결해요.
+      ${baked ? `<p class="hint" style="margin:0 0 4px">이 파일에는 Firebase 설정이 이미 들어 있어요
+        (<span class="mono" style="font-size:11.5px">${esc(HARDCODED_CONFIG.projectId)}</span>).
+        따로 붙여넣을 건 없고, 아래에서 보안 규칙만 확인하면 돼요.</p>`
+      : `<p class="hint" style="margin:0 0 16px">이 아카이브가 쓸 Firebase 프로젝트를 연결해요.
         한 번 연결하면 이 브라우저가 기억하고, 다음부터는 로그인 버튼만 보여요.</p>
       <label class="field" style="margin-bottom:8px">
         <span>FIREBASECONFIG</span>
         <textarea class="textarea mono" id="cfg-input" spellcheck="false"
           style="min-height:132px;font-size:12px;line-height:1.7"
           placeholder='{ "apiKey": "AIza...", "authDomain": "my-app.firebaseapp.com", "projectId": "my-app", "appId": "1:123:web:abc" }'></textarea>
-      </label>
+      </label>`}
       ${err ? `<p class="hint" style="color:var(--danger)">${esc(err)}</p>` : ''}
       <details class="setup-more">
         <summary>처음이라면 · 준비 순서</summary>
@@ -600,23 +612,17 @@ function openSetup(err) {
           <li>Firestore Database를 만들고 아래 규칙을 붙여넣어요.</li>
           <li>웹 앱 설정의 firebaseConfig를 위 칸에 붙여넣어요.</li>
         </ol>
-        <div class="code-block" id="rules-code">rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /users/{userId}/{document=**} {
-      allow read, write: if request.auth != null
-                         &amp;&amp; request.auth.uid == userId;
-    }
-  }
-}</div>
+        <div class="code-block" id="rules-code">${rulesFor(null)}</div>
         <button class="btn btn-sm" id="copy-rules">규칙 복사</button>
-        <p class="hint">HTML 파일 맨 위 <b>HARDCODED_CONFIG</b>에 직접 넣어두면, 이 화면 없이 바로 로그인 버튼만 뜹니다.</p>
+        <p class="hint">우선 이 규칙으로 로그인부터 하세요. 로그인하면 계정 메뉴(☰)의
+          <b>나만 쓰게 잠그기</b>에서 내 계정만 허용하는 규칙을 복사해 이것과 바꿔 넣으면 돼요.</p>
       </details>
-      ${loadConfig() ? `<details class="setup-more"><summary>연결 해제</summary>
+      ${localStorage.getItem(CFG_KEY) ? `<details class="setup-more"><summary>연결 해제</summary>
         <p class="hint">이 브라우저에 저장된 설정만 지워요. 데이터는 그대로 남아요.</p>
         <button class="btn btn-sm btn-danger" id="unlink2">연결 해제</button></details>` : ''}`,
-    foot: `<button class="btn btn-ghost" id="cancel-setup">취소</button>
-           <button class="btn btn-key" id="cfg-save">연결하기</button>`,
+    foot: baked ? `<button class="btn" id="cancel-setup">닫기</button>`
+      : `<button class="btn btn-ghost" id="cancel-setup">취소</button>
+         <button class="btn btn-key" id="cfg-save">연결하기</button>`,
   });
 
   m.querySelector('#copy-rules').onclick = () => copyText(m.querySelector('#rules-code').textContent);
@@ -624,7 +630,7 @@ service cloud.firestore {
   m.querySelector('#unlink2')?.addEventListener('click', () => {
     localStorage.removeItem(CFG_KEY); location.reload();
   });
-  m.querySelector('#cfg-save').onclick = async () => {
+  if (m.querySelector('#cfg-save')) m.querySelector('#cfg-save').onclick = async () => {
     const raw = m.querySelector('#cfg-input').value.trim();
     let cfg = null;
     try {
@@ -677,6 +683,57 @@ function showLogin() {
   });
 }
 
+/* 나만 쓰는 아카이브로 잠그는 Firestore 규칙 */
+function rulesFor(id) {
+  return `rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{userId}/{document=**} {
+      allow read, write: if request.auth != null
+                         &amp;&amp; request.auth.uid == userId${id ? `
+                         &amp;&amp; userId == '` + id + `'` : ''};
+    }
+  }
+}`;
+}
+
+function showPrivate() {
+  showGate(`
+    <h1>비공개 아카이브</h1>
+    <p>이 아카이브는 주인만 볼 수 있어요.<br>다른 계정으로 로그인하셨다면 로그아웃 후 다시 시도해 주세요.</p>
+    <div class="gate-panel">
+      <button class="btn btn-block" id="logout-other">로그아웃</button>
+    </div>`, () => {
+    $('#logout-other').onclick = async () => { await A.signOut(auth); location.reload(); };
+  });
+}
+
+/* 규칙이 아직 이 계정을 허용하지 않을 때 — 붙여넣을 규칙을 바로 보여줘요 */
+function showLockHelp() {
+  $('#app').classList.remove('hidden');
+  $('#gate').classList.add('hidden');
+  $('#view').innerHTML = `
+    <div class="panel" style="max-width:660px;margin:48px auto">
+      <div class="panel-head"><h2>아직 문이 잠겨 있어요</h2></div>
+      <p class="hint" style="margin:0 0 20px">로그인은 됐지만 Firestore 규칙이 이 계정을 허용하지 않고 있어요.
+        아래 규칙을 Firebase 콘솔 → Firestore Database → 규칙 탭에 붙여넣고 <b>게시</b>한 뒤 다시 시도해 주세요.</p>
+      <div class="field"><span>내 계정 ID</span>
+        <div class="code-block" id="my-uid">${esc(uid)}</div>
+        <button class="btn btn-sm" id="copy-uid">계정 ID 복사</button></div>
+      <div class="field"><span>붙여넣을 규칙 · 이 계정만 허용</span>
+        <div class="code-block" id="lock-rules">${rulesFor(uid)}</div>
+        <button class="btn btn-sm" id="copy-lock">규칙 복사</button></div>
+      <div style="display:flex;gap:8px;border-top:1px solid var(--hair);padding-top:16px;margin-top:4px">
+        <button class="btn btn-key" id="retry">다시 시도</button>
+        <button class="btn btn-ghost" id="signout-lock">로그아웃</button>
+      </div>
+    </div>`;
+  $('#copy-uid').onclick = () => copyText(uid);
+  $('#copy-lock').onclick = () => copyText($('#lock-rules').textContent);
+  $('#retry').onclick = () => location.reload();
+  $('#signout-lock').onclick = async () => { await A.signOut(auth); location.reload(); };
+}
+
 async function bootUser(u) {
   $('#gate').classList.add('hidden');
   $('#app').classList.remove('hidden');
@@ -692,6 +749,8 @@ async function bootUser(u) {
     await Promise.all([loadStatSets(), loadChars()]);
     renderGallery();
   } catch (e) {
+    const code = String(e.code || e.message || '');
+    if (/permission|insufficient/i.test(code)) return showLockHelp();
     $('#view').innerHTML = `<div class="empty"><h3>데이터를 불러오지 못했어요</h3>
       <p>Firestore 보안 규칙과 데이터베이스 생성 여부를 확인해 주세요.<br>
       <span class="mono" style="font-size:12px">${esc(e.code || e.message)}</span></p>
@@ -1536,6 +1595,19 @@ function openAccount() {
         <p class="hint">목록 맨 위와 카드 이미지에 표시돼요.</p></label>
       <button class="btn btn-sm btn-key" id="save-nick">이름 저장</button>
       <details class="setup-more">
+        <summary>나만 쓰게 잠그기</summary>
+        <p class="hint">아래 규칙을 Firebase 콘솔 → Firestore Database → 규칙 탭에 붙여넣고 게시하면,
+          다른 사람이 로그인해도 이 아카이브에 아무것도 저장할 수 없어요.</p>
+        <div class="code-block" id="lock-rules2">${rulesFor(uid)}</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-sm" id="copy-lock2">규칙 복사</button>
+          <button class="btn btn-sm btn-ghost" id="copy-uid2">내 계정 ID 복사</button>
+        </div>
+        <p class="hint">HTML 파일 맨 위 <b>OWNER_UID</b>에 이 계정 ID를 넣어두면,
+          다른 계정으로 들어온 사람에게는 비공개 안내가 보여요.<br>
+          <span class="mono" style="font-size:11.5px">const OWNER_UID = "${esc(uid)}";</span></p>
+      </details>
+      <details class="setup-more">
         <summary>기기에서 연결 해제</summary>
         <p class="hint">이 브라우저에 저장된 Firebase 설정만 지워요. 데이터는 그대로 남아요.</p>
         <button class="btn btn-sm btn-ghost" id="unlink">연결 해제</button>
@@ -1546,6 +1618,8 @@ function openAccount() {
   m.querySelector('#close3').onclick = closeModal;
   m.querySelector('#logout').onclick = async () => { await A.signOut(auth); closeModal(); location.reload(); };
   m.querySelector('#unlink').onclick = () => { localStorage.removeItem(CFG_KEY); location.reload(); };
+  m.querySelector('#copy-lock2').onclick = () => copyText(m.querySelector('#lock-rules2').textContent);
+  m.querySelector('#copy-uid2').onclick = () => copyText(uid);
   m.querySelector('#save-nick').onclick = async () => {
     profile.nickname = m.querySelector('#nick').value.trim() || '내 아카이브';
     await F.setDoc(F.doc(db, 'users', uid), { nickname: profile.nickname }, { merge: true });
