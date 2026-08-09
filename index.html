@@ -418,6 +418,16 @@ details.setup-more[open] > summary::before{content:"− "}
   background:var(--warm);border:1px solid var(--hair);border-radius:var(--r);
   padding:9px 12px;margin:0 0 10px;user-select:all}
 
+/* ─────────────── 고급 검색 ─────────────── */
+.adv{background:var(--warm);border:1px solid var(--hair);border-radius:var(--r);
+  padding:14px 16px;margin:14px 0 0}
+.adv-head{display:flex;align-items:center;gap:10px;margin-bottom:11px}
+.adv-head .spacer{flex:1}
+.ex-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.ex-row .ex-search{flex:1;min-width:170px}
+.select.ex-sort{width:auto;min-width:104px;padding:7px 10px;font-size:13px}
+.excerpt-item .tag{pointer-events:none}
+
 /* ─────────────── 이어 읽기 · 서체 ─────────────── */
 .tool.wide{width:auto;padding:0 9px;font-size:11.5px}
 .nav-short{display:none}
@@ -446,6 +456,7 @@ details.setup-more[open] > summary::before{content:"− "}
   .detail{grid-template-columns:1fr;gap:28px}
   .portrait{max-width:280px}
   .stat-wrap,.cmp-wrap{grid-template-columns:1fr;gap:20px}
+  .ex-row .ex-search{flex:1 0 100%}
   .sheet{padding:40px 26px 48px}
   .grid{grid-template-columns:repeat(auto-fill,minmax(142px,1fr));gap:16px}
   .page-head{padding:32px 0 6px}
@@ -556,6 +567,11 @@ const state = {
   sort: 'recent',        // recent | old | name
   exQ: '',               // 발췌 검색어
   exFolder: null,        // null = 전체 폴더
+  exSort: 'recent',      // recent | old | title
+  exTags: [],            // 발췌 태그 필터
+  exAdv: false,          // 발췌 고급 검색 열림
+  tagFilter: [],         // 캐릭터 태그 필터
+  adv: false,            // 캐릭터 고급 검색 열림
   notices: [],           // 공지 목록 (최신순)
   noticeOpen: false,     // 홈에서 본문을 펼쳤는지
 };
@@ -1001,6 +1017,12 @@ async function compressFit(file, maxSide, limit) {
 }
 
 /* ════════ 갤러리 ════════ */
+function tagCounts(items) {
+  const map = new Map();
+  items.forEach(it => (it.tags || []).forEach(t => map.set(t, (map.get(t) || 0) + 1)));
+  return [...map.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'ko'));
+}
+
 function visibleChars() {
   let list = [...state.chars];
   const q = state.q.trim().toLowerCase();
@@ -1008,6 +1030,8 @@ function visibleChars() {
     (c.name || '').toLowerCase().includes(q) ||
     (c.subtitle || '').toLowerCase().includes(q) ||
     (c.tags || []).some(t => t.toLowerCase().includes(q)));
+  if (state.tagFilter.length)
+    list = list.filter(c => state.tagFilter.every(t => (c.tags || []).includes(t)));
   const by = { recent: (a, b) => (b.updatedAt || 0) - (a.updatedAt || 0),
                old: (a, b) => (a.createdAt || 0) - (b.createdAt || 0),
                name: (a, b) => (a.name || '').localeCompare(b.name || '', 'ko') };
@@ -1029,10 +1053,13 @@ function renderGallery() {
     ${noticeHTML()}
     <div class="toolbar">
       <div class="search">
-        <span style="color:var(--dim)">⌕</span>
+        <span style="color:var(--faint)">⌕</span>
         <input id="q" placeholder="이름 · 부제 · 태그로 찾기" value="${esc(state.q)}" />
       </div>
+      <button class="btn btn-sm" id="adv-toggle" aria-pressed="${state.adv}">
+        고급 검색${state.tagFilter.length ? ` · ${state.tagFilter.length}` : ''}</button>
     </div>
+    ${state.adv ? advPanelHTML(tagCounts(state.chars), state.tagFilter, '캐릭터에 붙인 태그') : ''}
     <div class="chipbar">
       ${[['recent', '최근 수정순'], ['old', '오래된순'], ['name', '이름순']].map(([k, l]) =>
         `<button class="chip" data-sort="${k}" aria-pressed="${state.sort === k}">${l}</button>`).join('')}
@@ -1050,10 +1077,31 @@ function renderGallery() {
     bindCards();
   };
   $$('[data-sort]').forEach(b => b.onclick = () => { state.sort = b.dataset.sort; renderGallery(); });
+  $('#adv-toggle').onclick = () => { state.adv = !state.adv; renderGallery(); };
+  $$('#adv-panel [data-tag]').forEach(b => b.onclick = () => {
+    const t = b.dataset.tag;
+    state.tagFilter = state.tagFilter.includes(t)
+      ? state.tagFilter.filter(x => x !== t) : [...state.tagFilter, t];
+    renderGallery();
+  });
+  const gclr = $('#adv-clear');
+  if (gclr) gclr.onclick = () => { state.tagFilter = []; renderGallery(); };
   bindNotice();
   $('#add-char').onclick = () => openCharEditor(null);
   $$('[data-new]').forEach(b => b.onclick = () => openCharEditor(null));
   bindCards();
+}
+
+function advPanelHTML(tags, picked, label) {
+  return `<div class="adv" id="adv-panel">
+    <div class="adv-head"><span class="eyebrow">${esc(label)}</span><div class="spacer"></div>
+      ${picked.length ? `<button class="linkish" id="adv-clear">선택 해제</button>` : ''}</div>
+    ${tags.length
+      ? `<div class="chipbar" style="margin:0">${tags.map(([t, n]) =>
+          `<button class="chip" data-tag="${esc(t)}" aria-pressed="${picked.includes(t)}">#${esc(t)} ${n}</button>`).join('')}</div>`
+      : `<p class="hint" style="margin:0">아직 붙인 태그가 없어요. 수정 창의 태그 칸에 띄어쓰기로 적으면 여기에 모여요.</p>`}
+    ${picked.length > 1 ? `<p class="hint">고른 태그를 <b>모두</b> 가진 것만 보여줘요.</p>` : ''}
+  </div>`;
 }
 
 function noticeHTML() {
@@ -1334,7 +1382,7 @@ async function openCharacter(id) {
   const c = state.chars.find(x => x.id === id);
   if (!c) return renderGallery();
   state.view = 'character'; state.current = c; state.fullImg = null; state.excerpts = [];
-  state.exQ = ''; state.exFolder = null;
+  state.exQ = ''; state.exFolder = null; state.exTags = []; state.exAdv = false; state.exSort = 'recent';
   window.scrollTo(0, 0);
   renderCharacter();
   const [full] = await Promise.all([loadFullImage(c.imageId), loadExcerpts(id)]);
@@ -1425,10 +1473,20 @@ function renderCharacter() {
             <button class="btn btn-sm btn-ghost" id="manage-folders">폴더 관리</button>
             <button class="btn btn-sm btn-key" id="add-excerpt">＋ 발췌 추가</button></div>
           <div class="ex-tools">
-            <div class="ex-search">
-              <span style="color:var(--faint)">⌕</span>
-              <input id="ex-q" placeholder="제목 · 본문 · 메모 · 세부 사항에서 찾기" value="${esc(state.exQ)}">
+            <div class="ex-row">
+              <div class="ex-search">
+                <span style="color:var(--faint)">⌕</span>
+                <input id="ex-q" placeholder="제목 · 본문 · 메모 · 태그에서 찾기" value="${esc(state.exQ)}">
+              </div>
+              <select class="select ex-sort" id="ex-sort">
+                ${[['recent', '최근순'], ['old', '오래된순'], ['title', '제목순']].map(([k, l]) =>
+                  `<option value="${k}" ${state.exSort === k ? 'selected' : ''}>${l}</option>`).join('')}
+              </select>
+              <button class="btn btn-sm" id="ex-adv" aria-pressed="${state.exAdv}">
+                고급 검색${state.exTags.length ? ` · ${state.exTags.length}` : ''}</button>
             </div>
+            <div id="ex-adv-wrap">${state.exAdv
+              ? advPanelHTML(tagCounts(state.excerpts), state.exTags, '발췌에 붙인 태그') : ''}</div>
             <div class="chipbar folders" id="folder-chips">${folderChipsHTML()}</div>
           </div>
           <div class="excerpt-list" id="excerpt-list">${excerptListHTML()}</div>
@@ -1444,7 +1502,7 @@ function renderCharacter() {
   $('#compare-stats').onclick = () => state.chars.length > 1 ? openCompare() : toast('비교하려면 캐릭터가 2명 이상 필요해요');
   $('#add-excerpt').onclick = () => openExcerptEditor(null);
   $('#manage-folders').onclick = openFolders;
-  $('#read-all').onclick = () => openContinuous(true);
+  $('#read-all').onclick = () => openContinuous();
   $('#pin').onclick = async () => {
     c.pinned = !c.pinned;
     await F.updateDoc(ref('characters', c.id), { pinned: c.pinned });
@@ -1699,12 +1757,19 @@ function folderChipsHTML() {
 }
 
 function visibleExcerpts() {
-  let l = state.excerpts;
+  let l = [...state.excerpts];
   if (state.exFolder !== null) l = l.filter(e => (e.folderId || '') === state.exFolder);
+  if (state.exTags.length) l = l.filter(e => state.exTags.every(t => (e.tags || []).includes(t)));
   const q = state.exQ.trim().toLowerCase();
   if (q) l = l.filter(e => [e.title, e.body, e.memo, e.d1, e.d2, e.source]
-    .some(t => (t || '').toLowerCase().includes(q)));
-  return l;
+    .some(t => (t || '').toLowerCase().includes(q))
+    || (e.tags || []).some(t => t.toLowerCase().includes(q)));
+  const by = {
+    recent: (a, b) => (b.createdAt || 0) - (a.createdAt || 0),
+    old: (a, b) => (a.createdAt || 0) - (b.createdAt || 0),
+    title: (a, b) => (a.title || '').localeCompare(b.title || '', 'ko', { numeric: true }),
+  };
+  return l.sort(by[state.exSort] || by.recent);
 }
 
 function excerptListHTML() {
@@ -1714,9 +1779,11 @@ function excerptListHTML() {
   if (!l.length) return `<p class="hint" style="margin:0">조건에 맞는 발췌가 없어요.</p>`;
   return l.map(e => {
     const meta = [folderName(e.folderId), e.d1 || e.source, e.d2].filter(Boolean).map(esc).join(' · ');
+    const tags = (e.tags || []).map(t => `<span class="tag">#${esc(t)}</span>`).join('');
     return `<button class="excerpt-item" data-ex="${e.id}">
       <h3>${esc(e.title || '제목 없음')}</h3>
       <p>${esc((e.body || '').slice(0, 140))}</p>
+      ${tags ? `<div class="tags" style="margin-top:9px">${tags}</div>` : ''}
       ${meta ? `<div class="meta">${meta}</div>` : ''}
     </button>`;
   }).join('');
@@ -1728,6 +1795,17 @@ function bindExcerpts() {
 function bindExcerptTools() {
   const q = $('#ex-q');
   if (q) q.oninput = e => { state.exQ = e.target.value; redrawExcerpts(false); };
+  const sort = $('#ex-sort');
+  if (sort) sort.onchange = e => { state.exSort = e.target.value; redrawExcerpts(false); };
+  const adv = $('#ex-adv');
+  if (adv) adv.onclick = () => { state.exAdv = !state.exAdv; renderCharacter(); };
+  $$('#ex-adv-wrap [data-tag]').forEach(b => b.onclick = () => {
+    const t = b.dataset.tag;
+    state.exTags = state.exTags.includes(t) ? state.exTags.filter(x => x !== t) : [...state.exTags, t];
+    renderCharacter();
+  });
+  const clr = $('#adv-clear');
+  if (clr) clr.onclick = () => { state.exTags = []; renderCharacter(); };
   $$('[data-folder]').forEach(b => b.onclick = () => {
     const v = b.dataset.folder;
     state.exFolder = v === '__all' ? null : v;
@@ -1810,6 +1888,10 @@ function openExcerptEditor(ex) {
           <option value="__new">＋ 새 폴더 만들기</option>
         </select>
         <input class="input hidden" id="e-newfolder" placeholder="새 폴더 이름" maxlength="20" style="margin-top:8px"></label>
+      <label class="field"><span>태그</span>
+        <input class="input" id="e-tags" value="${esc((ex?.tags || []).join(' '))}"
+          placeholder="띄어쓰기로 구분 (예: 전투 회상 독백)">
+        <p class="hint">고급 검색에서 태그로 모아 볼 수 있어요.</p></label>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
         <label class="field"><span>세부 사항 1</span>
           <input class="input" id="e-d1" value="${esc(ex?.d1 ?? ex?.source ?? '')}" placeholder="예: 2권 · 7화" maxlength="40"></label>
@@ -1857,6 +1939,7 @@ function openExcerptEditor(ex) {
         d1: m.querySelector('#e-d1').value.trim(),
         d2: m.querySelector('#e-d2').value.trim(),
         memo: m.querySelector('#e-memo').value,
+        tags: m.querySelector('#e-tags').value.trim().split(/\s+/).filter(Boolean).slice(0, 20),
         folderId, body,
         highlights: ex?.body === body ? (ex?.highlights || []) : [],
         updatedAt: now, createdAt: ex?.createdAt || now,
@@ -1972,7 +2055,8 @@ function openSheet(id) {
   const idx = list.findIndex(x => x.id === id);
   const prev = idx > 0 ? list[idx - 1] : null;
   const next = idx >= 0 && idx < list.length - 1 ? list[idx + 1] : null;
-  const meta = [state.current.name, folderName(e.folderId), e.d1 || e.source, e.d2].filter(Boolean).map(esc).join(' · ');
+  const meta = [state.current.name, folderName(e.folderId), e.d1 || e.source, e.d2,
+    ...(e.tags || []).map(t => '#' + t)].filter(Boolean).map(esc).join(' · ');
 
   const wrap = document.createElement('div');
   wrap.className = 'sheet-scrim';
@@ -2026,8 +2110,8 @@ function openSheet(id) {
 }
 
 /* 폴더 안의 발췌를 한 번에 이어 읽기 */
-function openContinuous(asc = true) {
-  const list = asc ? visibleExcerpts().slice().reverse() : visibleExcerpts();
+function openContinuous(rev = state.exSort === 'recent') {
+  const list = rev ? visibleExcerpts().slice().reverse() : visibleExcerpts();
   if (!list.length) return toast('읽을 발췌가 없어요');
   const where = state.exFolder === null ? '전체'
     : (state.exFolder === '' ? '미분류' : folderName(state.exFolder));
@@ -2038,7 +2122,7 @@ function openContinuous(asc = true) {
     <div class="sheet-tools">
       ${viewToolsHTML()}
       <div class="tool-group right">
-        <button class="btn btn-sm" data-order>${asc ? '오래된 순' : '최근 순'}</button>
+        <button class="btn btn-sm" data-order>순서 뒤집기</button>
         <button class="btn btn-sm" data-close>닫기</button>
       </div>
     </div>
@@ -2060,7 +2144,7 @@ function openContinuous(asc = true) {
 
   wrap.addEventListener('click', ev => { if (ev.target === wrap) closeSheet(); });
   bindViewTools(wrap);
-  wrap.querySelector('[data-order]').onclick = () => { closeSheet(); openContinuous(!asc); };
+  wrap.querySelector('[data-order]').onclick = () => { closeSheet(); openContinuous(!rev); };
   wrap.querySelector('[data-close]').onclick = closeSheet;
   $('#sheet-root').append(wrap);
   document.body.style.overflow = 'hidden';
@@ -2101,8 +2185,10 @@ async function exportExcerpt(e) {
   const LH = Math.round(FS * readPrefs.lh);
   const INK = '#14161A', INK2 = '#26292F', FAINT = '#A6ABB2', HAIR = '#E5E7E8', LINE = '#D2D6D9', TEAL = '#0F4C47';
 
+  const FACE = readPrefs.font === 'sans'
+    ? '"Pretendard Variable", Pretendard, sans-serif' : '"Noto Serif KR", serif';
   const probe = document.createElement('canvas').getContext('2d');
-  probe.font = `400 ${FS}px "Noto Serif KR", serif`;
+  probe.font = `400 ${FS}px ${FACE}`;
   let lines = wrapLines(probe, e.body || '', W - PAD * 2);
   const maxLines = Math.floor((28000 - PAD - 351) / LH) + 1;
   const cut = lines.length > maxLines;
@@ -2124,7 +2210,7 @@ async function exportExcerpt(e) {
 
   let y = PAD + 46;
   x.textAlign = 'left';
-  x.font = '400 42px "Noto Serif KR", serif';
+  x.font = `${readPrefs.font === 'sans' ? '600' : '400'} 42px ${FACE}`;
   x.fillStyle = INK;
   x.fillText(fit(x, e.title || '제목 없음', W - PAD * 2), PAD, y);
   y += 46;
@@ -2137,7 +2223,7 @@ async function exportExcerpt(e) {
   x.beginPath(); x.moveTo(PAD, y + .5); x.lineTo(W - PAD, y + .5); x.stroke();
   y += 62;
 
-  x.font = `400 ${FS}px "Noto Serif KR", serif`;
+  x.font = `400 ${FS}px ${FACE}`;
   const hs = e.highlights || [];
   for (const L of lines) {
     for (const h of hs) {
