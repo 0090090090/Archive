@@ -394,8 +394,23 @@ details.setup-more[open] > summary::before{content:"− "}
 }
 .notice .top{display:flex;align-items:center;gap:8px;margin-bottom:9px}
 .notice .top .spacer{flex:1}
-.notice .txt{white-space:pre-wrap;font-size:14px;line-height:1.82;color:var(--ink-2)}
+.notice .txt{white-space:pre-wrap;font-size:14px;line-height:1.82;color:var(--ink-2);
+  margin-top:11px;padding-top:12px;border-top:1px solid var(--hair)}
 .notice-add{margin:20px 0 0}
+.notice-title{display:flex;align-items:center;gap:10px;width:100%;text-align:left;
+  font-family:var(--serif);font-size:16.5px;font-weight:500;color:var(--ink);
+  padding:2px 0;transition:color .15s}
+.notice-title:hover{color:var(--teal)}
+.notice-title .arrow{font-size:9px;color:var(--faint);transition:transform .2s}
+.notice-title[aria-expanded="true"] .arrow{transform:rotate(180deg)}
+.notice-row{padding:15px 0;border-bottom:1px solid var(--hair)}
+.notice-row:first-child{padding-top:0}
+.notice-row:last-child{border-bottom:none;padding-bottom:0}
+.notice-row .row-meta{display:flex;align-items:center;gap:4px;margin-top:7px}
+.notice-row .row-meta .spacer{flex:1}
+.notice-row .row-meta .mono{font-family:var(--mono);font-size:10.5px;color:var(--faint);letter-spacing:.08em}
+.notice-row .txt{white-space:pre-wrap;font-size:13.5px;line-height:1.85;color:var(--ink-2);
+  margin-top:11px;padding-top:12px;border-top:1px solid var(--hair)}
 
 /* ─────────────── 서식 ─────────────── */
 .preset-bar{display:flex;gap:7px;flex-wrap:wrap}
@@ -403,13 +418,34 @@ details.setup-more[open] > summary::before{content:"− "}
   background:var(--warm);border:1px solid var(--hair);border-radius:var(--r);
   padding:9px 12px;margin:0 0 10px;user-select:all}
 
+/* ─────────────── 이어 읽기 · 서체 ─────────────── */
+.tool.wide{width:auto;padding:0 9px;font-size:11.5px}
+.nav-short{display:none}
+.tool[aria-pressed="true"]{background:var(--teal-soft);color:var(--teal)}
+.cont-sec{padding:40px 0 4px;border-top:1px dashed var(--line);margin-top:36px}
+.cont-sec:first-of-type{border-top:none;margin-top:0;padding-top:8px}
+.cont-sec h2{font-family:var(--serif);font-weight:500;font-size:20px;margin-bottom:8px}
+.cont-meta{font-family:var(--mono);font-size:10.5px;color:var(--faint);letter-spacing:.12em;margin-bottom:24px}
+.panel-head{flex-wrap:wrap}
+
+/* ─────────────── 스탯 비교 ─────────────── */
+.cmp-wrap{display:grid;gap:24px;grid-template-columns:minmax(0,1fr) minmax(0,214px);align-items:start}
+.cmp-legend{display:grid;gap:9px;align-content:start}
+.cmp-legend .row{display:flex;align-items:center;gap:9px;font-size:13.5px}
+.cmp-dot{width:10px;height:10px;border-radius:2px;flex:none}
+.cmp-table{width:100%;border-collapse:collapse;margin-top:6px}
+.cmp-table th{text-align:left;font-family:var(--mono);font-size:10.5px;font-weight:400;
+  color:var(--faint);letter-spacing:.08em;padding:6px 0;border-bottom:1px solid var(--hair)}
+.cmp-table td{text-align:right;font-family:var(--mono);font-size:12px;color:var(--ink-2);
+  padding:6px 0 6px 10px;border-bottom:1px solid var(--hair)}
+
 /* ─────────────── 반응형 ─────────────── */
 @media (max-width:880px){
   .shell{padding:0 18px 110px}
   .topbar-in{padding:12px 18px}
   .detail{grid-template-columns:1fr;gap:28px}
   .portrait{max-width:280px}
-  .stat-wrap{grid-template-columns:1fr;gap:20px}
+  .stat-wrap,.cmp-wrap{grid-template-columns:1fr;gap:20px}
   .sheet{padding:40px 26px 48px}
   .grid{grid-template-columns:repeat(auto-fill,minmax(142px,1fr));gap:16px}
   .page-head{padding:32px 0 6px}
@@ -419,9 +455,13 @@ details.setup-more[open] > summary::before{content:"− "}
   .fab{right:18px;bottom:18px}
   .dl-row{grid-template-columns:96px minmax(0,1fr)}
   .sheet-tools{gap:5px;padding:7px 8px}
+  .tool-group{flex-wrap:wrap;justify-content:flex-end}
   .tool-group + .tool-group{padding-left:6px}
   .tool-group.right{flex:1 0 100%;margin-left:0;justify-content:flex-end;
     border-left:none;padding-left:0;padding-top:7px;margin-top:1px;border-top:1px solid var(--hair)}
+  .sheet-tools .btn-sm{padding:6px 10px;font-size:12px}
+  .nav-long{display:none}
+  .nav-short{display:inline}
 }
 @media (prefers-reduced-motion:reduce){
   *{animation-duration:.01ms !important;transition-duration:.01ms !important}
@@ -516,11 +556,13 @@ const state = {
   sort: 'recent',        // recent | old | name
   exQ: '',               // 발췌 검색어
   exFolder: null,        // null = 전체 폴더
+  notices: [],           // 공지 목록 (최신순)
+  noticeOpen: false,     // 홈에서 본문을 펼쳤는지
 };
 
 /* 읽기 설정은 기기별로 기억해요 */
 const READ_KEY = 'chararchive.read';
-let readPrefs = { size: 16.5, lh: 2.1 };
+let readPrefs = { size: 16.5, lh: 2.1, font: 'serif' };
 try { readPrefs = { ...readPrefs, ...JSON.parse(localStorage.getItem(READ_KEY) || '{}') }; } catch {}
 const saveRead = () => { try { localStorage.setItem(READ_KEY, JSON.stringify(readPrefs)); } catch {} };
 
@@ -859,7 +901,14 @@ async function bootUser(u) {
       profile = { nickname: d.nickname || '내 아카이브', notice: d.notice || '', formPreset: d.formPreset || null };
     }
     $('#brand-sub').textContent = profile.nickname;
-    await Promise.all([loadStatSets(), loadChars()]);
+    await Promise.all([loadStatSets(), loadChars(), loadNotices()]);
+    if (!state.notices.length && profile.notice) {   // 예전 한 줄 공지를 목록으로 옮겨요
+      const id = uidgen(), now = Date.now();
+      const n = { title: '공지', body: profile.notice, createdAt: now, updatedAt: now };
+      await F.setDoc(ref('notices', id), n);
+      await F.setDoc(F.doc(db, 'users', uid), { notice: '' }, { merge: true });
+      profile.notice = ''; state.notices = [{ id, ...n }];
+    }
     renderGallery();
   } catch (e) {
     const code = String(e.code || e.message || '');
@@ -897,6 +946,11 @@ async function saveStatSet(set) {
   const i = state.statSets.findIndex(s => s.id === id);
   if (i >= 0) state.statSets[i] = { id, ...data }; else state.statSets.push({ id, ...data });
   return id;
+}
+async function loadNotices() {
+  const snap = await F.getDocs(col('notices'));
+  state.notices = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+    .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
 }
 async function loadExcerpts(charId) {
   const snap = await F.getDocs(col('characters', charId, 'excerpts'));
@@ -996,46 +1050,130 @@ function renderGallery() {
     bindCards();
   };
   $$('[data-sort]').forEach(b => b.onclick = () => { state.sort = b.dataset.sort; renderGallery(); });
-  $('#edit-notice')?.addEventListener('click', openNotice);
+  bindNotice();
   $('#add-char').onclick = () => openCharEditor(null);
   $$('[data-new]').forEach(b => b.onclick = () => openCharEditor(null));
   bindCards();
 }
 
 function noticeHTML() {
-  if (!profile.notice) return `<div class="notice-add"><button class="linkish" id="edit-notice">＋ 공지 추가</button></div>`;
+  const n = state.notices[0];
+  if (!n) return `<div class="notice-add"><button class="linkish" id="add-notice">＋ 공지 추가</button></div>`;
   return `<section class="notice">
     <div class="top"><span class="eyebrow">공지</span><div class="spacer"></div>
-      <button class="btn btn-sm btn-ghost" id="edit-notice">수정</button></div>
-    <div class="txt">${esc(profile.notice)}</div>
+      <button class="btn btn-sm btn-ghost" id="all-notices">전체 ${state.notices.length}</button></div>
+    <button class="notice-title" id="notice-toggle" aria-expanded="${state.noticeOpen}">
+      <span style="flex:1">${esc(n.title || '제목 없음')}</span>
+      <span class="arrow">▾</span></button>
+    ${state.noticeOpen && n.body ? `<div class="txt">${esc(n.body)}</div>` : ''}
   </section>`;
 }
 
-function openNotice() {
+function bindNotice() {
+  $('#add-notice')?.addEventListener('click', () => openNoticeEditor(null));
+  $('#all-notices')?.addEventListener('click', openNotices);
+  $('#notice-toggle')?.addEventListener('click', () => {
+    const n = state.notices[0];
+    if (!n?.body) return toast('본문이 비어 있는 공지예요');
+    state.noticeOpen = !state.noticeOpen;
+    const sec = $('.notice');
+    const btn = $('#notice-toggle');
+    btn.setAttribute('aria-expanded', state.noticeOpen);
+    const old = sec.querySelector('.txt');
+    if (state.noticeOpen) {
+      const d = document.createElement('div');
+      d.className = 'txt'; d.textContent = n.body;
+      sec.append(d);
+    } else old?.remove();
+  });
+}
+
+/* 공지 전체 목록 */
+function openNotices() {
   const m = openModal({
     title: '공지사항',
-    body: `<p class="hint" style="margin:0 0 14px">목록 맨 위에 붙여두는 메모예요. 작업 계획이나 규칙을 적어두면 좋아요.</p>
-      <label class="field" style="margin:0">
-        <span>내용</span>
-        <textarea class="textarea" id="nt-body" style="min-height:150px"
-          placeholder="예: 이번 달은 북부 편 캐릭터부터 정리하는 중" maxlength="1200">${esc(profile.notice)}</textarea>
-        <p class="hint">줄바꿈은 그대로 유지돼요. 내용을 모두 지우고 저장하면 공지가 사라져요.</p>
-      </label>`,
-    foot: `<button class="btn btn-ghost" id="nt-cancel">취소</button>
-           <button class="btn btn-key" id="nt-save">저장</button>`,
+    wide: true,
+    body: `<div id="nt-list"></div>
+      <button class="btn btn-sm btn-key" id="nt-new" style="margin-top:14px">＋ 새 공지</button>`,
+    foot: `<button class="btn" id="nt-close">닫기</button>`,
   });
-  m.querySelector('#nt-cancel').onclick = closeModal;
-  m.querySelector('#nt-save').onclick = async () => {
-    const btn = m.querySelector('#nt-save');
+  const open = new Set();
+  function draw() {
+    const wrap = m.querySelector('#nt-list');
+    if (!state.notices.length) {
+      wrap.innerHTML = `<p class="hint" style="margin:0">아직 공지가 없어요.</p>`;
+      return;
+    }
+    wrap.innerHTML = state.notices.map((n, i) => `
+      <div class="notice-row">
+        <button class="notice-title" data-open="${n.id}" aria-expanded="${open.has(n.id)}">
+          <span style="flex:1">${esc(n.title || '제목 없음')}</span>
+          <span class="arrow">▾</span></button>
+        <div class="row-meta">
+          <span class="mono">${fmtDate(n.createdAt)}${i === 0 ? ' · 홈에 표시 중' : ''}</span>
+          <div class="spacer"></div>
+          <button class="btn btn-sm btn-ghost" data-edit="${n.id}">수정</button>
+          <button class="btn btn-sm btn-ghost" data-del="${n.id}" style="color:var(--danger)">삭제</button>
+        </div>
+        ${open.has(n.id) && n.body ? `<div class="txt">${esc(n.body)}</div>` : ''}
+      </div>`).join('');
+    wrap.querySelectorAll('[data-open]').forEach(el => el.onclick = () => {
+      const id = el.dataset.open;
+      open.has(id) ? open.delete(id) : open.add(id);
+      draw();
+    });
+    wrap.querySelectorAll('[data-edit]').forEach(el => el.onclick = () =>
+      openNoticeEditor(state.notices.find(x => x.id === el.dataset.edit)));
+    wrap.querySelectorAll('[data-del]').forEach(el => el.onclick = async () => {
+      const n = state.notices.find(x => x.id === el.dataset.del);
+      if (!await confirmDialog('공지를 삭제할까요?', `"${n.title || '제목 없음'}" 을 지워요.`)) return;
+      await F.deleteDoc(ref('notices', n.id));
+      state.notices = state.notices.filter(x => x.id !== n.id);
+      state.noticeOpen = false;
+      draw(); renderGallery(); toast('삭제했어요');
+      openNotices();
+    });
+  }
+  draw();
+  m.querySelector('#nt-new').onclick = () => openNoticeEditor(null);
+  m.querySelector('#nt-close').onclick = closeModal;
+}
+
+/* 공지 쓰기 */
+function openNoticeEditor(n) {
+  const m = openModal({
+    title: n ? '공지 수정' : '새 공지',
+    body: `
+      <label class="field"><span>제목</span>
+        <input class="input" id="nt-title" value="${esc(n?.title || '')}"
+          placeholder="목록에는 이 제목만 보여요" maxlength="60"></label>
+      <label class="field" style="margin:0"><span>내용</span>
+        <textarea class="textarea" id="nt-body" style="min-height:150px" maxlength="2000"
+          placeholder="제목을 누르면 펼쳐지는 내용이에요.">${esc(n?.body || '')}</textarea>
+        <p class="hint">줄바꿈은 그대로 유지돼요. 가장 최근에 쓴 공지가 홈에 표시됩니다.</p></label>`,
+    foot: `<button class="btn btn-ghost" id="ne-cancel">취소</button>
+           <button class="btn btn-key" id="ne-save">${n ? '저장' : '올리기'}</button>`,
+  });
+  m.querySelector('#ne-cancel').onclick = closeModal;
+  m.querySelector('#ne-save').onclick = async () => {
+    const title = m.querySelector('#nt-title').value.trim();
+    const body = m.querySelector('#nt-body').value.replace(/\s+$/, '');
+    if (!title && !body) return toast('제목이나 내용을 적어주세요', 1);
+    const btn = m.querySelector('#ne-save');
     btn.disabled = true; btn.textContent = '저장하는 중…';
-    const text = m.querySelector('#nt-body').value.replace(/\s+$/, '');
+    const now = Date.now();
+    const data = { title: title || '제목 없음', body, createdAt: n?.createdAt || now, updatedAt: now };
     try {
-      await F.setDoc(F.doc(db, 'users', uid), { notice: text }, { merge: true });
-      profile.notice = text;
+      const id = n?.id || uidgen();
+      await F.setDoc(ref('notices', id), data);
+      const i = state.notices.findIndex(x => x.id === id);
+      if (i >= 0) state.notices[i] = { id, ...data };
+      else state.notices.unshift({ id, ...data });
+      state.notices.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
       closeModal(); renderGallery();
-      toast(text ? '공지를 저장했어요' : '공지를 지웠어요');
+      toast(n ? '공지를 저장했어요' : '공지를 올렸어요');
     } catch (e) {
-      btn.disabled = false; btn.textContent = '저장';
+      btn.disabled = false; btn.textContent = n ? '저장' : '올리기';
       toast('저장하지 못했어요: ' + (e.code || e.message), 1);
     }
   };
@@ -1108,6 +1246,89 @@ function radarSVG(labels, values, max) {
     ${rings}${spokes}${poly}${dots}${texts}</svg>`;
 }
 
+const CMP_COLORS = ['#0F4C47', '#9C4A66', '#42588C'];
+
+function radarMultiSVG(labels, series, max) {
+  if (labels.length < 3) return `<p class="hint" style="text-align:center">항목이 3개 이상일 때 그래프가 그려져요.</p>`;
+  const R = 100, pad = 62, S = R + pad;
+  const base = radarGeom(labels, {}, max, R);
+  const ring = k => base.map(p => `${(Math.cos(p.a) * R * k).toFixed(1)},${(Math.sin(p.a) * R * k).toFixed(1)}`).join(' ');
+  const grid = [0.25, 0.5, 0.75].map(k =>
+    `<polygon points="${ring(k)}" fill="none" stroke="#D2D6D9" stroke-width=".7" stroke-dasharray="1.5 3"/>`).join('')
+    + `<polygon points="${ring(1)}" fill="none" stroke="#C3C8CB" stroke-width=".9"/>`
+    + base.map(p => `<line x1="0" y1="0" x2="${p.ax.toFixed(1)}" y2="${p.ay.toFixed(1)}" stroke="#DEE1E3" stroke-width=".7"/>`).join('');
+  const polys = series.map((sr, i) => {
+    const g = radarGeom(labels, sr.vals || {}, max, R);
+    const col = CMP_COLORS[i % CMP_COLORS.length];
+    return `<polygon points="${g.map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ')}"
+        fill="${col}1A" stroke="${col}" stroke-width="1.6" stroke-linejoin="round"/>
+      ${g.map(p => `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="2.4" fill="${col}"/>`).join('')}`;
+  }).join('');
+  const texts = base.map(p => {
+    const lx = Math.cos(p.a) * (R + 24), ly = Math.sin(p.a) * (R + 24);
+    const anchor = Math.abs(lx) < 8 ? 'middle' : (lx > 0 ? 'start' : 'end');
+    return `<text x="${lx.toFixed(1)}" y="${(ly + 4).toFixed(1)}" text-anchor="${anchor}"
+      font-family="Pretendard,sans-serif" font-size="11.5" fill="#3E434B">${esc(p.label)}</text>`;
+  }).join('');
+  return `<svg viewBox="${-S} ${-S} ${S * 2} ${S * 2}" role="img" aria-label="스탯 비교 그래프">
+    ${grid}${polys}${texts}</svg>`;
+}
+
+/* 스탯 비교 */
+function openCompare() {
+  const base = state.current;
+  const set = state.statSets.find(x => x.id === base.statSetId) || state.statSets[0];
+  const labels = set?.labels || [], max = set?.max || 10;
+  let picked = [base.id];
+
+  const m = openModal({
+    title: '스탯 비교',
+    wide: true,
+    body: `<p class="hint" style="margin:0 0 14px"><b>${esc(set?.name || '')}</b> 세트의 항목으로 최대 3명까지 겹쳐 봐요.
+        다른 세트를 쓰는 캐릭터는 같은 이름의 항목만 값이 잡히고, 없는 항목은 0으로 그려져요.</p>
+      <div class="chipbar" id="cmp-chips"></div>
+      <div class="cmp-wrap">
+        <div class="radar-box" id="cmp-radar"></div>
+        <div id="cmp-legend"></div>
+      </div>`,
+    foot: `<button class="btn" id="cmp-close">닫기</button>`,
+  });
+
+  function draw() {
+    const series = picked.map(id => {
+      const c = state.chars.find(x => x.id === id);
+      return { id, name: c?.name || '이름 없음', vals: c?.stats || {} };
+    });
+    m.querySelector('#cmp-chips').innerHTML = state.chars.map(c =>
+      `<button class="chip" data-c="${c.id}" aria-pressed="${picked.includes(c.id)}">${esc(c.name || '이름 없음')}</button>`).join('');
+    m.querySelector('#cmp-radar').innerHTML = radarMultiSVG(labels, series, max);
+    m.querySelector('#cmp-legend').innerHTML = `<div class="cmp-legend">
+      ${series.map((sr, i) => `<div class="row">
+        <span class="cmp-dot" style="background:${CMP_COLORS[i % CMP_COLORS.length]}"></span>
+        <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(sr.name)}</span>
+        <span class="mono" style="font-size:11.5px;color:var(--faint)">${labels.reduce((n, l) => n + Number(sr.vals[l] || 0), 0)}</span>
+      </div>`).join('')}
+      ${labels.length ? `<table class="cmp-table"><tbody>
+        ${labels.map(l => `<tr><th>${esc(l)}</th>${series.map(sr =>
+          `<td>${Number(sr.vals[l] || 0)}</td>`).join('')}</tr>`).join('')}
+      </tbody></table>` : ''}
+    </div>`;
+    m.querySelectorAll('[data-c]').forEach(b => b.onclick = () => {
+      const id = b.dataset.c;
+      if (picked.includes(id)) {
+        if (picked.length === 1) return toast('한 명은 남겨두세요');
+        picked = picked.filter(x => x !== id);
+      } else {
+        if (picked.length >= 3) return toast('한 번에 3명까지 비교할 수 있어요');
+        picked.push(id);
+      }
+      draw();
+    });
+  }
+  draw();
+  m.querySelector('#cmp-close').onclick = closeModal;
+}
+
 /* ════════ 캐릭터 상세 ════════ */
 async function openCharacter(id) {
   const c = state.chars.find(x => x.id === id);
@@ -1176,6 +1397,7 @@ function renderCharacter() {
 
         <section class="panel">
           <div class="panel-head"><h2>스탯</h2><div class="spacer"></div>
+            <button class="btn btn-sm btn-ghost" id="compare-stats">비교</button>
             <button class="btn btn-sm btn-ghost" id="manage-sets">세트 관리</button></div>
           <div class="set-bar">
             <select class="select" id="set-select">
@@ -1199,6 +1421,7 @@ function renderCharacter() {
 
         <section class="panel">
           <div class="panel-head"><h2>소설 발췌</h2><div class="spacer"></div>
+            <button class="btn btn-sm btn-ghost" id="read-all">이어 읽기</button>
             <button class="btn btn-sm btn-ghost" id="manage-folders">폴더 관리</button>
             <button class="btn btn-sm btn-key" id="add-excerpt">＋ 발췌 추가</button></div>
           <div class="ex-tools">
@@ -1218,8 +1441,10 @@ function renderCharacter() {
   $('#del-char').onclick = () => removeCharacter(c);
   $('#export-card').onclick = () => exportCard(c, set);
   $('#manage-sets').onclick = openStatSets;
+  $('#compare-stats').onclick = () => state.chars.length > 1 ? openCompare() : toast('비교하려면 캐릭터가 2명 이상 필요해요');
   $('#add-excerpt').onclick = () => openExcerptEditor(null);
   $('#manage-folders').onclick = openFolders;
+  $('#read-all').onclick = () => openContinuous(true);
   $('#pin').onclick = async () => {
     c.pinned = !c.pinned;
     await F.updateDoc(ref('characters', c.id), { pinned: c.pinned });
@@ -1696,31 +1921,74 @@ async function applyHighlight(e, color, bodyEl) {
 }
 
 /* ── 읽기 화면 ── */
+function viewToolsHTML() {
+  return `
+    <div class="tool-group">
+      <span class="tool-label">글씨</span>
+      <button class="tool" data-size="-1" title="글씨 작게">−</button>
+      <span class="tool-val" id="t-size">${readPrefs.size}</span>
+      <button class="tool" data-size="1" title="글씨 크게">＋</button>
+    </div>
+    <div class="tool-group">
+      <span class="tool-label">줄간격</span>
+      <button class="tool" data-lh="-1" title="줄간격 좁게">−</button>
+      <span class="tool-val" id="t-lh">${readPrefs.lh.toFixed(1)}</span>
+      <button class="tool" data-lh="1" title="줄간격 넓게">＋</button>
+    </div>
+    <div class="tool-group">
+      <span class="tool-label">서체</span>
+      <button class="tool wide" data-font="serif" aria-pressed="${readPrefs.font === 'serif'}">명조</button>
+      <button class="tool wide" data-font="sans" aria-pressed="${readPrefs.font === 'sans'}">고딕</button>
+    </div>`;
+}
+
+const bodyFont = () => readPrefs.font === 'sans' ? 'var(--ui)' : 'var(--serif)';
+
+function bindViewTools(wrap) {
+  const bodies = () => [...wrap.querySelectorAll('.sheet-body')];
+  wrap.querySelectorAll('[data-size]').forEach(b => b.onclick = () => {
+    readPrefs.size = Math.max(12, Math.min(30, +(readPrefs.size + Number(b.dataset.size) * 0.5).toFixed(1)));
+    bodies().forEach(el => el.style.fontSize = readPrefs.size + 'px');
+    wrap.querySelector('#t-size').textContent = readPrefs.size;
+    saveRead();
+  });
+  wrap.querySelectorAll('[data-lh]').forEach(b => b.onclick = () => {
+    readPrefs.lh = Math.max(1.4, Math.min(3, +(readPrefs.lh + Number(b.dataset.lh) * 0.1).toFixed(1)));
+    bodies().forEach(el => el.style.lineHeight = readPrefs.lh);
+    wrap.querySelector('#t-lh').textContent = readPrefs.lh.toFixed(1);
+    saveRead();
+  });
+  wrap.querySelectorAll('[data-font]').forEach(b => b.onclick = () => {
+    readPrefs.font = b.dataset.font;
+    bodies().forEach(el => el.style.fontFamily = bodyFont());
+    wrap.querySelectorAll('[data-font]').forEach(x => x.setAttribute('aria-pressed', x.dataset.font === readPrefs.font));
+    saveRead();
+  });
+}
+
 function openSheet(id) {
   const e = state.excerpts.find(x => x.id === id); if (!e) return;
+  const list = visibleExcerpts();
+  const idx = list.findIndex(x => x.id === id);
+  const prev = idx > 0 ? list[idx - 1] : null;
+  const next = idx >= 0 && idx < list.length - 1 ? list[idx + 1] : null;
   const meta = [state.current.name, folderName(e.folderId), e.d1 || e.source, e.d2].filter(Boolean).map(esc).join(' · ');
+
   const wrap = document.createElement('div');
   wrap.className = 'sheet-scrim';
   wrap.innerHTML = `
     <div class="sheet-tools">
-      <div class="tool-group">
-        <span class="tool-label">글씨</span>
-        <button class="tool" data-size="-1" title="글씨 작게">−</button>
-        <span class="tool-val" id="t-size">${readPrefs.size}</span>
-        <button class="tool" data-size="1" title="글씨 크게">＋</button>
-      </div>
-      <div class="tool-group">
-        <span class="tool-label">줄간격</span>
-        <button class="tool" data-lh="-1" title="줄간격 좁게">−</button>
-        <span class="tool-val" id="t-lh">${readPrefs.lh.toFixed(1)}</span>
-        <button class="tool" data-lh="1" title="줄간격 넓게">＋</button>
-      </div>
+      ${viewToolsHTML()}
       <div class="tool-group">
         <span class="tool-label">형광펜</span>
         ${Object.keys(HL).map(k => `<button class="swatch" data-hl="${k}" title="${HL_NAME[k]}으로 칠하기" style="background:${HL[k]}"></button>`).join('')}
         <button class="swatch eraser" data-hl="" title="형광펜 지우기">✕</button>
       </div>
       <div class="tool-group right">
+        <button class="btn btn-sm" data-prev title="이전 발췌" ${prev ? '' : 'disabled style="opacity:.4"'}>
+          <span class="nav-long">← 이전</span><span class="nav-short">←</span></button>
+        <button class="btn btn-sm" data-next title="다음 발췌" ${next ? '' : 'disabled style="opacity:.4"'}>
+          <span class="nav-long">다음 →</span><span class="nav-short">→</span></button>
         <button class="btn btn-sm" data-img>이미지</button>
         <button class="btn btn-sm" data-edit>수정</button>
         <button class="btn btn-sm btn-danger" data-del>삭제</button>
@@ -1729,32 +1997,22 @@ function openSheet(id) {
     </div>
     <article class="sheet">
       <h1>${esc(e.title || '제목 없음')}</h1>
-      ${meta ? `<div class="sheet-meta">${meta}</div>` : '<div class="sheet-meta"></div>'}
+      <div class="sheet-meta">${meta}${idx >= 0 ? `<span style="float:right">${idx + 1} / ${list.length}</span>` : ''}</div>
       <div class="sheet-body" id="sheet-body"
-        style="font-size:${readPrefs.size}px;line-height:${readPrefs.lh}">${bodyHTML(e)}</div>
+        style="font-size:${readPrefs.size}px;line-height:${readPrefs.lh};font-family:${bodyFont()}">${bodyHTML(e)}</div>
       ${e.memo ? `<div class="sheet-memo"><span class="eyebrow">메모</span>
         <div class="txt">${esc(e.memo)}</div></div>` : ''}
     </article>`;
 
   wrap.addEventListener('click', ev => { if (ev.target === wrap) closeSheet(); });
   const bodyEl = wrap.querySelector('#sheet-body');
-
-  wrap.querySelectorAll('[data-size]').forEach(b => b.onclick = () => {
-    readPrefs.size = Math.max(12, Math.min(30, +(readPrefs.size + Number(b.dataset.size) * 0.5).toFixed(1)));
-    bodyEl.style.fontSize = readPrefs.size + 'px';
-    wrap.querySelector('#t-size').textContent = readPrefs.size;
-    saveRead();
-  });
-  wrap.querySelectorAll('[data-lh]').forEach(b => b.onclick = () => {
-    readPrefs.lh = Math.max(1.4, Math.min(3, +(readPrefs.lh + Number(b.dataset.lh) * 0.1).toFixed(1)));
-    bodyEl.style.lineHeight = readPrefs.lh;
-    wrap.querySelector('#t-lh').textContent = readPrefs.lh.toFixed(1);
-    saveRead();
-  });
+  bindViewTools(wrap);
   wrap.querySelectorAll('[data-hl]').forEach(b => {
     b.addEventListener('mousedown', ev => ev.preventDefault());
     b.onclick = () => applyHighlight(e, b.dataset.hl || null, bodyEl);
   });
+  wrap.querySelector('[data-prev]').onclick = () => { if (prev) { closeSheet(); openSheet(prev.id); } };
+  wrap.querySelector('[data-next]').onclick = () => { if (next) { closeSheet(); openSheet(next.id); } };
   wrap.querySelector('[data-img]').onclick = () => exportExcerpt(e);
   wrap.querySelector('[data-close]').onclick = closeSheet;
   wrap.querySelector('[data-edit]').onclick = () => openExcerptEditor(e);
@@ -1766,6 +2024,48 @@ function openSheet(id) {
   $('#sheet-root').append(wrap);
   document.body.style.overflow = 'hidden';
 }
+
+/* 폴더 안의 발췌를 한 번에 이어 읽기 */
+function openContinuous(asc = true) {
+  const list = asc ? visibleExcerpts().slice().reverse() : visibleExcerpts();
+  if (!list.length) return toast('읽을 발췌가 없어요');
+  const where = state.exFolder === null ? '전체'
+    : (state.exFolder === '' ? '미분류' : folderName(state.exFolder));
+
+  const wrap = document.createElement('div');
+  wrap.className = 'sheet-scrim';
+  wrap.innerHTML = `
+    <div class="sheet-tools">
+      ${viewToolsHTML()}
+      <div class="tool-group right">
+        <button class="btn btn-sm" data-order>${asc ? '오래된 순' : '최근 순'}</button>
+        <button class="btn btn-sm" data-close>닫기</button>
+      </div>
+    </div>
+    <article class="sheet">
+      <h1>${esc(where)} 이어 읽기</h1>
+      <div class="sheet-meta">${esc(state.current.name)} · 발췌 ${list.length}편${state.exQ ? ` · "${esc(state.exQ)}" 검색 결과` : ''}</div>
+      ${list.map((e, i) => {
+        const meta = [folderName(e.folderId), e.d1 || e.source, e.d2].filter(Boolean).map(esc).join(' · ');
+        return `<section class="cont-sec">
+          <h2>${esc(e.title || '제목 없음')}</h2>
+          <div class="cont-meta">${meta ? meta + ' · ' : ''}${i + 1} / ${list.length}</div>
+          <div class="sheet-body"
+            style="font-size:${readPrefs.size}px;line-height:${readPrefs.lh};font-family:${bodyFont()}">${bodyHTML(e)}</div>
+        </section>`;
+      }).join('')}
+      <p class="hint" style="text-align:center;margin-top:36px">여기까지예요.
+        형광펜과 메모는 발췌를 하나씩 열었을 때 볼 수 있어요.</p>
+    </article>`;
+
+  wrap.addEventListener('click', ev => { if (ev.target === wrap) closeSheet(); });
+  bindViewTools(wrap);
+  wrap.querySelector('[data-order]').onclick = () => { closeSheet(); openContinuous(!asc); };
+  wrap.querySelector('[data-close]').onclick = closeSheet;
+  $('#sheet-root').append(wrap);
+  document.body.style.overflow = 'hidden';
+}
+
 function closeSheet() {
   $('#sheet-root').innerHTML = '';
   if (!$('#modal-root').children.length) document.body.style.overflow = '';
@@ -2162,6 +2462,18 @@ function openAccount() {
         <p class="hint">목록 맨 위와 카드 이미지에 표시돼요.</p></label>
       <button class="btn btn-sm btn-key" id="save-nick">이름 저장</button>
       <details class="setup-more">
+        <summary>백업 내보내기 · 불러오기</summary>
+        <p class="hint">아카이브 전체를 파일 하나로 저장해 둘 수 있어요. 실수로 지웠을 때 되돌리는 용도예요.</p>
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink-2);margin:10px 0">
+          <input type="checkbox" id="bk-img" checked> 이미지도 함께 (파일이 커져요)</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-sm" id="bk-out">내보내기</button>
+          <button class="btn btn-sm" id="bk-in">불러오기</button>
+          <input type="file" accept="application/json,.json" id="bk-file" class="sr">
+        </div>
+        <p class="hint">불러오기는 같은 항목을 덮어쓰고 없는 항목은 새로 만들어요. 지금 있는 자료가 지워지지는 않아요.</p>
+      </details>
+      <details class="setup-more">
         <summary>나만 쓰게 잠그기</summary>
         <p class="hint">아래 규칙을 Firebase 콘솔 → Firestore Database → 규칙 탭에 붙여넣고 게시하면,
           다른 사람이 로그인해도 이 아카이브에 아무것도 저장할 수 없어요.</p>
@@ -2185,6 +2497,12 @@ function openAccount() {
   m.querySelector('#close3').onclick = closeModal;
   m.querySelector('#logout').onclick = async () => { await A.signOut(auth); closeModal(); location.reload(); };
   m.querySelector('#unlink').onclick = () => { localStorage.removeItem(CFG_KEY); location.reload(); };
+  m.querySelector('#bk-out').onclick = () => exportBackup(m.querySelector('#bk-img').checked);
+  m.querySelector('#bk-in').onclick = () => m.querySelector('#bk-file').click();
+  m.querySelector('#bk-file').onchange = e => {
+    const f = e.target.files[0];
+    if (f) importBackup(f);
+  };
   m.querySelector('#copy-lock2').onclick = () => copyText(m.querySelector('#lock-rules2').textContent);
   m.querySelector('#copy-uid2').onclick = () => copyText(uid);
   m.querySelector('#save-nick').onclick = async () => {
@@ -2199,6 +2517,128 @@ function openAccount() {
 $('#account-btn').onclick = () => openAccount();
 $('#statset-btn').onclick = () => openStatSets();
 $('#brand-btn').onclick = () => { if (uid) renderGallery(); };
+
+/* ════════ 백업 ════════ */
+function progressModal(title) {
+  const m = openModal({
+    title,
+    body: `<p class="hint" id="pg-text" style="margin:0">준비하는 중…</p>
+      <div style="height:4px;background:var(--hair);border-radius:2px;margin-top:14px;overflow:hidden">
+        <div id="pg-bar" style="height:100%;width:0;background:var(--teal);transition:width .2s"></div></div>`,
+  });
+  return {
+    set(text, ratio) {
+      const t = m.querySelector('#pg-text'), b = m.querySelector('#pg-bar');
+      if (t) t.textContent = text;
+      if (b) b.style.width = Math.round((ratio || 0) * 100) + '%';
+    },
+    done: closeModal,
+  };
+}
+
+async function exportBackup(withImages) {
+  const pg = progressModal('내보내는 중');
+  try {
+    const data = {
+      app: 'chararchive', v: 1, exportedAt: Date.now(),
+      nickname: profile.nickname, formPreset: profile.formPreset || null,
+      statSets: state.statSets.map(x => ({ ...x })),
+      notices: state.notices.map(x => ({ ...x })),
+      characters: [], images: {},
+    };
+    const total = state.chars.length || 1;
+    for (let i = 0; i < state.chars.length; i++) {
+      const c = state.chars[i];
+      pg.set(`캐릭터 ${i + 1} / ${state.chars.length} · ${c.name || ''}`, (i + 1) / total * (withImages ? .6 : .95));
+      const snap = await F.getDocs(col('characters', c.id, 'excerpts'));
+      data.characters.push({ ...c, excerpts: snap.docs.map(d => ({ id: d.id, ...d.data() })) });
+    }
+    if (withImages) {
+      const withImg = state.chars.filter(c => c.imageId);
+      for (let i = 0; i < withImg.length; i++) {
+        pg.set(`이미지 ${i + 1} / ${withImg.length}`, .6 + (i + 1) / (withImg.length || 1) * .35);
+        const d = await loadFullImage(withImg[i].imageId);
+        if (d) data.images[withImg[i].imageId] = d;
+      }
+    }
+    pg.set('파일로 묶는 중…', .98);
+    const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const d = new Date();
+    a.href = url;
+    a.download = `archive-backup-${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}.json`;
+    document.body.append(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 6000);
+    pg.done();
+    toast(`내보냈어요 · 캐릭터 ${data.characters.length} · ${(blob.size / 1048576).toFixed(1)}MB`);
+  } catch (e) {
+    pg.done();
+    toast('내보내지 못했어요: ' + (e.code || e.message), 1);
+  }
+}
+
+async function importBackup(file) {
+  let data;
+  try {
+    data = JSON.parse(await file.text());
+    if (data.app !== 'chararchive' || !Array.isArray(data.characters)) throw 0;
+  } catch { return toast('이 아카이브의 백업 파일이 아니에요', 1); }
+
+  const exCount = data.characters.reduce((n, c) => n + (c.excerpts?.length || 0), 0);
+  const imgCount = Object.keys(data.images || {}).length;
+  const ok = await confirmDialog('백업을 불러올까요?',
+    `캐릭터 ${data.characters.length} · 발췌 ${exCount} · 스탯 세트 ${data.statSets?.length || 0} · 공지 ${data.notices?.length || 0}` +
+    `${imgCount ? ` · 이미지 ${imgCount}` : ''} 을 넣어요. 같은 항목은 백업 내용으로 덮어써요.`, '불러오기');
+  if (!ok) return;
+
+  const pg = progressModal('불러오는 중');
+  try {
+    const totalSteps = data.characters.length + exCount + imgCount +
+      (data.statSets?.length || 0) + (data.notices?.length || 0) + 1;
+    let step = 0;
+    const tick = t => { step++; pg.set(t, step / totalSteps); };
+
+    for (const st of (data.statSets || [])) {
+      const { id, ...rest } = st;
+      await F.setDoc(ref('statSets', id || uidgen()), rest);
+      tick('스탯 세트');
+    }
+    for (const n of (data.notices || [])) {
+      const { id, ...rest } = n;
+      await F.setDoc(ref('notices', id || uidgen()), rest);
+      tick('공지');
+    }
+    for (const [imgId, dataUrl] of Object.entries(data.images || {})) {
+      await F.setDoc(ref('images', imgId), { data: dataUrl, updatedAt: Date.now() });
+      tick('이미지');
+    }
+    for (const c of data.characters) {
+      const { id, excerpts = [], ...rest } = c;
+      const cid = id || uidgen();
+      await F.setDoc(ref('characters', cid), rest);
+      tick(`캐릭터 · ${rest.name || ''}`);
+      for (const e of excerpts) {
+        const { id: eid, ...erest } = e;
+        await F.setDoc(ref('characters', cid, 'excerpts', eid || uidgen()), erest);
+        tick('발췌');
+      }
+    }
+    if (data.formPreset) {
+      await F.setDoc(F.doc(db, 'users', uid), { formPreset: data.formPreset }, { merge: true });
+      profile.formPreset = data.formPreset;
+    }
+    tick('마무리');
+
+    await Promise.all([loadChars(), loadStatSets(), loadNotices()]);
+    pg.done();
+    renderGallery();
+    toast(`불러왔어요 · 캐릭터 ${data.characters.length}명`);
+  } catch (e) {
+    pg.done();
+    toast('불러오지 못했어요: ' + (e.code || e.message), 1);
+  }
+}
 
 /* ════════ 시작 ════════ */
 (async function boot() {
