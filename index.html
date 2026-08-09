@@ -777,7 +777,7 @@ function backupDue() {
   if (state.chars.length < 3) return false;
   const { last = 0, snooze = 0 } = bkInfo();
   if (Date.now() < snooze) return false;
-  return Date.now() - last > 14 * DAY;
+  return Date.now() - last > 30 * DAY;
 }
 
 const READ_KEY = 'chararchive.read';
@@ -1945,7 +1945,7 @@ function openStatTools(tab) {
           fields: cmpPick.map(k => ({ k, v: ((p?.fields || []).find(f => f.k === k) || {}).v || '' }))
             .filter(f => f.v),
         };
-      }), back);
+      }), cmpPick, back);
     } else if (tab === 'sets') {
       const chosen = state.statSets.filter(x => setsPicked.includes(x.id));
       if (!chosen.length) return toast('세트를 하나 이상 골라 주세요', 1);
@@ -2038,7 +2038,8 @@ async function exportRank(c, info, fields = [], showPeers = true, onBack) {
   const INK = '#14161A', INK2 = '#3E434B', FAINT = '#A6ABB2', HAIR = '#E5E7E8', LINE = '#D2D6D9', TEAL = '#0F4C47';
   const probe = document.createElement('canvas').getContext('2d');
   const flines = layoutFields(probe, fields, W - PAD * 2);
-  const H = 128 + 176 + flines.length * 34 + info.rows.length * 70 + 130;
+  const firstRow = 296 + flines.length * 34;                 // 첫 항목 줄의 기준선
+  const H = Math.round(firstRow + (info.rows.length - 1) * 70 + 126);
 
   const cv = document.createElement('canvas');
   cv.width = W; cv.height = H;
@@ -2186,20 +2187,30 @@ function plateFooter(x, W, H, PAD, left, right) {
   x.textAlign = 'left';
 }
 
-async function exportCompare(set, labels, max, series, onBack) {
+async function exportCompare(set, labels, max, series, keys, onBack) {
   if (labels.length < 3) return toast('항목이 3개 이상일 때 저장할 수 있어요');
   toast('이미지를 그리는 중…');
   try { await document.fonts.ready; } catch {}
   const W = 1080, PAD = 84;
   const INK = '#14161A', INK2 = '#3E434B', FAINT = '#A6ABB2', HAIR = '#E5E7E8', LINE = '#D2D6D9', TEAL = '#0F4C47';
   const R = 224;
-  const legendH = series.length * 44 + 18;
-  const tableH = labels.length * 46 + 104;
-  const probe = document.createElement('canvas').getContext('2d');
-  const fieldBlocks = series.map(sr => layoutFields(probe, sr.fields || [], W - PAD * 2, 2))
-    .filter(l => l.length);
-  const fieldsH = fieldBlocks.length ? 34 + fieldBlocks.reduce((n, l) => n + l.length * 32, 0) + 14 : 0;
-  const H = 128 + 78 + (R * 2 + 130) + legendH + tableH + fieldsH + 116;
+  // 값이 하나라도 있는 프로필 항목만 남겨요
+  const fieldKeys = (keys || []).filter(k => series.some(sr =>
+    ((sr.fields || []).find(f => f.k === k) || {}).v));
+
+  // 자리부터 계산 — 아래 여백이 남지 않도록
+  let ly = 100;                    // 머리말
+  ly += 62;                        // 제목
+  ly += 40;
+  const cy = ly + R + 46;          // 그래프 중심
+  ly = cy + R + 84;                // 범례 첫 줄
+  const legendTop = ly;
+  ly += series.length * 44 + 48;
+  const tableTop = ly;             // 표 첫 줄 (굵은 선은 이 위 52.5)
+  let bottom = tableTop + (labels.length - 1) * 46 + 17;
+  const fieldTop = bottom + 44;
+  if (fieldKeys.length) bottom = fieldTop + (fieldKeys.length - 1) * 46 + 10;
+  const H = Math.round(bottom + 116);
 
   const cv = document.createElement('canvas');
   cv.width = W; cv.height = H;
@@ -2231,8 +2242,7 @@ async function exportCompare(set, labels, max, series, onBack) {
   y += 40;
 
   // 그래프
-  const cx = W / 2, cy = y + R + 46;
-  x.save(); x.translate(cx, cy);
+  x.save(); x.translate(W / 2, cy);
   const base = radarGeom(labels, {}, max, R);
   const path = k => { x.beginPath(); base.forEach((p, i) => {
     const px = Math.cos(p.a) * R * k, py = Math.sin(p.a) * R * k;
@@ -2261,7 +2271,7 @@ async function exportCompare(set, labels, max, series, onBack) {
   });
   x.restore();
   x.textAlign = 'left';
-  y = cy + R + 84;
+  y = legendTop;
 
   // 범례
   series.forEach((sr, i) => {
@@ -2277,7 +2287,7 @@ async function exportCompare(set, labels, max, series, onBack) {
     x.textAlign = 'left';
     y += 44;
   });
-  y += 48;
+  y = tableTop;
 
   // 표 — 굵은 선 위아래 여백을 넉넉히
   const colW = (W - PAD * 2 - 300) / series.length;
@@ -2312,19 +2322,24 @@ async function exportCompare(set, labels, max, series, onBack) {
     y += 46;
   });
 
-  // 캐릭터별 프로필 항목 — 각자의 색으로
-  if (fieldBlocks.length) {
-    y += 10;
-    x.strokeStyle = HAIR; x.lineWidth = 1;
-    x.beginPath(); x.moveTo(PAD, y + .5); x.lineTo(W - PAD, y + .5); x.stroke();
-    y += 34;
-    let bi = 0;
-    series.forEach(sr => {
-      const lines = layoutFields(probe, sr.fields || [], W - PAD * 2, 2);
-      if (!lines.length) return;
-      const col = CMP_COLORS[series.indexOf(sr) % CMP_COLORS.length];
-      y = drawFieldLines(x, lines, PAD, y, 32, col + '99', col);
-      bi++;
+  // 프로필 항목 — 위 표와 같은 격자에, 값은 각 캐릭터의 색으로
+  if (fieldKeys.length) {
+    y = fieldTop;
+    fieldKeys.forEach(k => {
+      x.font = '400 20px "IBM Plex Mono", monospace';
+      x.fillStyle = '#9AA0A6';
+      x.textAlign = 'left';
+      x.fillText(fit(x, k, 280), PAD, y);
+      x.textAlign = 'right';
+      series.forEach((sr, i) => {
+        const v = ((sr.fields || []).find(f => f.k === k) || {}).v || '';
+        if (!v) return;
+        x.font = '400 22px "Pretendard Variable", Pretendard, sans-serif';
+        x.fillStyle = CMP_COLORS[i % CMP_COLORS.length];
+        x.fillText(fit(x, v, colW - 16), PAD + 300 + colW * (i + 1), y);
+      });
+      x.textAlign = 'left';
+      y += 46;
     });
   }
 
@@ -3668,10 +3683,20 @@ async function exportCard(c, set) {
   x.textAlign = 'right'; x.fillStyle = INK2;
   x.fillText(fit(x, profile.nickname, 400), W - PAD, 100);
 
-  // 이름 · 부제 (오른쪽 맞춤, 사진 위)
+  // 이름 · 부제 (오른쪽 맞춤, 사진 위) — 왼쪽 여백은 가는 선으로 이어줘요
   x.fillStyle = INK;
   x.font = '300 66px "Noto Serif KR", serif';
-  x.fillText(fit(x, c.name || '이름 없음', W - PAD * 2), W - PAD, nameY);
+  const nameTxt = fit(x, c.name || '이름 없음', W - PAD * 2 - 120);
+  const nameW = x.measureText(nameTxt).width;
+  const lineEnd = W - PAD - nameW - 34;
+  if (lineEnd > PAD + 60) {
+    x.strokeStyle = LINE; x.lineWidth = 1;
+    x.beginPath(); x.moveTo(PAD, nameY - 21.5); x.lineTo(lineEnd, nameY - 21.5); x.stroke();
+    x.fillStyle = TEAL;
+    x.fillRect(PAD, nameY - 25, 14, 7);
+    x.fillStyle = INK;
+  }
+  x.fillText(nameTxt, W - PAD, nameY);
   if (c.subtitle) {
     x.font = '400 22px "IBM Plex Mono", monospace';
     x.fillStyle = TEAL;
@@ -3679,14 +3704,22 @@ async function exportCard(c, set) {
   }
   x.textAlign = 'left';
 
-  // 사진
+  // 사진 — 오른쪽에 어둠을 깔고 청록 세로선으로 마무리
   if (photo) {
+    const pw = W - PAD * 2;
     x.save();
-    x.beginPath(); x.rect(PAD, photoTop, W - PAD * 2, photoH); x.clip();
-    coverDraw(x, photo, PAD, photoTop, W - PAD * 2, photoH);
+    x.beginPath(); x.rect(PAD, photoTop, pw, photoH); x.clip();
+    coverDraw(x, photo, PAD, photoTop, pw, photoH);
+    const shade = x.createLinearGradient(W - PAD - pw * 0.42, 0, W - PAD, 0);
+    shade.addColorStop(0, 'rgba(8,10,14,0)');
+    shade.addColorStop(1, 'rgba(8,10,14,.62)');
+    x.fillStyle = shade;
+    x.fillRect(W - PAD - pw * 0.42, photoTop, pw * 0.42, photoH);
     x.restore();
+    x.fillStyle = TEAL;
+    x.fillRect(W - PAD - 5, photoTop, 5, photoH);
     x.strokeStyle = 'rgba(20,22,26,.14)'; x.lineWidth = 1;
-    x.strokeRect(PAD + .5, photoTop + .5, W - PAD * 2 - 1, photoH - 1);
+    x.strokeRect(PAD + .5, photoTop + .5, pw - 1, photoH - 1);
   }
 
   // 프로필
@@ -3737,6 +3770,23 @@ async function exportCard(c, set) {
     });
     x.restore();
     x.textAlign = 'left';
+
+    // 그래프 양옆 — 가는 세로선과 세로 글씨
+    const gTop = ruleY + 44, gBot = cy + R + 44;
+    x.strokeStyle = HAIR; x.lineWidth = 1;
+    [PAD + 48, W - PAD - 48].forEach(px => {
+      x.beginPath(); x.moveTo(px + .5, gTop); x.lineTo(px + .5, gBot); x.stroke();
+    });
+    x.fillStyle = TEAL;
+    [PAD + 44, W - PAD - 52].forEach(px => { x.fillRect(px, gTop, 9, 3); x.fillRect(px, gBot - 3, 9, 3); });
+    x.font = '400 17px "IBM Plex Mono", monospace';
+    x.fillStyle = FAINT;
+    x.textAlign = 'center';
+    x.save(); x.translate(PAD + 26, (gTop + gBot) / 2); x.rotate(-Math.PI / 2);
+    x.fillText(fit(x, set?.name || 'STAT', gBot - gTop - 60), 0, 0); x.restore();
+    x.save(); x.translate(W - PAD - 26, (gTop + gBot) / 2); x.rotate(Math.PI / 2);
+    x.fillText(`MAX ${max}`, 0, 0); x.restore();
+    x.textAlign = 'left';
   }
 
   // 꼬리말
@@ -3744,7 +3794,8 @@ async function exportCard(c, set) {
   x.beginPath(); x.moveTo(PAD, H - 92.5); x.lineTo(W - PAD, H - 92.5); x.stroke();
   x.font = '400 18px "IBM Plex Mono", monospace';
   x.fillStyle = FAINT;
-  x.fillText(set ? `${set.name} · MAX ${max}` : '', PAD, H - 56);
+  const footL = (c.tags || []).length ? c.tags.map(t => '#' + t).join('  ') : (set ? `${set.name} · MAX ${max}` : '');
+  x.fillText(fit(x, footL, 620), PAD, H - 56);
   x.textAlign = 'right';
   x.fillText(fmtDate(Date.now()), W - PAD, H - 56);
 
