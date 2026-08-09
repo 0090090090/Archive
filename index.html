@@ -330,7 +330,9 @@ details.setup-more[open] > summary::before{content:"− "}
 .drop:hover{border-color:var(--teal);background:var(--teal-soft);color:var(--teal)}
 .drop img{max-height:190px;margin:0 auto 12px;border-radius:var(--r);border:1px solid var(--hair)}
 
-.kv-row{display:grid;grid-template-columns:116px minmax(0,1fr) 30px;gap:8px;margin-bottom:8px;align-items:start}
+.kv-row{display:grid;grid-template-columns:116px minmax(0,1fr) 30px 30px;gap:8px;margin-bottom:8px;align-items:start}
+.img-toggle{color:var(--teal)}
+.img-toggle[aria-pressed="true"]{color:var(--faint)}
 .kv-row .input{padding:8px 11px;font-size:13.5px}
 .stat-edit-row{display:grid;grid-template-columns:minmax(0,1fr) 30px;gap:8px;margin-bottom:8px}
 
@@ -387,6 +389,9 @@ details.setup-more[open] > summary::before{content:"− "}
 .sheet-memo .eyebrow{display:block;margin-bottom:9px}
 .sheet-memo .txt{margin:0;font-family:var(--ui);font-size:13.5px;color:var(--muted);
   white-space:pre-wrap;line-height:1.85}
+.sheet-memo2{margin-top:20px;padding-top:16px;border-top:1px dashed rgba(15,76,71,.28)}
+.sheet-memo2 .eyebrow{display:block;margin-bottom:9px;color:var(--teal);opacity:.75}
+.sheet-memo2 .txt{margin:0;color:var(--teal);white-space:pre-wrap;line-height:1.85}
 
 
 /* ─────────────── 공지 ─────────────── */
@@ -433,8 +438,28 @@ details.setup-more[open] > summary::before{content:"− "}
 /* 캐릭터 좌측 열 — 가운데 정렬 */
 .char-side{text-align:center}
 .char-side .portrait{margin:0 auto}
-.char-side .tags,.char-side .side-actions{justify-content:center}
-.side-actions{display:flex;gap:8px;margin-top:20px;flex-wrap:wrap}
+.char-side .tags{justify-content:center}
+.char-side .side-actions,.char-side > .hint{text-align:left}
+.side-actions{display:flex;gap:8px;margin-top:20px;flex-wrap:wrap;justify-content:flex-start}
+
+/* 관계 */
+.rel-list{display:grid;gap:10px}
+.rel-item{display:flex;align-items:center;gap:12px;width:100%;text-align:left;
+  border:1px solid var(--hair);border-radius:var(--r);padding:9px 12px;background:var(--paper);
+  transition:border-color .15s,background .15s}
+.rel-item:hover{border-color:var(--teal);background:var(--teal-soft)}
+.rel-item[disabled]{opacity:.55;cursor:default}
+.rel-thumb{width:42px;height:52px;border-radius:2px;background:var(--warm);
+  border:1px solid var(--hair);overflow:hidden;flex:none}
+.rel-thumb img{width:100%;height:100%;object-fit:cover}
+.rel-info{display:grid;gap:3px;min-width:0}
+.rel-info b{font-family:var(--serif);font-size:15.5px;font-weight:500;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rel-info span{font-family:var(--mono);font-size:11px;color:var(--teal);letter-spacing:.06em;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rel-row{display:grid;grid-template-columns:minmax(0,180px) minmax(0,1fr) 30px;gap:8px;margin-bottom:9px}
+.excl{font-family:var(--mono);font-size:9px;letter-spacing:.06em;color:var(--faint);
+  border:1px solid var(--hair);border-radius:2px;padding:1px 4px;vertical-align:1px}
 
 /* 태그 중요도 */
 .adv-group{display:flex;align-items:flex-start;gap:11px;padding:7px 0}
@@ -463,6 +488,28 @@ details.setup-more[open] > summary::before{content:"− "}
 .cont-meta{font-family:var(--mono);font-size:10.5px;color:var(--faint);letter-spacing:.12em;margin-bottom:24px}
 .panel-head{flex-wrap:wrap}
 
+/* ─────────────── 스탯 분석 ─────────────── */
+.seg.tabs{width:100%;margin-bottom:18px}
+.seg.tabs button{flex:1;padding:8px 10px;font-size:13px}
+.set-group{margin-bottom:26px}
+.set-group:last-child{margin-bottom:0}
+.set-group h3{font-family:var(--serif);font-size:15.5px;font-weight:500;margin-bottom:14px;
+  padding-bottom:8px;border-bottom:1px solid var(--line);display:flex;align-items:baseline;gap:10px}
+.set-group h3 .mono{margin-left:auto;font-family:var(--mono);font-size:10.5px;
+  color:var(--faint);letter-spacing:.1em}
+.bar-row{display:grid;grid-template-columns:92px minmax(0,1fr) 34px;gap:12px;align-items:center;margin-bottom:11px}
+.bar-row.rank{grid-template-columns:92px minmax(0,1fr) 34px 58px}
+.bar-label{font-size:13px;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar-track{height:10px;background:var(--hair);border-radius:5px;position:relative}
+.bar-fill{display:block;height:100%;background:var(--teal);border-radius:5px;min-width:10px}
+.rank-tick{position:absolute;top:-4px;width:2px;height:18px;background:#6B7280;opacity:.55;border-radius:1px}
+.bar-val{font-family:var(--mono);font-size:12.5px;color:var(--teal);text-align:right}
+.bar-rank{font-family:var(--mono);font-size:11px;color:var(--faint);text-align:right}
+.rank-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;
+  padding-bottom:12px;border-bottom:1px solid var(--line);margin-bottom:18px;
+  font-family:var(--mono);font-size:11.5px;color:var(--faint);letter-spacing:.06em}
+.rank-head b{margin-left:auto;font-family:var(--mono);font-size:13px;color:var(--teal);font-weight:500}
+
 /* ─────────────── 스탯 비교 ─────────────── */
 .cmp-wrap{display:grid;gap:24px;grid-template-columns:minmax(0,1fr) minmax(0,214px);align-items:start}
 .cmp-legend{display:grid;gap:9px;align-content:start}
@@ -490,6 +537,8 @@ details.setup-more[open] > summary::before{content:"− "}
   .panel{padding:22px 20px}
   .fab{right:18px;bottom:18px}
   .dl-row{grid-template-columns:96px minmax(0,1fr)}
+  .rel-row{grid-template-columns:minmax(0,1fr) 30px}
+  .rel-row .select{grid-column:1/-1}
   .sheet-tools{gap:5px;padding:7px 8px}
   .tool-group{flex-wrap:wrap;justify-content:flex-end}
   .tool-group + .tool-group{padding-left:6px}
@@ -608,7 +657,7 @@ const state = {
 
 /* 읽기 설정은 기기별로 기억해요 */
 const READ_KEY = 'chararchive.read';
-let readPrefs = { size: 16.5, lh: 2.1, font: 'serif' };
+let readPrefs = { size: 16.5, lh: 2.1, font: 'serif', memo2: true };
 try { readPrefs = { ...readPrefs, ...JSON.parse(localStorage.getItem(READ_KEY) || '{}') }; } catch {}
 const saveRead = () => { try { localStorage.setItem(READ_KEY, JSON.stringify(readPrefs)); } catch {} };
 
@@ -1404,48 +1453,136 @@ function radarMultiSVG(labels, series, max) {
     ${grid}${polys}${texts}</svg>`;
 }
 
-/* 스탯 비교 */
-function openCompare() {
-  const base = state.current;
-  const set = state.statSets.find(x => x.id === base.statSetId) || state.statSets[0];
+/* 관계 편집 */
+function openRelations(c) {
+  const draft = (c.relations || []).map(r => ({ ...r }));
+  const others = state.chars.filter(x => x.id !== c.id);
+  const m = openModal({
+    title: '관계',
+    wide: true,
+    body: `<p class="hint" style="margin:0 0 16px">이 캐릭터와 이어지는 상대와 한 줄 설명을 적어요.
+        상대 쪽에는 자동으로 추가되지 않으니, 필요하면 그 캐릭터에서도 따로 적어 주세요.</p>
+      <div id="rel-wrap"></div>
+      <button class="btn btn-sm btn-ghost" id="rel-add" style="margin-top:4px">＋ 관계 추가</button>`,
+    foot: `<button class="btn btn-ghost" id="rel-cancel">취소</button>
+           <button class="btn btn-key" id="rel-save">저장</button>`,
+  });
+  function draw() {
+    m.querySelector('#rel-wrap').innerHTML = others.length
+      ? (draft.length ? draft.map((r, i) => `
+          <div class="rel-row">
+            <select class="select" data-rid="${i}">
+              ${others.map(o => `<option value="${o.id}" ${o.id === r.id ? 'selected' : ''}>${esc(o.name || '이름 없음')}</option>`).join('')}
+            </select>
+            <input class="input" data-rlabel="${i}" value="${esc(r.label || '')}"
+              placeholder="관계 (예: 스승 · 앙숙 · 쌍둥이 누나)" maxlength="30">
+            <button class="icon-btn" data-rrm="${i}" title="지우기">✕</button>
+          </div>`).join('') : `<p class="hint" style="margin:0 0 10px">아직 이어둔 캐릭터가 없어요.</p>`)
+      : `<p class="hint" style="margin:0">관계를 맺을 다른 캐릭터가 아직 없어요.</p>`;
+    m.querySelectorAll('[data-rid]').forEach(el => el.onchange = e => draft[+el.dataset.rid].id = e.target.value);
+    m.querySelectorAll('[data-rlabel]').forEach(el => el.oninput = e => draft[+el.dataset.rlabel].label = e.target.value);
+    m.querySelectorAll('[data-rrm]').forEach(el => el.onclick = () => { draft.splice(+el.dataset.rrm, 1); draw(); });
+  }
+  draw();
+  m.querySelector('#rel-add').onclick = () => {
+    if (!others.length) return toast('다른 캐릭터를 먼저 만들어 주세요');
+    draft.push({ id: others[0].id, label: '' });
+    draw();
+  };
+  m.querySelector('#rel-cancel').onclick = closeModal;
+  m.querySelector('#rel-save').onclick = async () => {
+    const seen = new Set();
+    const list = draft.filter(r => r.id && !seen.has(r.id) && seen.add(r.id))
+      .map(r => ({ id: r.id, label: (r.label || '').trim() }));
+    const btn = m.querySelector('#rel-save');
+    btn.disabled = true; btn.textContent = '저장하는 중…';
+    try {
+      await F.updateDoc(ref('characters', c.id), { relations: list, updatedAt: Date.now() });
+      c.relations = list;
+      closeModal(); renderCharacter(); toast('관계를 저장했어요');
+    } catch (e) {
+      btn.disabled = false; btn.textContent = '저장';
+      toast('저장하지 못했어요: ' + (e.code || e.message), 1);
+    }
+  };
+}
+
+/* 스탯 분석 — 비교 · 세트 모음 · 순위 */
+function statPool(setId) {
+  const pool = state.chars.filter(x => (x.statSetId || state.statSets[0]?.id) === setId);
+  if (state.current && !pool.some(x => x.id === state.current.id)) pool.push(state.current);
+  return pool;
+}
+
+function rankInfo(setId) {
+  const set = state.statSets.find(x => x.id === setId) || state.statSets[0];
   const labels = set?.labels || [], max = set?.max || 10;
-  let picked = [base.id];
+  const pool = statPool(setId);
+  const mine = state.current.stats || {};
+  const rows = labels.map(l => {
+    const vals = pool.map(pc => Number((pc.stats || {})[l] || 0));
+    const v = Number(mine[l] || 0);
+    const sorted = [...vals].sort((x, y) => y - x);
+    return {
+      label: l, v, rank: sorted.indexOf(v) + 1, n: pool.length,
+      avg: vals.length ? vals.reduce((x, y) => x + y, 0) / vals.length : 0,
+      hi: Math.max(0, ...vals),
+    };
+  });
+  const totals = pool.map(pc => labels.reduce((n, l) => n + Number((pc.stats || {})[l] || 0), 0));
+  const myTotal = labels.reduce((n, l) => n + Number(mine[l] || 0), 0);
+  return {
+    set, labels, max, pool, rows, myTotal,
+    totalRank: [...totals].sort((x, y) => y - x).indexOf(myTotal) + 1,
+    avgTotal: totals.length ? totals.reduce((x, y) => x + y, 0) / totals.length : 0,
+    outside: (state.current.statSetId || state.statSets[0]?.id) !== setId,
+  };
+}
+
+function openStatTools(tab = 'compare') {
+  const c = state.current;
+  const curSet = state.statSets.find(x => x.id === c.statSetId) || state.statSets[0];
+  let picked = [c.id];
+  let setsPicked = curSet ? [curSet.id] : [];
+  let rankSet = curSet?.id;
 
   const m = openModal({
-    title: '스탯 비교',
+    title: '스탯 분석',
     wide: true,
-    body: `<p class="hint" style="margin:0 0 14px"><b>${esc(set?.name || '')}</b> 세트의 항목으로 최대 3명까지 겹쳐 봐요.
-        다른 세트를 쓰는 캐릭터는 같은 이름의 항목만 값이 잡히고, 없는 항목은 0으로 그려져요.</p>
-      <div class="chipbar" id="cmp-chips"></div>
-      <div class="cmp-wrap">
-        <div class="radar-box" id="cmp-radar"></div>
-        <div id="cmp-legend"></div>
-      </div>`,
-    foot: `<button class="btn btn-ghost" id="cmp-close">닫기</button>
-           <button class="btn btn-key" id="cmp-img">이미지 저장</button>`,
+    body: `<div class="seg tabs" id="st-tabs">
+        ${[['compare', '캐릭터 비교'], ['sets', '세트 모음'], ['rank', '순위']].map(([k, l]) =>
+          `<button data-tab="${k}" aria-pressed="${tab === k}">${l}</button>`).join('')}
+      </div>
+      <div id="st-body"></div>`,
+    foot: `<button class="btn btn-ghost" id="st-close">닫기</button>
+           <button class="btn btn-key" id="st-img">이미지 저장</button>`,
   });
 
-  function draw() {
+  function drawCompare() {
+    const labels = curSet?.labels || [], max = curSet?.max || 10;
     const series = picked.map(id => {
-      const c = state.chars.find(x => x.id === id);
-      return { id, name: c?.name || '이름 없음', vals: c?.stats || {} };
+      const p = state.chars.find(x => x.id === id);
+      return { id, name: p?.name || '이름 없음', vals: p?.stats || {} };
     });
-    m.querySelector('#cmp-chips').innerHTML = state.chars.map(c =>
-      `<button class="chip" data-c="${c.id}" aria-pressed="${picked.includes(c.id)}">${esc(c.name || '이름 없음')}</button>`).join('');
-    m.querySelector('#cmp-radar').innerHTML = radarMultiSVG(labels, series, max);
-    m.querySelector('#cmp-legend').innerHTML = `<div class="cmp-legend">
-      ${series.map((sr, i) => `<div class="row">
-        <span class="cmp-dot" style="background:${CMP_COLORS[i % CMP_COLORS.length]}"></span>
-        <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(sr.name)}</span>
-        <span class="mono" style="font-size:11.5px;color:var(--faint)">${labels.reduce((n, l) => n + Number(sr.vals[l] || 0), 0)}</span>
-      </div>`).join('')}
-      ${labels.length ? `<table class="cmp-table"><tbody>
-        ${labels.map(l => `<tr><th>${esc(l)}</th>${series.map(sr =>
-          `<td>${Number(sr.vals[l] || 0)}</td>`).join('')}</tr>`).join('')}
-      </tbody></table>` : ''}
-    </div>`;
-    m.querySelectorAll('[data-c]').forEach(b => b.onclick = () => {
-      const id = b.dataset.c;
+    $('#st-body').innerHTML = `
+      <p class="hint" style="margin:0 0 14px"><b>${esc(curSet?.name || '')}</b> 세트의 항목으로 최대 3명까지 겹쳐 봐요.
+        다른 세트를 쓰는 캐릭터는 같은 이름의 항목만 값이 잡히고, 없는 항목은 0으로 그려져요.</p>
+      <div class="chipbar" id="cmp-chips">${state.chars.map(x =>
+        `<button class="chip" data-c="${x.id}" aria-pressed="${picked.includes(x.id)}">${esc(x.name || '이름 없음')}</button>`).join('')}</div>
+      <div class="cmp-wrap">
+        <div class="radar-box">${radarMultiSVG(labels, series, max)}</div>
+        <div class="cmp-legend">
+          ${series.map((sr, i) => `<div class="row">
+            <span class="cmp-dot" style="background:${CMP_COLORS[i % CMP_COLORS.length]}"></span>
+            <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(sr.name)}</span>
+            <span class="mono" style="font-size:11.5px;color:var(--faint)">${labels.reduce((n, l) => n + Number(sr.vals[l] || 0), 0)}</span>
+          </div>`).join('')}
+          ${labels.length ? `<table class="cmp-table"><tbody>${labels.map(l =>
+            `<tr><th>${esc(l)}</th>${series.map(sr => `<td>${Number(sr.vals[l] || 0)}</td>`).join('')}</tr>`).join('')}</tbody></table>` : ''}
+        </div>
+      </div>`;
+    $$('#cmp-chips [data-c]').forEach(b2 => b2.onclick = () => {
+      const id = b2.dataset.c;
       if (picked.includes(id)) {
         if (picked.length === 1) return toast('한 명은 남겨두세요');
         picked = picked.filter(x => x !== id);
@@ -1453,15 +1590,248 @@ function openCompare() {
         if (picked.length >= 3) return toast('한 번에 3명까지 비교할 수 있어요');
         picked.push(id);
       }
-      draw();
+      drawCompare();
     });
   }
+
+  function drawSets() {
+    const chosen = state.statSets.filter(x => setsPicked.includes(x.id));
+    $('#st-body').innerHTML = `
+      <p class="hint" style="margin:0 0 14px">한 캐릭터의 여러 스탯 세트를 한 장에 담아요.
+        항목이 많아도 잘 보이도록 막대로 그립니다.</p>
+      <div class="chipbar">${state.statSets.map(x =>
+        `<button class="chip" data-s="${x.id}" aria-pressed="${setsPicked.includes(x.id)}">${esc(x.name)} · ${x.labels.length}</button>`).join('')}</div>
+      ${chosen.length ? chosen.map(st => `
+        <div class="set-group">
+          <h3>${esc(st.name)}<span class="mono">MAX ${st.max}</span></h3>
+          ${st.labels.map(l => {
+            const v = Number((c.stats || {})[l] || 0);
+            return `<div class="bar-row">
+              <span class="bar-label">${esc(l)}</span>
+              <span class="bar-track"><span class="bar-fill" style="width:${Math.min(100, v / st.max * 100)}%"></span></span>
+              <span class="bar-val">${v}</span></div>`;
+          }).join('')}
+        </div>`).join('')
+      : `<p class="hint" style="margin:0">세트를 하나 이상 골라 주세요.</p>`}`;
+    $$('#st-body [data-s]').forEach(b2 => b2.onclick = () => {
+      const id = b2.dataset.s;
+      setsPicked = setsPicked.includes(id) ? setsPicked.filter(x => x !== id) : [...setsPicked, id];
+      drawSets();
+    });
+  }
+
+  function drawRank() {
+    const info = rankInfo(rankSet);
+    $('#st-body').innerHTML = `
+      <p class="hint" style="margin:0 0 14px">같은 세트를 쓰는 캐릭터들 사이에서 이 캐릭터가 어디쯤인지 봐요.
+        회색 눈금은 평균이에요.</p>
+      <div class="set-bar">
+        <select class="select" id="rank-set">${state.statSets.map(x =>
+          `<option value="${x.id}" ${x.id === rankSet ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select>
+      </div>
+      ${info.outside ? `<p class="hint" style="color:var(--danger);margin:0 0 12px">
+        ${esc(c.name)}은(는) 이 세트를 쓰지 않아요. 비교 대상에 임시로 넣어 계산했어요.</p>` : ''}
+      <div class="rank-head">
+        <span>${esc(info.set?.name || '')} · 대상 ${info.pool.length}명</span>
+        <b>합계 ${info.myTotal} · ${info.totalRank}위</b>
+      </div>
+      ${info.rows.map(r => `
+        <div class="bar-row rank">
+          <span class="bar-label">${esc(r.label)}</span>
+          <span class="bar-track">
+            <span class="bar-fill" style="width:${Math.min(100, r.v / info.max * 100)}%"></span>
+            <span class="rank-tick" style="left:${Math.min(100, r.avg / info.max * 100)}%"></span>
+          </span>
+          <span class="bar-val">${r.v}</span>
+          <span class="bar-rank">${r.rank}/${r.n}위</span>
+        </div>`).join('')}`;
+    $('#rank-set').onchange = e => { rankSet = e.target.value; drawRank(); };
+  }
+
+  function draw() {
+    $$('#st-tabs [data-tab]').forEach(b2 => b2.setAttribute('aria-pressed', b2.dataset.tab === tab));
+    if (tab === 'compare') drawCompare();
+    else if (tab === 'sets') drawSets();
+    else drawRank();
+  }
+  $$('#st-tabs [data-tab]').forEach(b2 => b2.onclick = () => { tab = b2.dataset.tab; draw(); });
   draw();
-  m.querySelector('#cmp-close').onclick = closeModal;
-  m.querySelector('#cmp-img').onclick = () => exportCompare(set, labels, max, picked.map(id => {
-    const c = state.chars.find(x => x.id === id);
-    return { name: c?.name || '이름 없음', vals: c?.stats || {} };
-  }));
+
+  m.querySelector('#st-close').onclick = closeModal;
+  m.querySelector('#st-img').onclick = () => {
+    if (tab === 'compare') {
+      exportCompare(curSet, curSet?.labels || [], curSet?.max || 10, picked.map(id => {
+        const p = state.chars.find(x => x.id === id);
+        return { name: p?.name || '이름 없음', vals: p?.stats || {} };
+      }));
+    } else if (tab === 'sets') {
+      const chosen = state.statSets.filter(x => setsPicked.includes(x.id));
+      if (!chosen.length) return toast('세트를 하나 이상 골라 주세요', 1);
+      exportSets(c, chosen);
+    } else {
+      exportRank(c, rankInfo(rankSet));
+    }
+  };
+}
+
+/* 여러 세트를 막대로 */
+async function exportSets(c, sets) {
+  toast('이미지를 그리는 중…');
+  try { await document.fonts.ready; } catch {}
+  const W = 1080, PAD = 84;
+  const INK = '#14161A', INK2 = '#3E434B', FAINT = '#A6ABB2', HAIR = '#E5E7E8', LINE = '#D2D6D9', TEAL = '#0F4C47';
+  const rows = sets.reduce((n, st) => n + st.labels.length, 0);
+  const H = 128 + 74 + sets.length * 92 + rows * 56 + 116;
+
+  const cv = document.createElement('canvas');
+  cv.width = W; cv.height = H;
+  const x = cv.getContext('2d');
+  paperPlate(x, W, H);
+
+  let y = 100;
+  x.font = '500 19px "IBM Plex Mono", monospace';
+  x.fillStyle = FAINT; x.textAlign = 'left';
+  x.fillText('S T A T   S E T S', PAD, y);
+  x.textAlign = 'right'; x.fillStyle = INK2;
+  x.fillText(fit(x, profile.nickname, 400), W - PAD, y);
+  x.textAlign = 'left';
+  y += 62;
+  x.font = '300 46px "Noto Serif KR", serif';
+  x.fillStyle = INK;
+  x.fillText(fit(x, c.name || '이름 없음', W - PAD * 2), PAD, y);
+  y += 56;
+
+  const trackL = PAD + 220, trackR = W - PAD - 76, trackW = trackR - trackL;
+  sets.forEach(st => {
+    x.font = '500 22px "IBM Plex Mono", monospace';
+    x.fillStyle = TEAL;
+    x.fillText(fit(x, st.name, 500), PAD, y);
+    x.textAlign = 'right';
+    x.font = '400 19px "IBM Plex Mono", monospace';
+    x.fillStyle = FAINT;
+    x.fillText('MAX ' + st.max, W - PAD, y);
+    x.textAlign = 'left';
+    y += 18;
+    x.strokeStyle = LINE; x.lineWidth = 1.2;
+    x.beginPath(); x.moveTo(PAD, y + .5); x.lineTo(W - PAD, y + .5); x.stroke();
+    y += 44;
+
+    st.labels.forEach(l => {
+      const v = Number((c.stats || {})[l] || 0);
+      x.font = '400 21px "Pretendard Variable", Pretendard, sans-serif';
+      x.fillStyle = INK2;
+      x.fillText(fit(x, l, 200), PAD, y + 6);
+      x.fillStyle = HAIR;
+      roundRect(x, trackL, y - 8, trackW, 16, 8); x.fill();
+      const w = Math.max(0, Math.min(1, v / st.max)) * trackW;
+      if (w > 0) { x.fillStyle = TEAL; roundRect(x, trackL, y - 8, Math.max(w, 16), 16, 8); x.fill(); }
+      x.textAlign = 'right';
+      x.font = '500 22px "IBM Plex Mono", monospace';
+      x.fillStyle = TEAL;
+      x.fillText(String(v), W - PAD, y + 7);
+      x.textAlign = 'left';
+      y += 56;
+    });
+    y += 30;
+  });
+
+  plateFooter(x, W, H, PAD, `${sets.length}개 세트`, fmtDate(Date.now()));
+  cv.toBlob(b => {
+    if (!b) return toast('이미지를 만들지 못했어요', 1);
+    showImageModal(b, `${(c.name || 'character').replace(/[\\/:*?"<>|\s]/g, '')}_스탯세트.png`, c.name);
+  }, 'image/png');
+}
+
+/* 세트 안에서의 위치 */
+async function exportRank(c, info) {
+  toast('이미지를 그리는 중…');
+  try { await document.fonts.ready; } catch {}
+  const W = 1080, PAD = 84;
+  const INK = '#14161A', INK2 = '#3E434B', FAINT = '#A6ABB2', HAIR = '#E5E7E8', LINE = '#D2D6D9', TEAL = '#0F4C47';
+  const H = 128 + 150 + info.rows.length * 64 + 130;
+
+  const cv = document.createElement('canvas');
+  cv.width = W; cv.height = H;
+  const x = cv.getContext('2d');
+  paperPlate(x, W, H);
+
+  let y = 100;
+  x.font = '500 19px "IBM Plex Mono", monospace';
+  x.fillStyle = FAINT; x.textAlign = 'left';
+  x.fillText('S T A T   S T A N D I N G', PAD, y);
+  x.textAlign = 'right'; x.fillStyle = INK2;
+  x.fillText(fit(x, profile.nickname, 400), W - PAD, y);
+  x.textAlign = 'left';
+  y += 62;
+  x.font = '300 46px "Noto Serif KR", serif';
+  x.fillStyle = INK;
+  x.fillText(fit(x, c.name || '이름 없음', W - PAD * 2 - 300), PAD, y);
+  x.textAlign = 'right';
+  x.font = '500 26px "IBM Plex Mono", monospace';
+  x.fillStyle = TEAL;
+  x.fillText(`합계 ${info.myTotal} · ${info.totalRank} / ${info.pool.length}위`, W - PAD, y);
+  x.textAlign = 'left';
+  y += 26;
+  x.font = '400 19px "IBM Plex Mono", monospace';
+  x.fillStyle = FAINT;
+  x.fillText(`${info.set?.name || ''} · 같은 세트 ${info.pool.length}명 · 회색 눈금은 평균`, PAD, y);
+  y += 26;
+  x.strokeStyle = LINE; x.lineWidth = 1.5;
+  x.beginPath(); x.moveTo(PAD, y + .5); x.lineTo(W - PAD, y + .5); x.stroke();
+  y += 56;
+
+  const trackL = PAD + 200, trackR = W - PAD - 200, trackW = trackR - trackL;
+  info.rows.forEach(r => {
+    x.font = '400 21px "Pretendard Variable", Pretendard, sans-serif';
+    x.fillStyle = INK2;
+    x.fillText(fit(x, r.label, 180), PAD, y + 6);
+    x.fillStyle = HAIR;
+    roundRect(x, trackL, y - 8, trackW, 16, 8); x.fill();
+    const w = Math.max(0, Math.min(1, r.v / info.max)) * trackW;
+    if (w > 0) { x.fillStyle = TEAL; roundRect(x, trackL, y - 8, Math.max(w, 16), 16, 8); x.fill(); }
+    const ax = trackL + Math.max(0, Math.min(1, r.avg / info.max)) * trackW;
+    x.strokeStyle = '#6B7280'; x.lineWidth = 2;
+    x.beginPath(); x.moveTo(ax, y - 15); x.lineTo(ax, y + 13); x.stroke();
+    x.textAlign = 'right';
+    x.font = '500 22px "IBM Plex Mono", monospace';
+    x.fillStyle = TEAL;
+    x.fillText(String(r.v), trackR + 56, y + 7);
+    x.font = '400 20px "IBM Plex Mono", monospace';
+    x.fillStyle = r.rank === 1 ? TEAL : FAINT;
+    x.fillText(`${r.rank}/${r.n}위`, W - PAD, y + 7);
+    x.textAlign = 'left';
+    y += 64;
+  });
+
+  plateFooter(x, W, H, PAD, `MAX ${info.max}`, fmtDate(Date.now()));
+  cv.toBlob(b => {
+    if (!b) return toast('이미지를 만들지 못했어요', 1);
+    showImageModal(b, `${(c.name || 'character').replace(/[\\/:*?"<>|\s]/g, '')}_순위.png`, c.name);
+  }, 'image/png');
+}
+
+/* 공통 판면 */
+function paperPlate(x, W, H) {
+  x.fillStyle = '#FFFFFF'; x.fillRect(0, 0, W, H);
+  const warm = x.createLinearGradient(0, 0, 0, H);
+  warm.addColorStop(0, 'rgba(251,250,247,0)'); warm.addColorStop(1, 'rgba(247,246,242,.9)');
+  x.fillStyle = warm; x.fillRect(0, 0, W, H);
+  x.strokeStyle = '#E5E7E8'; x.lineWidth = 1.5;
+  x.strokeRect(30.5, 30.5, W - 61, H - 61);
+  x.strokeStyle = '#0F4C47'; x.lineWidth = 1.5;
+  const T = 26, o = 30.5;
+  [[o, o, 1, 1], [W - o, o, -1, 1], [o, H - o, 1, -1], [W - o, H - o, -1, -1]].forEach(([px, py, sx, sy]) => {
+    x.beginPath(); x.moveTo(px + sx * T, py); x.lineTo(px, py); x.lineTo(px, py + sy * T); x.stroke();
+  });
+}
+function plateFooter(x, W, H, PAD, left, right) {
+  x.strokeStyle = '#E5E7E8'; x.lineWidth = 1;
+  x.beginPath(); x.moveTo(PAD, H - 92.5); x.lineTo(W - PAD, H - 92.5); x.stroke();
+  x.font = '400 18px "IBM Plex Mono", monospace';
+  x.fillStyle = '#A6ABB2';
+  x.textAlign = 'left'; x.fillText(left, PAD, H - 56);
+  x.textAlign = 'right'; x.fillText(right, W - PAD, H - 56);
+  x.textAlign = 'left';
 }
 
 async function exportCompare(set, labels, max, series) {
@@ -1472,7 +1842,7 @@ async function exportCompare(set, labels, max, series) {
   const INK = '#14161A', INK2 = '#3E434B', FAINT = '#A6ABB2', HAIR = '#E5E7E8', LINE = '#D2D6D9', TEAL = '#0F4C47';
   const R = 224;
   const legendH = series.length * 44 + 18;
-  const tableH = labels.length * 46 + 46;
+  const tableH = labels.length * 46 + 74;
   const H = 128 + 78 + (R * 2 + 130) + legendH + tableH + 116;
 
   const cv = document.createElement('canvas');
@@ -1553,22 +1923,35 @@ async function exportCompare(set, labels, max, series) {
   });
   y += 18;
 
-  // 표
+  // 표 — 굵은 선 아래 여백을 넉넉히
   const colW = (W - PAD * 2 - 300) / series.length;
-  x.strokeStyle = LINE; x.lineWidth = 1;
-  x.beginPath(); x.moveTo(PAD, y - 24.5); x.lineTo(W - PAD, y - 24.5); x.stroke();
+  x.strokeStyle = LINE; x.lineWidth = 1.5;
+  x.beginPath(); x.moveTo(PAD, y - 52.5); x.lineTo(W - PAD, y - 52.5); x.stroke();
   labels.forEach(l => {
+    const nums = series.map(sr => Number(sr.vals[l] || 0));
+    const top = Math.max(...nums);
+    const flat = nums.every(n => n === nums[0]);
     x.font = '400 21px "IBM Plex Mono", monospace';
     x.fillStyle = FAINT;
+    x.textAlign = 'left';
     x.fillText(fit(x, l, 280), PAD, y);
     x.textAlign = 'right';
     series.forEach((sr, i) => {
+      const col = CMP_COLORS[i % CMP_COLORS.length];
+      const right = PAD + 300 + colW * (i + 1);
       x.font = '500 23px "IBM Plex Mono", monospace';
-      x.fillStyle = CMP_COLORS[i % CMP_COLORS.length];
-      x.fillText(String(Number(sr.vals[l] || 0)), PAD + 300 + colW * (i + 1), y);
+      x.fillStyle = col;
+      const txt = String(nums[i]);
+      x.fillText(txt, right, y);
+      if (!flat && nums[i] === top && top > 0) {      // 가장 높은 값 왼쪽에 작은 표식
+        const tx = right - x.measureText(txt).width - 15;
+        x.beginPath();
+        x.moveTo(tx + 5, y - 15); x.lineTo(tx + 10, y - 6); x.lineTo(tx, y - 6);
+        x.closePath(); x.fillStyle = col; x.fill();
+      }
     });
     x.textAlign = 'left';
-    x.strokeStyle = HAIR;
+    x.strokeStyle = HAIR; x.lineWidth = 1;
     x.beginPath(); x.moveTo(PAD, y + 16.5); x.lineTo(W - PAD, y + 16.5); x.stroke();
     y += 46;
   });
@@ -1633,10 +2016,29 @@ function renderCharacter() {
 
       <div>
         <section class="panel">
+          <div class="panel-head"><h2>관계</h2><div class="spacer"></div>
+            <button class="btn btn-sm btn-ghost" id="edit-rel">편집</button></div>
+          ${(c.relations || []).length
+            ? `<div class="rel-list">${c.relations.map(r => {
+                const t = state.chars.find(x => x.id === r.id);
+                return `<button class="rel-item" data-rel="${esc(r.id)}" ${t ? '' : 'disabled'}>
+                  <span class="rel-thumb">${t?.thumb ? `<img src="${t.thumb}" alt="">` : ''}</span>
+                  <span class="rel-info">
+                    <b>${esc(t?.name || '지워진 캐릭터')}</b>
+                    <span>${esc(r.label || '관계 미정')}</span>
+                  </span></button>`;
+              }).join('')}</div>`
+            : `<p class="hint" style="margin:0">스승, 앙숙, 남매처럼 다른 캐릭터와의 관계를 적어두면
+                여기서 바로 그 페이지로 넘어갈 수 있어요.</p>`}
+        </section>
+
+        <section class="panel">
           <div class="panel-head"><h2>프로필</h2><div class="spacer"></div>
             <span class="eyebrow">${(c.fields || []).length}개 항목</span></div>
           ${(c.fields || []).length
-            ? `<dl class="dl">${c.fields.map(f => `<div class="dl-row"><dt>${esc(f.k)}</dt><dd>${esc(f.v)}</dd></div>`).join('')}</dl>`
+            ? `<dl class="dl">${c.fields.map(f => `<div class="dl-row">
+                <dt>${esc(f.k)}${f.hide ? ` <span class="excl">이미지 제외</span>` : ''}</dt>
+                <dd>${esc(f.v)}</dd></div>`).join('')}</dl>`
             : `<p class="hint" style="margin:0">프로필 수정에서 키·값 항목을 자유롭게 추가할 수 있어요. (예: 나이 / 소속 / 말투)</p>`}
         </section>
 
@@ -1654,7 +2056,7 @@ function renderCharacter() {
         <section class="panel">
           <div class="panel-head"><h2>스탯</h2><div class="spacer"></div>
             <button class="btn btn-sm" id="toggle-stat" aria-pressed="${state.statEdit}">값 조절</button>
-            <button class="btn btn-sm btn-ghost" id="compare-stats">비교</button>
+            <button class="btn btn-sm btn-ghost" id="compare-stats">분석</button>
             <button class="btn btn-sm btn-ghost" id="manage-sets">세트 관리</button></div>
           <div class="set-bar">
             <select class="select" id="set-select">
@@ -1708,8 +2110,10 @@ function renderCharacter() {
   $('#del-char').onclick = () => removeCharacter(c);
   $('#export-card').onclick = () => exportCard(c, set);
   $('#manage-sets').onclick = openStatSets;
+  $('#edit-rel').onclick = () => openRelations(c);
+  $$('[data-rel]').forEach(b => b.onclick = () => openCharacter(b.dataset.rel));
   $('#toggle-stat').onclick = () => { state.statEdit = !state.statEdit; renderCharacter(); };
-  $('#compare-stats').onclick = () => state.chars.length > 1 ? openCompare() : toast('비교하려면 캐릭터가 2명 이상 필요해요');
+  $('#compare-stats').onclick = () => openStatTools(state.chars.length > 1 ? 'compare' : 'sets');
   $('#add-excerpt').onclick = () => openExcerptEditor(null);
   $('#manage-folders').onclick = openFolders;
   $('#read-all').onclick = () => openContinuous();
@@ -1809,7 +2213,8 @@ function openCharEditor(c) {
       <div class="field"><span>프로필 항목</span>
         <div id="kv-wrap"></div>
         <button class="btn btn-sm btn-ghost" id="add-kv" style="margin-top:4px">＋ 항목 추가</button>
-        <p class="hint">왼쪽은 항목 이름(나이, 키, 성격…), 오른쪽은 내용이에요. 내용은 줄바꿈 없이 한 칸에 들어가요.</p>
+        <p class="hint">왼쪽은 항목 이름(나이, 키, 성격…), 오른쪽은 내용이에요.
+          <b>◉</b>를 눌러 <b>◌</b>로 바꾸면 그 항목은 카드 이미지에서 빠집니다.</p>
       </div>
       <div class="field"><span>세부 묘사</span>
         <div id="det-wrap"></div>
@@ -1875,8 +2280,14 @@ function openCharEditor(c) {
       <div class="kv-row">
         <input class="input" data-k="${i}" value="${esc(f.k)}" placeholder="항목" maxlength="24">
         <input class="input" data-v="${i}" value="${esc(f.v)}" placeholder="내용" maxlength="300">
+        <button class="icon-btn img-toggle" data-hide="${i}" aria-pressed="${f.hide ? 'true' : 'false'}"
+          title="${f.hide ? '카드 이미지에서 숨김' : '카드 이미지에 표시'}">${f.hide ? '◌' : '◉'}</button>
         <button class="icon-btn" data-rm="${i}" title="이 항목 지우기">✕</button>
       </div>`).join('');
+    kvWrap.querySelectorAll('[data-hide]').forEach(el => el.onclick = () => {
+      const f = draft.fields[+el.dataset.hide];
+      f.hide = !f.hide; drawKV();
+    });
     kvWrap.querySelectorAll('[data-k]').forEach(el => el.oninput = e => draft.fields[+el.dataset.k].k = e.target.value);
     kvWrap.querySelectorAll('[data-v]').forEach(el => el.oninput = e => draft.fields[+el.dataset.v].v = e.target.value);
     kvWrap.querySelectorAll('[data-rm]').forEach(el => el.onclick = () => {
@@ -1917,7 +2328,8 @@ function openCharEditor(c) {
         name: m.querySelector('#f-name').value.trim() || '이름 없음',
         subtitle: m.querySelector('#f-sub').value.trim(),
         tags: m.querySelector('#f-tags').value.trim().split(/\s+/).filter(Boolean).slice(0, 20),
-        fields: draft.fields.filter(f => f.k.trim() || f.v.trim()).map(f => ({ k: f.k.trim(), v: f.v.trim() })),
+        fields: draft.fields.filter(f => f.k.trim() || f.v.trim())
+          .map(f => ({ k: f.k.trim(), v: f.v.trim(), hide: !!f.hide })),
         details: draft.details.filter(d => d.t.trim() || d.v.trim()).map(d => ({ t: d.t.trim(), v: d.v.replace(/\s+$/, '') })),
         statSetId: m.querySelector('#f-set').value,
         thumb: draft.thumb || null,
@@ -2117,7 +2529,12 @@ function openExcerptEditor(ex) {
       <label class="field"><span>메모</span>
         <textarea class="textarea" id="e-memo" style="min-height:90px;font-size:14px"
           placeholder="이 장면에 대한 생각, 고칠 점 같은 걸 적어두세요.">${esc(ex?.memo || '')}</textarea>
-        <p class="hint">읽기 화면 아래에만 보이고, 이미지로 저장할 때는 빠져요.</p></label>`,
+        <p class="hint">읽기 화면 아래에만 보이고, 이미지로 저장할 때는 빠져요.</p></label>
+      <label class="field" style="margin-bottom:0"><span>추가 메모</span>
+        <textarea class="textarea" id="e-memo2" style="min-height:90px;font-size:14px"
+          placeholder="이미지에 함께 담고 싶은 짧은 말.">${esc(ex?.memo2 || '')}</textarea>
+        <p class="hint">읽기 화면에서는 메모 아래에 작게 표시되고,
+          이미지로 저장할 때 <b>MEMO</b> 라벨과 함께 넣을지 고를 수 있어요.</p></label>`,
     foot: `<button class="btn btn-ghost" id="cancel">취소</button>
            <button class="btn btn-key" id="save">${ex ? '저장' : '추가'}</button>`,
   });
@@ -2150,6 +2567,7 @@ function openExcerptEditor(ex) {
         d1: m.querySelector('#e-d1').value.trim(),
         d2: m.querySelector('#e-d2').value.trim(),
         memo: m.querySelector('#e-memo').value,
+        memo2: m.querySelector('#e-memo2').value.replace(/\s+$/, ''),
         tags: m.querySelector('#e-tags').value.trim().split(/\s+/).filter(Boolean).slice(0, 20),
         folderId, body,
         highlights: ex?.body === body ? (ex?.highlights || []) : [],
@@ -2284,6 +2702,8 @@ function openSheet(id) {
           <span class="nav-long">← 이전</span><span class="nav-short">←</span></button>
         <button class="btn btn-sm" data-next title="다음 발췌" ${next ? '' : 'disabled style="opacity:.4"'}>
           <span class="nav-long">다음 →</span><span class="nav-short">→</span></button>
+        ${e.memo2 ? `<button class="btn btn-sm" data-memo2 aria-pressed="${readPrefs.memo2 !== false}"
+          title="이미지에 추가 메모 넣기">MEMO</button>` : ''}
         <button class="btn btn-sm" data-img>이미지</button>
         <button class="btn btn-sm" data-edit>수정</button>
         <button class="btn btn-sm btn-danger" data-del>삭제</button>
@@ -2297,6 +2717,8 @@ function openSheet(id) {
         style="font-size:${readPrefs.size}px;line-height:${readPrefs.lh};font-family:${bodyFont()}">${bodyHTML(e)}</div>
       ${e.memo ? `<div class="sheet-memo"><span class="eyebrow">메모</span>
         <div class="txt">${esc(e.memo)}</div></div>` : ''}
+      ${e.memo2 ? `<div class="sheet-memo2"><span class="eyebrow">추가 메모</span>
+        <div class="txt" style="font-size:${(readPrefs.size * 0.82).toFixed(1)}px">${esc(e.memo2)}</div></div>` : ''}
     </article>`;
 
   wrap.addEventListener('click', ev => { if (ev.target === wrap) closeSheet(); });
@@ -2308,6 +2730,13 @@ function openSheet(id) {
   });
   wrap.querySelector('[data-prev]').onclick = () => { if (prev) { closeSheet(); openSheet(prev.id); } };
   wrap.querySelector('[data-next]').onclick = () => { if (next) { closeSheet(); openSheet(next.id); } };
+  const mm = wrap.querySelector('[data-memo2]');
+  if (mm) mm.onclick = () => {
+    readPrefs.memo2 = readPrefs.memo2 === false;
+    mm.setAttribute('aria-pressed', readPrefs.memo2 !== false);
+    saveRead();
+    toast(readPrefs.memo2 !== false ? '이미지에 추가 메모를 넣어요' : '이미지에서 추가 메모를 빼요');
+  };
   wrap.querySelector('[data-img]').onclick = () => exportExcerpt(e);
   wrap.querySelector('[data-close]').onclick = closeSheet;
   wrap.querySelector('[data-edit]').onclick = () => openExcerptEditor(e);
@@ -2405,7 +2834,15 @@ async function exportExcerpt(e) {
   const cut = lines.length > maxLines;
   if (cut) lines = lines.slice(0, maxLines);
 
-  const H = Math.max(520, PAD + 351 + (lines.length - 1) * LH + (cut ? 40 : 0));
+  const showMemo = readPrefs.memo2 !== false && (e.memo2 || '').trim();
+  let memoLines = [];
+  const MFS = Math.round(FS * 0.78), MLH = Math.round(MFS * 1.85);
+  if (showMemo) {
+    probe.font = `400 ${MFS}px ${FACE}`;
+    memoLines = wrapLines(probe, e.memo2, W - PAD * 2);
+  }
+  const memoH = showMemo ? LH + 90 - MLH + memoLines.length * MLH : 0;   // 본문 마지막 줄 아래 여백까지 포함
+  const H = Math.max(520, PAD + 351 + (lines.length - 1) * LH + (cut ? 40 : 0) + memoH);
   const cv = document.createElement('canvas');
   cv.width = W; cv.height = H;
   const x = cv.getContext('2d');
@@ -2453,6 +2890,26 @@ async function exportExcerpt(e) {
     x.font = '400 19px "IBM Plex Mono", monospace';
     x.fillStyle = FAINT;
     x.fillText('… 본문이 길어 여기까지만 담았어요', PAD, y + 10);
+    y += 34;
+  }
+
+  // 추가 메모
+  if (showMemo) {
+    y += 24;
+    x.strokeStyle = 'rgba(15,76,71,.3)'; x.lineWidth = 1;
+    x.setLineDash([3, 5]);
+    x.beginPath(); x.moveTo(PAD, y + .5); x.lineTo(W - PAD, y + .5); x.stroke();
+    x.setLineDash([]);
+    y += 34;
+    x.font = '500 17px "IBM Plex Mono", monospace';
+    x.fillStyle = TEAL;
+    x.globalAlpha = .75;
+    x.fillText('M E M O', PAD, y);
+    x.globalAlpha = 1;
+    y += 32;
+    x.font = `400 ${MFS}px ${FACE}`;
+    x.fillStyle = TEAL;
+    memoLines.forEach(L => { if (L.t) x.fillText(L.t, PAD, y); y += MLH; });
   }
 
   x.strokeStyle = HAIR; x.lineWidth = 1;
@@ -2593,28 +3050,37 @@ async function exportCard(c, set) {
     const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = img;
   });
 
-  const W = 1080, PAD = 84;
+  const W = 1080, PAD = 84, R = 206;
   const INK = '#14161A', INK2 = '#3E434B', FAINT = '#A6ABB2', HAIR = '#E5E7E8', LINE = '#D2D6D9', TEAL = '#0F4C47';
   const labels = set?.labels || [], max = set?.max || 10, vals = c.stats || {};
-  const fields = (c.fields || []).slice(0, 8);
+  const fields = (c.fields || []).filter(f => !f.hide).slice(0, 9);   // '이미지 제외' 항목은 빼요
   const hasRadar = labels.length >= 3;
-
   const photoH = photo ? 700 : 0;
-  const fieldsH = fields.length ? fields.length * 56 + 30 : 0;
-  const radarH = hasRadar ? 640 : 0;
-  const H = 128 + (photo ? photoH + 52 : 16) + 116 + (c.subtitle ? 42 : 0) + fieldsH + radarH + 116;
+
+  /* 자리부터 계산해요 — 이름/부제 → 사진 → 프로필 → 굵은 선 → 그래프 */
+  let ly = 100;
+  const nameY = ly + 78;
+  ly = nameY;
+  const subY = c.subtitle ? ly + 44 : 0;
+  if (c.subtitle) ly = subY;
+  const photoTop = ly + 46;
+  ly = photoTop + (photo ? photoH + 46 : 0);
+  const fieldsTop = ly + (fields.length ? 10 : 0);
+  let fy = fieldsTop;
+  fields.forEach(() => fy += 56);
+  let ruleY = 0, cy = 0, bottom = fy;
+  if (hasRadar) { ruleY = fy + 30; cy = ruleY + 98 + R; bottom = cy + R + 80; }
+  const H = Math.round(bottom + 128);
 
   const cv = document.createElement('canvas');
   cv.width = W; cv.height = H;
   const x = cv.getContext('2d');
 
-  // 바탕 — 흰 종이에 아주 옅은 결
+  // 바탕
   x.fillStyle = '#FFFFFF'; x.fillRect(0, 0, W, H);
   const warm = x.createLinearGradient(0, 0, 0, H);
   warm.addColorStop(0, 'rgba(251,250,247,0)'); warm.addColorStop(1, 'rgba(247,246,242,.9)');
   x.fillStyle = warm; x.fillRect(0, 0, W, H);
-
-  // 판면 테두리 + 모서리 각인
   x.strokeStyle = HAIR; x.lineWidth = 1.5;
   x.strokeRect(30.5, 30.5, W - 61, H - 61);
   x.strokeStyle = TEAL; x.lineWidth = 1.5;
@@ -2623,64 +3089,56 @@ async function exportCard(c, set) {
     x.beginPath(); x.moveTo(px + sx * T, py); x.lineTo(px, py); x.lineTo(px, py + sy * T); x.stroke();
   });
 
-  let y = 100;
+  // 머리말
   x.font = '500 19px "IBM Plex Mono", monospace';
   x.fillStyle = FAINT; x.textAlign = 'left';
-  x.fillText('C H A R A C T E R   S H E E T', PAD, y);
+  x.fillText('C H A R A C T E R   S H E E T', PAD, 100);
   x.textAlign = 'right'; x.fillStyle = INK2;
-  x.fillText(fit(x, profile.nickname, 420), W - PAD, y);
-  x.textAlign = 'left';
-  y += 44;
+  x.fillText(fit(x, profile.nickname, 400), W - PAD, 100);
 
-  if (photo) {
-    x.save();
-    x.beginPath(); x.rect(PAD, y, W - PAD * 2, photoH); x.clip();
-    coverDraw(x, photo, PAD, y, W - PAD * 2, photoH);
-    x.restore();
-    x.strokeStyle = 'rgba(20,22,26,.14)'; x.lineWidth = 1;
-    x.strokeRect(PAD + .5, y + .5, W - PAD * 2 - 1, photoH - 1);
-    y += photoH + 52;
-  } else y += 16;
-
-  // 이름 · 부제 — 오른쪽 맞춤
-  x.textAlign = 'right';
+  // 이름 · 부제 (오른쪽 맞춤, 사진 위)
   x.fillStyle = INK;
   x.font = '300 66px "Noto Serif KR", serif';
-  x.fillText(fit(x, c.name || '이름 없음', W - PAD * 2), W - PAD, y + 46);
-  y += 84;
+  x.fillText(fit(x, c.name || '이름 없음', W - PAD * 2), W - PAD, nameY);
   if (c.subtitle) {
     x.font = '400 22px "IBM Plex Mono", monospace';
     x.fillStyle = TEAL;
-    x.fillText(fit(x, c.subtitle, W - PAD * 2), W - PAD, y + 14);
-    y += 42;
+    x.fillText(fit(x, c.subtitle, W - PAD * 2), W - PAD, subY);
   }
   x.textAlign = 'left';
-  y += 30;
 
-  // 프로필 — 가는 괘선으로 나눈 표
-  if (fields.length) {
-    x.strokeStyle = LINE; x.lineWidth = 1;
-    x.beginPath(); x.moveTo(PAD, y + .5); x.lineTo(W - PAD, y + .5); x.stroke();
-    y += 30;
-    fields.forEach((f, i) => {
-      x.font = '400 19px "IBM Plex Mono", monospace';
-      x.fillStyle = FAINT;
-      x.fillText(fit(x, f.k, 200), PAD, y + 20);
-      x.font = '400 25px "Pretendard Variable", Pretendard, sans-serif';
-      x.fillStyle = INK2;
-      x.fillText(fit(x, f.v, W - PAD * 2 - 240), PAD + 240, y + 21);
-      if (i < fields.length - 1) {
-        x.strokeStyle = HAIR;
-        x.beginPath(); x.moveTo(PAD, y + 38.5); x.lineTo(W - PAD, y + 38.5); x.stroke();
-      }
-      y += 56;
-    });
+  // 사진
+  if (photo) {
+    x.save();
+    x.beginPath(); x.rect(PAD, photoTop, W - PAD * 2, photoH); x.clip();
+    coverDraw(x, photo, PAD, photoTop, W - PAD * 2, photoH);
+    x.restore();
+    x.strokeStyle = 'rgba(20,22,26,.14)'; x.lineWidth = 1;
+    x.strokeRect(PAD + .5, photoTop + .5, W - PAD * 2 - 1, photoH - 1);
   }
 
-  // 방사형 그래프 — 점선 눈금의 도판
+  // 프로필
+  let y = fieldsTop;
+  fields.forEach((f, i) => {
+    x.font = '400 19px "IBM Plex Mono", monospace';
+    x.fillStyle = FAINT;
+    x.fillText(fit(x, f.k, 200), PAD, y + 20);
+    x.font = '400 25px "Pretendard Variable", Pretendard, sans-serif';
+    x.fillStyle = INK2;
+    x.fillText(fit(x, f.v, W - PAD * 2 - 240), PAD + 240, y + 21);
+    if (i < fields.length - 1) {
+      x.strokeStyle = HAIR; x.lineWidth = 1;
+      x.beginPath(); x.moveTo(PAD, y + 38.5); x.lineTo(W - PAD, y + 38.5); x.stroke();
+    }
+    y += 56;
+  });
+
+  // 프로필과 그래프를 가르는 굵은 선
   if (hasRadar) {
-    const cx = W / 2, cy = y + 300, R = 206;
-    x.save(); x.translate(cx, cy);
+    x.strokeStyle = LINE; x.lineWidth = 1.5;
+    x.beginPath(); x.moveTo(PAD, ruleY + .5); x.lineTo(W - PAD, ruleY + .5); x.stroke();
+
+    x.save(); x.translate(W / 2, cy);
     const g = radarGeom(labels, vals, max, R);
     const path = k => { x.beginPath(); g.forEach((p, i) => {
       const px = Math.cos(p.a) * R * k, py = Math.sin(p.a) * R * k;
@@ -2698,12 +3156,12 @@ async function exportCard(c, set) {
     x.strokeStyle = TEAL; x.lineWidth = 2.4; x.lineJoin = 'round'; x.stroke();
     g.forEach(p => { x.beginPath(); x.arc(p.x, p.y, 5, 0, 7); x.fillStyle = TEAL; x.fill(); });
     g.forEach(p => {
-      const lx = Math.cos(p.a) * (R + 44), ly = Math.sin(p.a) * (R + 44);
+      const lx = Math.cos(p.a) * (R + 44), ly2 = Math.sin(p.a) * (R + 44);
       x.textAlign = Math.abs(lx) < 14 ? 'center' : (lx > 0 ? 'left' : 'right');
       x.font = '400 22px "Pretendard Variable", Pretendard, sans-serif';
-      x.fillStyle = INK2; x.fillText(p.label, lx, ly);
+      x.fillStyle = INK2; x.fillText(p.label, lx, ly2);
       x.font = '500 20px "IBM Plex Mono", monospace';
-      x.fillStyle = TEAL; x.fillText(String(p.value), lx, ly + 27);
+      x.fillStyle = TEAL; x.fillText(String(p.value), lx, ly2 + 27);
     });
     x.restore();
     x.textAlign = 'left';
