@@ -343,6 +343,48 @@ details.setup-more[open] > summary::before{content:"− "}
 .loading{display:grid;place-items:center;padding:80px 0;color:var(--faint);
   font-family:var(--mono);font-size:11px;letter-spacing:.2em}
 
+
+/* ─────────────── 세부 묘사 ─────────────── */
+.detail-item{padding:18px 0;border-bottom:1px solid var(--hair)}
+.detail-item:first-child{padding-top:0}
+.detail-item:last-child{border-bottom:none;padding-bottom:0}
+.detail-item h3{font-family:var(--serif);font-weight:500;font-size:16.5px;margin-bottom:9px}
+.detail-item .txt{white-space:pre-wrap;font-size:14.5px;line-height:1.92;color:var(--ink-2)}
+.det-row{border:1px solid var(--hair);border-radius:var(--r);padding:13px;margin-bottom:10px;background:var(--warm)}
+.det-row .det-top{display:grid;grid-template-columns:minmax(0,1fr) 30px;gap:8px;margin-bottom:8px}
+
+/* ─────────────── 발췌 도구 ─────────────── */
+.ex-tools{display:grid;gap:11px;margin-bottom:18px}
+.ex-search{display:flex;align-items:center;gap:9px;background:var(--warm);
+  border:1px solid var(--hair);border-radius:var(--r);padding:7px 13px}
+.ex-search input{flex:1;background:none;border:none;outline:none;font-size:13.5px}
+.ex-search input::placeholder{color:var(--faint)}
+.chipbar.folders{margin:0}
+
+/* ─────────────── 읽기 도구막대 ─────────────── */
+.sheet-tools{
+  position:sticky;top:0;z-index:3;max-width:632px;margin:0 auto 14px;
+  display:flex;flex-wrap:wrap;gap:7px;align-items:center;justify-content:flex-start;
+  background:rgba(255,255,255,.95);backdrop-filter:blur(10px);
+  border:1px solid var(--hair);border-radius:var(--r);padding:8px 10px;box-shadow:var(--lift);
+}
+.tool-group{display:flex;align-items:center;gap:3px}
+.tool-group + .tool-group{padding-left:9px;border-left:1px solid var(--hair)}
+.tool-group.right{margin-left:auto;padding-left:9px;border-left:1px solid var(--hair)}
+.tool{width:29px;height:27px;border-radius:var(--r);border:1px solid transparent;
+  color:var(--muted);font-size:12px;display:grid;place-items:center;line-height:1}
+.tool:hover{background:rgba(20,22,26,.05);color:var(--ink)}
+.tool-val{font-family:var(--mono);font-size:10.5px;color:var(--ink-2);min-width:30px;text-align:center}
+.tool-label{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;color:var(--faint);margin-right:3px}
+.swatch{width:19px;height:19px;border-radius:50%;border:1px solid rgba(20,22,26,.16);transition:transform .12s}
+.swatch:hover{transform:scale(1.15)}
+.swatch.eraser{display:grid;place-items:center;background:#fff;font-size:9px;color:var(--muted)}
+.sheet-body mark{color:inherit;padding:.08em 0;border-radius:2px}
+.sheet-memo{margin-top:40px;padding-top:20px;border-top:1px dashed var(--line)}
+.sheet-memo .eyebrow{display:block;margin-bottom:9px}
+.sheet-memo .txt{margin:0;font-family:var(--ui);font-size:13.5px;color:var(--muted);
+  white-space:pre-wrap;line-height:1.85}
+
 /* ─────────────── 반응형 ─────────────── */
 @media (max-width:880px){
   .shell{padding:0 18px 110px}
@@ -358,6 +400,10 @@ details.setup-more[open] > summary::before{content:"− "}
   .panel{padding:22px 20px}
   .fab{right:18px;bottom:18px}
   .dl-row{grid-template-columns:96px minmax(0,1fr)}
+  .sheet-tools{gap:5px;padding:7px 8px}
+  .tool-group + .tool-group{padding-left:6px}
+  .tool-group.right{flex:1 0 100%;margin-left:0;justify-content:flex-end;
+    border-left:none;padding-left:0;padding-top:7px;margin-top:1px;border-top:1px solid var(--hair)}
 }
 @media (prefers-reduced-motion:reduce){
   *{animation-duration:.01ms !important;transition-duration:.01ms !important}
@@ -426,7 +472,7 @@ const HARDCODED_CONFIG = {
 /* 나만 쓰는 아카이브로 잠그려면, 로그인 후 계정 메뉴에 표시되는
    '내 계정 ID'를 여기에 붙여넣으세요. (예: OWNER_UID = "a1b2c3...")
    비워두면 로그인한 누구나 각자의 갤러리를 만들 수 있어요. */
-const OWNER_UID = null;
+const OWNER_UID = "6glDgQNFt4aQgq8SNOHn2g8r81n1";
 
 const CFG_KEY = 'chararchive.config';
 const SDK_VERSIONS = ['10.13.2', '10.12.2', '9.23.0'];
@@ -444,7 +490,19 @@ const state = {
   fullImg: null,
   q: '',
   sort: 'recent',        // recent | old | name
+  exQ: '',               // 발췌 검색어
+  exFolder: null,        // null = 전체 폴더
 };
+
+/* 읽기 설정은 기기별로 기억해요 */
+const READ_KEY = 'chararchive.read';
+let readPrefs = { size: 16.5, lh: 2.1 };
+try { readPrefs = { ...readPrefs, ...JSON.parse(localStorage.getItem(READ_KEY) || '{}') }; } catch {}
+const saveRead = () => { try { localStorage.setItem(READ_KEY, JSON.stringify(readPrefs)); } catch {} };
+
+/* 채도를 낮춘 형광펜 */
+const HL = { y: '#F6EFC9', p: '#F4E0E3', g: '#DEEAE0', b: '#DDE4EF', v: '#E7E1EE' };
+const HL_NAME = { y: '노랑', p: '분홍', g: '초록', b: '파랑', v: '보라' };
 
 /* ─────────── 유틸 ─────────── */
 const $ = (s, r = document) => r.querySelector(s);
@@ -959,6 +1017,7 @@ async function openCharacter(id) {
   const c = state.chars.find(x => x.id === id);
   if (!c) return renderGallery();
   state.view = 'character'; state.current = c; state.fullImg = null; state.excerpts = [];
+  state.exQ = ''; state.exFolder = null;
   window.scrollTo(0, 0);
   renderCharacter();
   const [full] = await Promise.all([loadFullImage(c.imageId), loadExcerpts(id)]);
@@ -971,6 +1030,7 @@ function renderCharacter() {
   const set = state.statSets.find(s => s.id === c.statSetId) || state.statSets[0];
   const labels = set?.labels || [], max = set?.max || 10, vals = c.stats || {};
   const img = state.fullImg || c.thumb;
+  const details = c.details || [];
 
   $('#view').innerHTML = `
     <div class="back-row">
@@ -984,14 +1044,14 @@ function renderCharacter() {
       <div>
         <div class="portrait">
           ${img ? `<img src="${img}" alt="${esc(c.name)}">`
-                : `<div class="ph" style="display:flex"><svg width="52" height="52" viewBox="0 0 32 32"><polygon points="16,4 27,11 23,26 9,26 5,11" fill="none" stroke="#A6ABB2" stroke-width="1"/></svg><span>이미지 없음</span></div>`}
+                : `<div class="ph"><svg width="52" height="52" viewBox="0 0 32 32"><polygon points="16,4 27,11 23,26 9,26 5,11" fill="none" stroke="#A6ABB2" stroke-width="1"/></svg></div>`}
         </div>
         <div class="name-block">
           <h1>${esc(c.name || '이름 없음')}</h1>
           ${c.subtitle ? `<div class="sub">${esc(c.subtitle)}</div>` : ''}
         </div>
         ${(c.tags || []).length ? `<div class="tags">${c.tags.map(t => `<span class="tag">#${esc(t)}</span>`).join('')}</div>` : ''}
-        <div style="display:flex;gap:8px;margin-top:18px;flex-wrap:wrap">
+        <div style="display:flex;gap:8px;margin-top:20px;flex-wrap:wrap">
           <button class="btn btn-key btn-sm" id="export-card">카드 이미지 저장</button>
           <button class="btn btn-sm btn-danger" id="del-char">삭제</button>
         </div>
@@ -1005,6 +1065,17 @@ function renderCharacter() {
           ${(c.fields || []).length
             ? `<dl class="dl">${c.fields.map(f => `<div class="dl-row"><dt>${esc(f.k)}</dt><dd>${esc(f.v)}</dd></div>`).join('')}</dl>`
             : `<p class="hint" style="margin:0">프로필 수정에서 키·값 항목을 자유롭게 추가할 수 있어요. (예: 나이 / 소속 / 말투)</p>`}
+        </section>
+
+        <section class="panel">
+          <div class="panel-head"><h2>세부 묘사</h2><div class="spacer"></div>
+            <span class="eyebrow">${details.length ? details.length + '편' : '카드 이미지에 미포함'}</span></div>
+          ${details.length
+            ? details.map(d => `<article class="detail-item">
+                <h3>${esc(d.t || '제목 없음')}</h3>
+                <div class="txt">${esc(d.v)}</div></article>`).join('')
+            : `<p class="hint" style="margin:0">외모, 습관, 과거처럼 길게 풀어 쓸 이야기를 제목과 함께 적어두는 칸이에요.
+                프로필 수정에서 추가할 수 있고, 카드 이미지에는 들어가지 않아요.</p>`}
         </section>
 
         <section class="panel">
@@ -1032,7 +1103,15 @@ function renderCharacter() {
 
         <section class="panel">
           <div class="panel-head"><h2>소설 발췌</h2><div class="spacer"></div>
+            <button class="btn btn-sm btn-ghost" id="manage-folders">폴더 관리</button>
             <button class="btn btn-sm btn-key" id="add-excerpt">＋ 발췌 추가</button></div>
+          <div class="ex-tools">
+            <div class="ex-search">
+              <span style="color:var(--faint)">⌕</span>
+              <input id="ex-q" placeholder="제목 · 본문 · 메모 · 세부 사항에서 찾기" value="${esc(state.exQ)}">
+            </div>
+            <div class="chipbar folders" id="folder-chips">${folderChipsHTML()}</div>
+          </div>
           <div class="excerpt-list" id="excerpt-list">${excerptListHTML()}</div>
         </section>
       </div>
@@ -1044,6 +1123,7 @@ function renderCharacter() {
   $('#export-card').onclick = () => exportCard(c, set);
   $('#manage-sets').onclick = openStatSets;
   $('#add-excerpt').onclick = () => openExcerptEditor(null);
+  $('#manage-folders').onclick = openFolders;
   $('#pin').onclick = async () => {
     c.pinned = !c.pinned;
     await F.updateDoc(ref('characters', c.id), { pinned: c.pinned });
@@ -1056,7 +1136,7 @@ function renderCharacter() {
     renderCharacter();
   };
   bindStatSliders(labels, max);
-  bindExcerpts();
+  bindExcerptTools();
 }
 
 let statTimer = null;
@@ -1097,6 +1177,7 @@ function openCharEditor(c) {
     name: c?.name || '', subtitle: c?.subtitle || '',
     tags: (c?.tags || []).join(' '),
     fields: (c?.fields || []).map(f => ({ ...f })),
+    details: (c?.details || []).map(d => ({ ...d })),
     statSetId: c?.statSetId || state.statSets[0]?.id || '',
     thumb: c?.thumb || null, imageId: c?.imageId || null,
     newFull: null, removedImg: false,
@@ -1130,10 +1211,35 @@ function openCharEditor(c) {
         <div id="kv-wrap"></div>
         <button class="btn btn-sm btn-ghost" id="add-kv" style="margin-top:4px">＋ 항목 추가</button>
         <p class="hint">왼쪽은 항목 이름(나이, 키, 성격…), 오른쪽은 내용이에요. 내용은 줄바꿈 없이 한 칸에 들어가요.</p>
+      </div>
+      <div class="field"><span>세부 묘사</span>
+        <div id="det-wrap"></div>
+        <button class="btn btn-sm btn-ghost" id="add-det" style="margin-top:4px">＋ 묘사 추가</button>
+        <p class="hint">제목을 달아 길게 풀어 쓰는 칸이에요. 줄바꿈이 그대로 유지되고, 카드 이미지에는 포함되지 않아요.</p>
       </div>`,
     foot: `<button class="btn btn-ghost" id="cancel">취소</button>
            <button class="btn btn-key" id="save">${isNew ? '만들기' : '저장'}</button>`,
   });
+
+  const detWrap = m.querySelector('#det-wrap');
+  function drawDet() {
+    detWrap.innerHTML = draft.details.map((d, i) => `
+      <div class="det-row">
+        <div class="det-top">
+          <input class="input" data-dt="${i}" value="${esc(d.t)}" placeholder="소제목 (예: 외모 · 말버릇 · 과거)" maxlength="40">
+          <button class="icon-btn" data-drm="${i}" title="이 묘사 지우기">✕</button>
+        </div>
+        <textarea class="textarea" data-dv="${i}" style="min-height:110px;font-size:14px"
+          placeholder="길게 풀어 써도 괜찮아요.">${esc(d.v)}</textarea>
+      </div>`).join('');
+    detWrap.querySelectorAll('[data-dt]').forEach(el => el.oninput = ev => draft.details[+el.dataset.dt].t = ev.target.value);
+    detWrap.querySelectorAll('[data-dv]').forEach(el => el.oninput = ev => draft.details[+el.dataset.dv].v = ev.target.value);
+    detWrap.querySelectorAll('[data-drm]').forEach(el => el.onclick = () => {
+      draft.details.splice(+el.dataset.drm, 1); drawDet();
+    });
+  }
+  drawDet();
+  m.querySelector('#add-det').onclick = () => { draft.details.push({ t: '', v: '' }); drawDet(); };
 
   const kvWrap = m.querySelector('#kv-wrap');
   function drawKV() {
@@ -1184,6 +1290,7 @@ function openCharEditor(c) {
         subtitle: m.querySelector('#f-sub').value.trim(),
         tags: m.querySelector('#f-tags').value.trim().split(/\s+/).filter(Boolean).slice(0, 20),
         fields: draft.fields.filter(f => f.k.trim() || f.v.trim()).map(f => ({ k: f.k.trim(), v: f.v.trim() })),
+        details: draft.details.filter(d => d.t.trim() || d.v.trim()).map(d => ({ t: d.t.trim(), v: d.v.replace(/\s+$/, '') })),
         statSetId: m.querySelector('#f-set').value,
         thumb: draft.thumb || null,
         updatedAt: now,
@@ -1216,18 +1323,66 @@ function openCharEditor(c) {
   };
 }
 
-/* ════════ 발췌 ════════ */
+/* ════════ 발췌 · 폴더 ════════ */
+const folders = () => state.current?.folders || [];
+const folderName = id => folders().find(f => f.id === id)?.name || '';
+
+function folderChipsHTML() {
+  const counts = {};
+  state.excerpts.forEach(e => { const k = e.folderId || ''; counts[k] = (counts[k] || 0) + 1; });
+  const chips = [`<button class="chip" data-folder="__all" aria-pressed="${state.exFolder === null}">전체 ${state.excerpts.length}</button>`];
+  folders().forEach(f => chips.push(
+    `<button class="chip" data-folder="${f.id}" aria-pressed="${state.exFolder === f.id}">${esc(f.name)} ${counts[f.id] || 0}</button>`));
+  if (counts['']) chips.push(
+    `<button class="chip" data-folder="" aria-pressed="${state.exFolder === ''}">미분류 ${counts['']}</button>`);
+  return chips.join('');
+}
+
+function visibleExcerpts() {
+  let l = state.excerpts;
+  if (state.exFolder !== null) l = l.filter(e => (e.folderId || '') === state.exFolder);
+  const q = state.exQ.trim().toLowerCase();
+  if (q) l = l.filter(e => [e.title, e.body, e.memo, e.d1, e.d2, e.source]
+    .some(t => (t || '').toLowerCase().includes(q)));
+  return l;
+}
+
 function excerptListHTML() {
   if (!state.excerpts.length)
     return `<p class="hint" style="margin:0">아직 발췌가 없어요. 이 캐릭터가 나오는 장면을 옮겨두면 여기에 쌓여요.</p>`;
-  return state.excerpts.map(e => `<button class="excerpt-item" data-ex="${e.id}">
+  const l = visibleExcerpts();
+  if (!l.length) return `<p class="hint" style="margin:0">조건에 맞는 발췌가 없어요.</p>`;
+  return l.map(e => {
+    const meta = [folderName(e.folderId), e.d1 || e.source, e.d2].filter(Boolean).map(esc).join(' · ');
+    return `<button class="excerpt-item" data-ex="${e.id}">
       <h3>${esc(e.title || '제목 없음')}</h3>
       <p>${esc((e.body || '').slice(0, 140))}</p>
-      <div class="meta">${fmtDate(e.createdAt)} · ${(e.body || '').length}자${e.source ? ' · ' + esc(e.source) : ''}</div>
-    </button>`).join('');
+      ${meta ? `<div class="meta">${meta}</div>` : ''}
+    </button>`;
+  }).join('');
 }
+
 function bindExcerpts() {
   $$('[data-ex]').forEach(b => b.onclick = () => openSheet(b.dataset.ex));
+}
+function bindExcerptTools() {
+  const q = $('#ex-q');
+  if (q) q.oninput = e => { state.exQ = e.target.value; redrawExcerpts(false); };
+  $$('[data-folder]').forEach(b => b.onclick = () => {
+    const v = b.dataset.folder;
+    state.exFolder = v === '__all' ? null : v;
+    redrawExcerpts();
+  });
+  bindExcerpts();
+}
+function redrawExcerpts(chips = true) {
+  const list = $('#excerpt-list');
+  if (list) list.innerHTML = excerptListHTML();
+  if (chips) {
+    const c = $('#folder-chips');
+    if (c) c.innerHTML = folderChipsHTML();
+  }
+  bindExcerptTools();
 }
 async function refreshExcerpts() {
   const c = state.current;
@@ -1235,10 +1390,52 @@ async function refreshExcerpts() {
   const n = state.excerpts.length;
   c.excerptCount = n;
   await F.updateDoc(ref('characters', c.id), { excerptCount: n }).catch(() => {});
-  const list = $('#excerpt-list');
-  if (list) { list.innerHTML = excerptListHTML(); bindExcerpts(); }
+  redrawExcerpts();
+}
+async function saveFolders(list) {
+  state.current.folders = list;
+  await F.updateDoc(ref('characters', state.current.id), { folders: list, updatedAt: Date.now() });
 }
 
+/* 폴더 관리 */
+function openFolders() {
+  let draft = folders().map(f => ({ ...f }));
+  const m = openModal({
+    title: '발췌 폴더',
+    body: `<p class="hint" style="margin:0 0 16px">장면을 묶어둘 폴더예요. 폴더를 지워도 발췌는 남고 미분류로 옮겨져요.</p>
+      <div id="fd-wrap"></div>
+      <button class="btn btn-sm btn-ghost" id="add-folder">＋ 폴더 추가</button>`,
+    foot: `<button class="btn btn-ghost" id="fd-cancel">취소</button>
+           <button class="btn btn-key" id="fd-save">저장</button>`,
+  });
+  function draw() {
+    m.querySelector('#fd-wrap').innerHTML = draft.map((f, i) => `
+      <div class="stat-edit-row">
+        <input class="input" data-fn="${i}" value="${esc(f.name)}" placeholder="폴더 이름" maxlength="20">
+        <button class="icon-btn" data-frm="${i}" title="폴더 지우기">✕</button>
+      </div>`).join('') || `<p class="hint" style="margin:0 0 10px">아직 폴더가 없어요.</p>`;
+    m.querySelectorAll('[data-fn]').forEach(el => el.oninput = e => draft[+el.dataset.fn].name = e.target.value);
+    m.querySelectorAll('[data-frm]').forEach(el => el.onclick = () => { draft.splice(+el.dataset.frm, 1); draw(); });
+  }
+  draw();
+  m.querySelector('#add-folder').onclick = () => { draft.push({ id: uidgen(), name: '' }); draw(); };
+  m.querySelector('#fd-cancel').onclick = closeModal;
+  m.querySelector('#fd-save').onclick = async () => {
+    const list = draft.filter(f => f.name.trim()).map(f => ({ id: f.id, name: f.name.trim() }));
+    const gone = folders().filter(f => !list.some(x => x.id === f.id)).map(f => f.id);
+    try {
+      await saveFolders(list);
+      for (const e of state.excerpts.filter(e => gone.includes(e.folderId))) {
+        e.folderId = '';
+        await F.updateDoc(ref('characters', state.current.id, 'excerpts', e.id), { folderId: '' });
+      }
+      if (state.exFolder && gone.includes(state.exFolder)) state.exFolder = null;
+      closeModal(); redrawExcerpts(); toast('폴더를 저장했어요');
+    } catch (err) { toast('저장하지 못했어요: ' + (err.code || err.message), 1); }
+  };
+}
+
+/* 발췌 편집 */
 function openExcerptEditor(ex) {
   const m = openModal({
     title: ex ? '발췌 수정' : '발췌 추가',
@@ -1246,27 +1443,64 @@ function openExcerptEditor(ex) {
     body: `
       <label class="field"><span>제목</span>
         <input class="input" id="e-title" value="${esc(ex?.title || '')}" placeholder="장면 이름 (예: 3장 · 다리 위에서)" maxlength="80"></label>
-      <label class="field"><span>출처</span>
-        <input class="input" id="e-src" value="${esc(ex?.source || '')}" placeholder="작품명 · 화수 (선택)" maxlength="60"></label>
+      <label class="field"><span>폴더</span>
+        <select class="select" id="e-folder">
+          <option value="">미분류</option>
+          ${folders().map(f => `<option value="${f.id}" ${f.id === ex?.folderId ? 'selected' : ''}>${esc(f.name)}</option>`).join('')}
+          <option value="__new">＋ 새 폴더 만들기</option>
+        </select>
+        <input class="input hidden" id="e-newfolder" placeholder="새 폴더 이름" maxlength="20" style="margin-top:8px"></label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <label class="field"><span>세부 사항 1</span>
+          <input class="input" id="e-d1" value="${esc(ex?.d1 ?? ex?.source ?? '')}" placeholder="예: 2권 · 7화" maxlength="40"></label>
+        <label class="field"><span>세부 사항 2</span>
+          <input class="input" id="e-d2" value="${esc(ex?.d2 || '')}" placeholder="예: 아이린 시점" maxlength="40"></label>
+      </div>
+      <p class="hint" style="margin:-8px 0 16px">목록과 읽기 화면에 이 두 가지가 표시돼요. 비워두면 표시되지 않아요.</p>
       <label class="field"><span>본문</span>
         <textarea class="textarea serif" id="e-body" style="min-height:260px;font-size:15.5px;line-height:1.95"
           placeholder="여기에 발췌한 줄글을 붙여넣어요.">${esc(ex?.body || '')}</textarea>
-        <p class="hint">줄바꿈은 그대로 유지돼요.</p></label>`,
+        <p class="hint">줄바꿈은 그대로 유지돼요. 본문을 고치면 칠해둔 형광펜 위치가 어긋날 수 있어요.</p></label>
+      <label class="field"><span>메모</span>
+        <textarea class="textarea" id="e-memo" style="min-height:90px;font-size:14px"
+          placeholder="이 장면에 대한 생각, 고칠 점 같은 걸 적어두세요.">${esc(ex?.memo || '')}</textarea>
+        <p class="hint">읽기 화면 아래에만 보이고, 이미지로 저장할 때는 빠져요.</p></label>`,
     foot: `<button class="btn btn-ghost" id="cancel">취소</button>
            <button class="btn btn-key" id="save">${ex ? '저장' : '추가'}</button>`,
   });
+
+  const sel = m.querySelector('#e-folder'), nf = m.querySelector('#e-newfolder');
+  sel.onchange = () => {
+    nf.classList.toggle('hidden', sel.value !== '__new');
+    if (sel.value === '__new') nf.focus();
+  };
   m.querySelector('#cancel').onclick = closeModal;
   m.querySelector('#save').onclick = async () => {
     const body = m.querySelector('#e-body').value;
     if (!body.trim()) return toast('본문을 입력해 주세요', 1);
     const btn = m.querySelector('#save'); btn.disabled = true; btn.textContent = '저장하는 중…';
     const now = Date.now();
-    const data = {
-      title: m.querySelector('#e-title').value.trim() || '제목 없음',
-      source: m.querySelector('#e-src').value.trim(),
-      body, updatedAt: now, createdAt: ex?.createdAt || now,
-    };
     try {
+      let folderId = sel.value;
+      if (folderId === '__new') {
+        const name = nf.value.trim();
+        if (!name) { btn.disabled = false; btn.textContent = ex ? '저장' : '추가'; return toast('새 폴더 이름을 적어주세요', 1); }
+        const same = folders().find(f => f.name === name);   // 같은 이름이면 기존 폴더를 써요
+        if (same) folderId = same.id;
+        else {
+          folderId = uidgen();
+          await saveFolders([...folders(), { id: folderId, name }]);
+        }
+      }
+      const data = {
+        title: m.querySelector('#e-title').value.trim() || '제목 없음',
+        d1: m.querySelector('#e-d1').value.trim(),
+        d2: m.querySelector('#e-d2').value.trim(),
+        memo: m.querySelector('#e-memo').value,
+        folderId, body,
+        highlights: ex?.body === body ? (ex?.highlights || []) : [],
+        updatedAt: now, createdAt: ex?.createdAt || now,
+      };
       await F.setDoc(ref('characters', state.current.id, 'excerpts', ex?.id || uidgen()), data);
       closeModal(); closeSheet();
       await refreshExcerpts();
@@ -1278,22 +1512,115 @@ function openExcerptEditor(ex) {
   };
 }
 
+/* ── 형광펜 ── */
+function bodyHTML(e) {
+  const text = e.body || '';
+  const hs = (e.highlights || []).slice().sort((a, b) => a.s - b.s);
+  let out = '', pos = 0;
+  for (const h of hs) {
+    const s = Math.max(pos, Math.min(text.length, h.s));
+    const en = Math.max(s, Math.min(text.length, h.e));
+    if (en <= s) continue;
+    out += esc(text.slice(pos, s));
+    out += `<mark style="background:${HL[h.c] || HL.y}">${esc(text.slice(s, en))}</mark>`;
+    pos = en;
+  }
+  return out + esc(text.slice(pos));
+}
+
+function selOffsets(container) {
+  const sel = window.getSelection();
+  if (!sel || !sel.rangeCount || sel.isCollapsed) return null;
+  const r = sel.getRangeAt(0);
+  if (!container.contains(r.commonAncestorContainer)) return null;
+  const pre = r.cloneRange();
+  pre.selectNodeContents(container);
+  pre.setEnd(r.startContainer, r.startOffset);
+  const s = pre.toString().length;
+  const len = r.toString().length;
+  return len ? { s, e: s + len } : null;
+}
+
+async function applyHighlight(e, color, bodyEl) {
+  const sel = selOffsets(bodyEl);
+  if (!sel) return toast(color ? '칠할 부분을 먼저 드래그해 주세요' : '지울 부분을 먼저 드래그해 주세요');
+  const kept = [];
+  for (const h of (e.highlights || [])) {
+    if (h.e <= sel.s || h.s >= sel.e) { kept.push(h); continue; }
+    if (h.s < sel.s) kept.push({ s: h.s, e: sel.s, c: h.c });
+    if (h.e > sel.e) kept.push({ s: sel.e, e: h.e, c: h.c });
+  }
+  if (color) kept.push({ s: sel.s, e: sel.e, c: color });
+  kept.sort((a, b) => a.s - b.s);
+  e.highlights = kept;
+  bodyEl.innerHTML = bodyHTML(e);
+  window.getSelection()?.removeAllRanges();
+  try {
+    await F.updateDoc(ref('characters', state.current.id, 'excerpts', e.id), { highlights: kept });
+  } catch (err) { toast('형광펜을 저장하지 못했어요', 1); }
+}
+
+/* ── 읽기 화면 ── */
 function openSheet(id) {
   const e = state.excerpts.find(x => x.id === id); if (!e) return;
+  const meta = [state.current.name, folderName(e.folderId), e.d1 || e.source, e.d2].filter(Boolean).map(esc).join(' · ');
   const wrap = document.createElement('div');
   wrap.className = 'sheet-scrim';
   wrap.innerHTML = `
     <div class="sheet-tools">
-      <button class="btn btn-sm" data-edit>수정</button>
-      <button class="btn btn-sm btn-danger" data-del>삭제</button>
-      <button class="btn btn-sm" data-close>✕ 닫기</button>
+      <div class="tool-group">
+        <span class="tool-label">글씨</span>
+        <button class="tool" data-size="-1" title="글씨 작게">−</button>
+        <span class="tool-val" id="t-size">${readPrefs.size}</span>
+        <button class="tool" data-size="1" title="글씨 크게">＋</button>
+      </div>
+      <div class="tool-group">
+        <span class="tool-label">줄간격</span>
+        <button class="tool" data-lh="-1" title="줄간격 좁게">−</button>
+        <span class="tool-val" id="t-lh">${readPrefs.lh.toFixed(1)}</span>
+        <button class="tool" data-lh="1" title="줄간격 넓게">＋</button>
+      </div>
+      <div class="tool-group">
+        <span class="tool-label">형광펜</span>
+        ${Object.keys(HL).map(k => `<button class="swatch" data-hl="${k}" title="${HL_NAME[k]}으로 칠하기" style="background:${HL[k]}"></button>`).join('')}
+        <button class="swatch eraser" data-hl="" title="형광펜 지우기">✕</button>
+      </div>
+      <div class="tool-group right">
+        <button class="btn btn-sm" data-img>이미지</button>
+        <button class="btn btn-sm" data-edit>수정</button>
+        <button class="btn btn-sm btn-danger" data-del>삭제</button>
+        <button class="btn btn-sm" data-close>닫기</button>
+      </div>
     </div>
     <article class="sheet">
       <h1>${esc(e.title || '제목 없음')}</h1>
-      <div class="sheet-meta">${esc(state.current.name)}${e.source ? ' · ' + esc(e.source) : ''} · ${fmtDate(e.createdAt)} · ${(e.body || '').length}자</div>
-      <div class="sheet-body">${esc(e.body)}</div>
+      ${meta ? `<div class="sheet-meta">${meta}</div>` : '<div class="sheet-meta"></div>'}
+      <div class="sheet-body" id="sheet-body"
+        style="font-size:${readPrefs.size}px;line-height:${readPrefs.lh}">${bodyHTML(e)}</div>
+      ${e.memo ? `<div class="sheet-memo"><span class="eyebrow">메모 · 이미지에는 포함되지 않아요</span>
+        <div class="txt">${esc(e.memo)}</div></div>` : ''}
     </article>`;
+
   wrap.addEventListener('click', ev => { if (ev.target === wrap) closeSheet(); });
+  const bodyEl = wrap.querySelector('#sheet-body');
+
+  wrap.querySelectorAll('[data-size]').forEach(b => b.onclick = () => {
+    readPrefs.size = Math.max(12, Math.min(30, +(readPrefs.size + Number(b.dataset.size) * 0.5).toFixed(1)));
+    bodyEl.style.fontSize = readPrefs.size + 'px';
+    wrap.querySelector('#t-size').textContent = readPrefs.size;
+    saveRead();
+  });
+  wrap.querySelectorAll('[data-lh]').forEach(b => b.onclick = () => {
+    readPrefs.lh = Math.max(1.4, Math.min(3, +(readPrefs.lh + Number(b.dataset.lh) * 0.1).toFixed(1)));
+    bodyEl.style.lineHeight = readPrefs.lh;
+    wrap.querySelector('#t-lh').textContent = readPrefs.lh.toFixed(1);
+    saveRead();
+  });
+  wrap.querySelectorAll('[data-hl]').forEach(b => {
+    b.addEventListener('mousedown', ev => ev.preventDefault());
+    b.onclick = () => applyHighlight(e, b.dataset.hl || null, bodyEl);
+  });
+  wrap.querySelector('[data-img]').onclick = () => exportExcerpt(e);
   wrap.querySelector('[data-close]').onclick = closeSheet;
   wrap.querySelector('[data-edit]').onclick = () => openExcerptEditor(e);
   wrap.querySelector('[data-del]').onclick = async () => {
@@ -1307,6 +1634,127 @@ function openSheet(id) {
 function closeSheet() {
   $('#sheet-root').innerHTML = '';
   if (!$('#modal-root').children.length) document.body.style.overflow = '';
+}
+
+/* ── 발췌를 이미지로 ── */
+function wrapLines(x, text, maxW) {
+  const out = [];
+  let idx = 0;
+  for (const para of String(text || '').split('\n')) {
+    if (para === '') out.push({ t: '', o: idx });
+    else {
+      let start = idx, line = '';
+      for (let i = 0; i < para.length; i++) {
+        const ch = para[i];
+        if (line && x.measureText(line + ch).width > maxW) {
+          out.push({ t: line, o: start });
+          start += line.length;
+          line = ch;
+        } else line += ch;
+      }
+      out.push({ t: line, o: start });
+    }
+    idx += para.length + 1;
+  }
+  return out;
+}
+
+async function exportExcerpt(e) {
+  toast('이미지를 그리는 중…');
+  try { await document.fonts.ready; } catch {}
+  const W = 1000, PAD = 88, FS = 27;
+  const LH = Math.round(FS * readPrefs.lh);
+  const INK = '#14161A', INK2 = '#26292F', FAINT = '#A6ABB2', HAIR = '#E5E7E8', LINE = '#D2D6D9', TEAL = '#0F4C47';
+
+  const probe = document.createElement('canvas').getContext('2d');
+  probe.font = `400 ${FS}px "Noto Serif KR", serif`;
+  let lines = wrapLines(probe, e.body || '', W - PAD * 2);
+  const maxLines = Math.floor((28000 - PAD - 351) / LH) + 1;
+  const cut = lines.length > maxLines;
+  if (cut) lines = lines.slice(0, maxLines);
+
+  const H = Math.max(520, PAD + 351 + (lines.length - 1) * LH + (cut ? 40 : 0));
+  const cv = document.createElement('canvas');
+  cv.width = W; cv.height = H;
+  const x = cv.getContext('2d');
+
+  x.fillStyle = '#FBFAF7'; x.fillRect(0, 0, W, H);
+  x.strokeStyle = HAIR; x.lineWidth = 1.5;
+  x.strokeRect(30.5, 30.5, W - 61, H - 61);
+  x.strokeStyle = TEAL; x.lineWidth = 1.5;
+  const T = 24, o = 30.5;
+  [[o, o, 1, 1], [W - o, o, -1, 1], [o, H - o, 1, -1], [W - o, H - o, -1, -1]].forEach(([px, py, sx, sy]) => {
+    x.beginPath(); x.moveTo(px + sx * T, py); x.lineTo(px, py); x.lineTo(px, py + sy * T); x.stroke();
+  });
+
+  let y = PAD + 46;
+  x.textAlign = 'left';
+  x.font = '400 42px "Noto Serif KR", serif';
+  x.fillStyle = INK;
+  x.fillText(fit(x, e.title || '제목 없음', W - PAD * 2), PAD, y);
+  y += 46;
+  const meta = [state.current.name, folderName(e.folderId), e.d1 || e.source, e.d2].filter(Boolean).join('   ·   ');
+  x.font = '400 19px "IBM Plex Mono", monospace';
+  x.fillStyle = FAINT;
+  x.fillText(fit(x, meta, W - PAD * 2), PAD, y);
+  y += 34;
+  x.strokeStyle = LINE; x.lineWidth = 1;
+  x.beginPath(); x.moveTo(PAD, y + .5); x.lineTo(W - PAD, y + .5); x.stroke();
+  y += 62;
+
+  x.font = `400 ${FS}px "Noto Serif KR", serif`;
+  const hs = e.highlights || [];
+  for (const L of lines) {
+    for (const h of hs) {
+      const s = Math.max(h.s, L.o), en = Math.min(h.e, L.o + L.t.length);
+      if (en <= s) continue;
+      const x0 = x.measureText(L.t.slice(0, s - L.o)).width;
+      const w = x.measureText(L.t.slice(s - L.o, en - L.o)).width;
+      x.fillStyle = HL[h.c] || HL.y;
+      x.fillRect(PAD + x0, y - FS * 0.88, w, FS * 1.2);
+    }
+    x.fillStyle = INK2;
+    if (L.t) x.fillText(L.t, PAD, y);
+    y += LH;
+  }
+  if (cut) {
+    x.font = '400 19px "IBM Plex Mono", monospace';
+    x.fillStyle = FAINT;
+    x.fillText('… 본문이 길어 여기까지만 담았어요', PAD, y + 10);
+  }
+
+  x.strokeStyle = HAIR; x.lineWidth = 1;
+  x.beginPath(); x.moveTo(PAD, H - 96.5); x.lineTo(W - PAD, H - 96.5); x.stroke();
+  x.font = '400 18px "IBM Plex Mono", monospace';
+  x.fillStyle = FAINT;
+  x.fillText(fit(x, state.current.name, 420), PAD, H - 60);
+  x.textAlign = 'right';
+  x.fillText(fit(x, profile.nickname, 420), W - PAD, H - 60);
+
+  cv.toBlob(b => {
+    if (!b) return toast('이미지를 만들지 못했어요', 1);
+    showImageModal(b, `${(e.title || 'excerpt').replace(/[\\/:*?"<>|\s]/g, '')}_발췌.png`, e.title);
+  }, 'image/png');
+}
+
+/* 이미지 미리보기 + 저장 */
+function showImageModal(blob, name, label) {
+  const url = URL.createObjectURL(blob);
+  const m = openModal({
+    title: '이미지',
+    body: `<img src="${url}" alt="${esc(label || '')} 이미지" style="border:1px solid var(--hair);border-radius:var(--r);max-height:56vh;margin:0 auto;width:auto">
+           <p class="hint" style="text-align:center;margin-top:14px">
+             모바일에서는 이미지를 길게 눌러 사진첩에 저장할 수도 있어요.</p>`,
+    foot: `<button class="btn btn-ghost" id="img-close">닫기</button>
+           <button class="btn btn-key" id="img-dl">이미지 저장</button>`,
+  });
+  m.querySelector('#img-close').onclick = () => { closeModal(); URL.revokeObjectURL(url); };
+  m.querySelector('#img-dl').onclick = () => {
+    const a = document.createElement('a');
+    a.href = url; a.download = name; a.rel = 'noopener';
+    document.body.append(a); a.click(); a.remove();
+    toast('이미지를 저장했어요');
+  };
 }
 
 /* ════════ 스탯 세트 관리 ════════ */
@@ -1538,23 +1986,7 @@ async function exportCard(c, set) {
 
   cv.toBlob(b => {
     if (!b) return toast('이미지를 만들지 못했어요', 1);
-    const url = URL.createObjectURL(b);
-    const name = `${(c.name || 'character').replace(/[\\/:*?"<>|\s]/g, '')}_카드.png`;
-    const m = openModal({
-      title: '카드 이미지',
-      body: `<img src="${url}" alt="${esc(c.name)} 카드" style="border:1px solid var(--hair);border-radius:var(--r);max-height:56vh;margin:0 auto;width:auto">
-             <p class="hint" style="text-align:center;margin-top:14px">
-               모바일에서는 이미지를 길게 눌러 사진첩에 저장할 수도 있어요.</p>`,
-      foot: `<button class="btn btn-ghost" id="close4">닫기</button>
-             <button class="btn btn-key" id="dl">이미지 저장</button>`,
-    });
-    m.querySelector('#close4').onclick = () => { closeModal(); URL.revokeObjectURL(url); };
-    m.querySelector('#dl').onclick = () => {
-      const a = document.createElement('a');
-      a.href = url; a.download = name; a.rel = 'noopener';
-      document.body.append(a); a.click(); a.remove();
-      toast('카드 이미지를 저장했어요');
-    };
+    showImageModal(b, `${(c.name || 'character').replace(/[\\/:*?"<>|\s]/g, '')}_카드.png`, c.name);
   }, 'image/png');
 }
 
