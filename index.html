@@ -187,10 +187,10 @@ details.setup-more[open] > summary::before{content:"− "}
 .card:hover .card-img{box-shadow:var(--lift-2);border-color:var(--line)}
 .card-img img{width:100%;height:100%;object-fit:cover}
 .card-img .ph{position:absolute;inset:0;display:grid;place-items:center;opacity:.5}
-.card-body{padding:13px 2px 0}
+.card-body{padding:11px 2px 0}
 .card-body h3{font-family:var(--serif);font-size:16px;font-weight:500;letter-spacing:-.01em;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.card-body p{margin:7px 0 0;padding-top:7px;border-top:1px solid var(--hair);
+.card-body p{margin:5px 0 0;padding-top:5px;border-top:1px solid var(--hair);
   font-family:var(--mono);font-size:10.5px;color:var(--faint);letter-spacing:.07em;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .card-pin{
@@ -443,15 +443,18 @@ details.setup-more[open] > summary::before{content:"− "}
 /* 공지 댓글 */
 .cmt-count{font-family:var(--mono);font-size:10px;color:var(--teal);
   background:var(--teal-soft);border-radius:2px;padding:2px 7px;letter-spacing:.04em}
-.cmt-box{margin-top:14px;padding-top:14px;border-top:1px dashed var(--line)}
-.cmt-box > .eyebrow{display:block;margin-bottom:10px}
-.cmt{padding:9px 0;border-bottom:1px solid var(--hair)}
-.cmt-txt{font-size:13.5px;line-height:1.75;color:var(--ink-2);white-space:pre-wrap}
+.cmt-box{margin-top:18px;padding:14px 16px;background:#F2F3F4;
+  border:1px solid #E4E6E7;border-radius:var(--r);max-width:88%}
+.cmt-box > .eyebrow{display:block;margin-bottom:9px}
+.cmt{padding:8px 0;border-bottom:1px solid #E1E3E4}
+.cmt:last-of-type{border-bottom:none}
+.cmt-txt{font-size:12.5px;line-height:1.7;color:var(--ink-2);white-space:pre-wrap}
 .cmt-meta{display:flex;align-items:center;gap:10px;margin-top:5px}
 .cmt-meta .mono{font-family:var(--mono);font-size:10px;color:var(--faint);letter-spacing:.06em}
 .cmt-meta .linkish{margin-left:auto;font-size:10.5px}
 .cmt-add{display:flex;gap:8px;margin-top:12px}
-.cmt-add .input{flex:1;padding:7px 11px;font-size:13.5px}
+.cmt-add .input{flex:1;padding:6px 10px;font-size:12.5px;background:var(--paper)}
+.cmt-add .btn{padding:6px 12px;font-size:12px}
 
 /* ─────────────── 서식 ─────────────── */
 .preset-bar{display:flex;gap:7px;flex-wrap:wrap}
@@ -479,17 +482,22 @@ details.setup-more[open] > summary::before{content:"− "}
 /* 초상 · 그래프 좌우 이동 */
 .portrait-wrap{display:flex;align-items:center;gap:9px}
 .portrait-wrap .portrait{flex:1;min-width:0}
-.port-nav,.set-nav{
+.set-nav{
   border:1px solid var(--hair);border-radius:var(--r);background:var(--paper);
   display:grid;place-items:center;color:var(--muted);line-height:1;flex:none;
 }
-.port-nav{width:24px;height:56px;font-size:17px;padding-bottom:2px}
+.port-nav{
+  flex:none;width:22px;height:56px;display:grid;place-items:center;line-height:1;
+  border:none;background:none;color:var(--faint);font-size:24px;padding-bottom:4px;
+  transition:color .15s,transform .15s;
+}
+.port-nav:hover:not([disabled]){color:var(--teal);transform:scale(1.15)}
 .set-nav{position:absolute;top:50%;transform:translateY(-50%);
   width:22px;height:44px;font-size:15px;padding-bottom:2px;z-index:2}
 .set-nav.left{left:0}
 .set-nav.right{right:0}
-.port-nav:hover:not([disabled]),.set-nav:hover{border-color:var(--teal);color:var(--teal)}
-.port-nav[disabled]{opacity:.3;cursor:default}
+.set-nav:hover{border-color:var(--teal);color:var(--teal)}
+.port-nav[disabled]{opacity:.22;cursor:default}
 
 /* 관계 */
 .rel-list{display:grid;gap:10px}
@@ -594,6 +602,7 @@ details.setup-more[open] > summary::before{content:"− "}
   .fab{right:18px;bottom:18px}
   .dl-row{grid-template-columns:96px minmax(0,1fr)}
   .kv-row{grid-template-columns:88px minmax(0,1fr) 20px 26px 26px;gap:6px}
+  .cmt-box{max-width:100%;padding:12px 13px}
   .rel-row{grid-template-columns:minmax(0,1fr) 30px}
   .rel-row .select{grid-column:1/-1}
   .sheet-tools{gap:5px;padding:7px 8px}
@@ -1344,12 +1353,14 @@ function bindComments(root, redraw) {
   });
 }
 
+const homeNotice = () => state.notices.find(n => n.home) || state.notices[0];
+
 function noticeHTML() {
-  const n = state.notices[0];
+  const n = homeNotice();
   if (!n) return `<div class="notice-add"><button class="linkish" id="add-notice">＋ 공지 추가</button></div>`;
   const cn = (n.comments || []).length;
   return `<section class="notice">
-    <div class="top"><span class="eyebrow">공지</span><div class="spacer"></div>
+    <div class="top"><span class="eyebrow">공지${n.home ? ' · 고정' : ''}</span><div class="spacer"></div>
       <button class="btn btn-sm btn-ghost" id="all-notices">전체 ${state.notices.length}</button></div>
     <button class="notice-title" id="notice-toggle" aria-expanded="${state.noticeOpen}">
       <span style="flex:1">${esc(n.title || '제목 없음')}</span>
@@ -1386,6 +1397,7 @@ function openNotices() {
       wrap.innerHTML = `<p class="hint" style="margin:0">아직 공지가 없어요.</p>`;
       return;
     }
+    const home = homeNotice();
     wrap.innerHTML = state.notices.map((n, i) => `
       <div class="notice-row">
         <button class="notice-title" data-open="${n.id}" aria-expanded="${open.has(n.id)}">
@@ -1393,8 +1405,10 @@ function openNotices() {
           ${(n.comments || []).length ? `<span class="cmt-count">댓글 ${n.comments.length}</span>` : ''}
           <span class="arrow">▾</span></button>
         <div class="row-meta">
-          <span class="mono">${fmtDate(n.createdAt)}${i === 0 ? ' · 홈에 표시 중' : ''}</span>
+          <span class="mono">${fmtDate(n.createdAt)}</span>
           <div class="spacer"></div>
+          <button class="btn btn-sm ${home?.id === n.id ? 'btn-key' : 'btn-ghost'}" data-home="${n.id}">
+            ${home?.id === n.id ? '홈에 표시 중' : '홈에 표시'}</button>
           <button class="btn btn-sm btn-ghost" data-edit="${n.id}">수정</button>
           <button class="btn btn-sm btn-ghost" data-del="${n.id}" style="color:var(--danger)">삭제</button>
         </div>
@@ -1405,6 +1419,22 @@ function openNotices() {
       const id = el.dataset.open;
       open.has(id) ? open.delete(id) : open.add(id);
       draw();
+    });
+    wrap.querySelectorAll('[data-home]').forEach(el => el.onclick = async () => {
+      const id = el.dataset.home;
+      const cur = homeNotice();
+      const next = cur?.id === id ? null : id;        // 다시 누르면 '가장 최근 공지'로 되돌아가요
+      try {
+        for (const n of state.notices) {
+          const want = n.id === next;
+          if (!!n.home !== want) {
+            await F.updateDoc(ref('notices', n.id), { home: want });
+            n.home = want;
+          }
+        }
+        draw(); renderGallery();
+        toast(next ? '홈에 이 공지를 띄워요' : '가장 최근 공지를 홈에 띄워요');
+      } catch (e) { toast('바꾸지 못했어요: ' + (e.code || e.message), 1); }
     });
     wrap.querySelectorAll('[data-edit]').forEach(el => el.onclick = () =>
       openNoticeEditor(state.notices.find(x => x.id === el.dataset.edit)));
@@ -1651,6 +1681,7 @@ function openStatTools(tab = 'compare') {
   let setsPicked = curSet ? [curSet.id] : [];
   let rankSet = curSet?.id;
   let fieldPick = [];                       // 이미지에 함께 넣을 프로필 항목
+  let showPeers = true;                     // 표본(다른 캐릭터) 눈금 표시
 
   const fieldChipsHTML = () => {
     const fs = c.fields || [];
@@ -1752,11 +1783,12 @@ function openStatTools(tab = 'compare') {
   function drawRank() {
     const info = rankInfo(rankSet);
     $('#st-body').innerHTML = `
-      <p class="hint" style="margin:0 0 14px">초록 게이지는 <b>표본 평균</b>, 옅은 눈금은 다른 캐릭터들,
-        진한 눈금이 <b>이 캐릭터</b>예요.</p>
+      <p class="hint" style="margin:0 0 14px">초록 게이지는 <b>표본 평균</b>, 진한 눈금이 <b>이 캐릭터</b>예요.
+        옅은 눈금(다른 캐릭터들)은 <b>표본 눈금</b> 버튼으로 끄고 켤 수 있고, 이미지에도 그대로 반영돼요.</p>
       <div class="set-bar">
         <select class="select" id="rank-set">${state.statSets.map(x =>
           `<option value="${x.id}" ${x.id === rankSet ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select>
+        <button class="btn btn-sm" id="peer-toggle" aria-pressed="${showPeers}">표본 눈금</button>
       </div>
       ${fieldChipsHTML()}
       ${info.outside ? `<p class="hint" style="color:var(--danger);margin:0 0 12px">
@@ -1770,13 +1802,14 @@ function openStatTools(tab = 'compare') {
           <span class="bar-label">${esc(r.label)}</span>
           <span class="bar-track">
             <span class="bar-fill avg" style="width:${Math.min(100, r.avg / info.max * 100)}%"></span>
-            ${r.vals.map(v => `<span class="peer-tick" style="left:${Math.min(100, v / info.max * 100)}%"></span>`).join('')}
+            ${showPeers ? r.vals.map(v => `<span class="peer-tick" style="left:${Math.min(100, v / info.max * 100)}%"></span>`).join('') : ''}
             <span class="me-tick" style="left:${Math.min(100, r.v / info.max * 100)}%"></span>
           </span>
           <span class="bar-val">${r.v}</span>
           <span class="bar-rank">${r.rank}/${r.n}위</span>
         </div>`).join('')}`;
     $('#rank-set').onchange = e => { rankSet = e.target.value; drawRank(); };
+    $('#peer-toggle').onclick = () => { showPeers = !showPeers; drawRank(); };
     bindFieldChips(drawRank);
   }
 
@@ -1801,7 +1834,7 @@ function openStatTools(tab = 'compare') {
       if (!chosen.length) return toast('세트를 하나 이상 골라 주세요', 1);
       exportSets(c, chosen, pickedFields());
     } else {
-      exportRank(c, rankInfo(rankSet), pickedFields());
+      exportRank(c, rankInfo(rankSet), pickedFields(), showPeers);
     }
   };
 }
@@ -1881,7 +1914,7 @@ async function exportSets(c, sets, fields = []) {
 }
 
 /* 세트 안에서의 위치 */
-async function exportRank(c, info, fields = []) {
+async function exportRank(c, info, fields = [], showPeers = true) {
   toast('이미지를 그리는 중…');
   try { await document.fonts.ready; } catch {}
   const W = 1080, PAD = 84;
@@ -1934,7 +1967,7 @@ async function exportRank(c, info, fields = []) {
     if (aw > 0) { x.fillStyle = 'rgba(15,76,71,.30)'; roundRect(x, trackL, y - 8, Math.max(aw, 16), 16, 8); x.fill(); }
 
     // 표본 눈금 (익명)
-    r.vals.forEach(v => {
+    if (showPeers) r.vals.forEach(v => {
       const px = trackL + Math.max(0, Math.min(1, v / info.max)) * trackW;
       x.fillStyle = 'rgba(110,118,128,.6)';
       x.fillRect(px - 1, y - 13, 2, 26);
@@ -1958,7 +1991,8 @@ async function exportRank(c, info, fields = []) {
   });
 
   plateFooter(x, W, H, PAD,
-    `MAX ${info.max} · 초록 = 평균 · 진한 눈금 = ${c.name || '이 캐릭터'}`, fmtDate(Date.now()));
+    `MAX ${info.max} · 초록 = 평균 · 진한 눈금 = ${c.name || '이 캐릭터'}${showPeers ? ' · 옅은 눈금 = 표본' : ''}`,
+    fmtDate(Date.now()));
   cv.toBlob(b => {
     if (!b) return toast('이미지를 만들지 못했어요', 1);
     showImageModal(b, `${(c.name || 'character').replace(/[\\/:*?"<>|\s]/g, '')}_순위.png`, c.name);
