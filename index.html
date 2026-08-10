@@ -220,19 +220,27 @@ details.setup-more[open] > summary::before{content:"− "}
 .back-row{display:flex;align-items:center;gap:8px;padding:26px 0 22px}
 .detail{display:grid;gap:38px;grid-template-columns:minmax(0,318px) minmax(0,1fr);align-items:start}
 .portrait{
-  border-radius:0;overflow:hidden;background:var(--paper);
-  border:1px solid var(--hair);border-top:2px solid var(--teal);border-bottom:2px solid var(--teal);
+  border-radius:var(--r);overflow:hidden;border:1px solid var(--hair);background:var(--paper);
   aspect-ratio:3/4;position:relative;box-shadow:var(--lift);
 }
 .portrait img{width:100%;height:100%;object-fit:cover}
 /* 중요도 — 사진 폭에 맞춘 표제 줄 */
 .port-col{flex:1;min-width:0;display:flex;flex-direction:column}
 .portrait-wrap .port-col{max-width:none}
-.rank-line{display:flex;align-items:baseline;justify-content:space-between;gap:14px;padding:0 1px 9px}
+.rank-line{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:0 1px 10px}
 .rank-key{font-family:var(--mono);font-size:8.5px;letter-spacing:.34em;color:var(--faint)}
-.rank-val{font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.26em;color:var(--teal)}
-.rank-val em{font-style:normal;font-size:9px;letter-spacing:.12em;color:var(--faint);margin-right:9px}
+.rank-val{display:flex;align-items:center;gap:10px;
+  font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.26em;color:var(--teal)}
+.rank-gauge{display:flex;flex-direction:column-reverse;gap:2px}
+.rank-gauge i{display:block;width:10px;height:4px;border:1px solid var(--line);border-radius:1px}
+.rank-v3 .rank-gauge i:nth-child(-n+3),
+.rank-v2 .rank-gauge i:nth-child(-n+2){background:var(--teal);border-color:var(--teal)}
+.rank-v1 .rank-gauge i:nth-child(-n+1){background:var(--muted);border-color:var(--muted)}
 .rank-v1 .rank-val{color:var(--muted)}
+/* 사진 위아래 녹색 실선 — 사진과 사이를 띄워요 */
+.port-rule{height:2px;background:var(--teal);flex:none}
+.port-rule.top{margin-bottom:14px}
+.port-rule.bottom{margin-top:14px}
 .rank-seg{display:flex;flex-wrap:wrap;gap:0}
 .rank-seg .seg{flex:1;min-width:0}
 .rank-seg .seg button{flex:1;font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;padding:7px 4px}
@@ -2254,9 +2262,7 @@ async function exportSets(c, sets, fields = [], onBack) {
   const flines = layoutFields(probe, fields, W - PAD * 2);
   const H = 128 + 74 + flines.length * 34 + sets.length * 92 + rows * 56 + 72;
 
-  const cv = document.createElement('canvas');
-  cv.width = W; cv.height = H;
-  const x = cv.getContext('2d');
+  const { cv, x } = makePlate(W, H);
   paperPlate(x, W, H);
 
   let y = 100;
@@ -2327,9 +2333,7 @@ async function exportRank(c, info, fields = [], showPeers = true, onBack) {
   const flines = layoutFields(probe, fields, W - PAD * 2);
   const H = 128 + 176 + flines.length * 34 + info.rows.length * 70 + 84;
 
-  const cv = document.createElement('canvas');
-  cv.width = W; cv.height = H;
-  const x = cv.getContext('2d');
+  const { cv, x } = makePlate(W, H);
   paperPlate(x, W, H);
 
   let y = 100;
@@ -2450,6 +2454,18 @@ function drawFieldLines(x, lines, left, y, lineH, faint, ink, sep = '#C3C8CB') {
 }
 
 /* 공통 판면 */
+/* 저장용 판 — 화면 좌표는 그대로 두고 픽셀만 배로 늘려 글씨를 또렷하게 */
+function makePlate(W, H) {
+  const area = W * H;
+  const S = H > 6200 || area > 7.2e6 ? 1.5 : 2;      // 아주 긴 판면은 배율을 낮춰요
+  const cv = document.createElement('canvas');
+  cv.width = Math.round(W * S); cv.height = Math.round(H * S);
+  const x = cv.getContext('2d');
+  x.scale(S, S);
+  x.textRendering = 'geometricPrecision';
+  return { cv, x };
+}
+
 function paperPlate(x, W, H) {
   x.fillStyle = '#FFFFFF'; x.fillRect(0, 0, W, H);
   const warm = x.createLinearGradient(0, 0, 0, H);
@@ -2488,9 +2504,7 @@ async function exportCompare(set, labels, max, series, onBack) {
   const fieldsH = fieldBlocks.length ? 6 + fieldBlocks.reduce((n, l) => n + l.length * 32 + 10, 0) : 0;
   const H = 128 + 78 + (R * 2 + 130) + legendH + tableH + fieldsH + 34;
 
-  const cv = document.createElement('canvas');
-  cv.width = W; cv.height = H;
-  const x = cv.getContext('2d');
+  const { cv, x } = makePlate(W, H);
 
   x.fillStyle = '#FFFFFF'; x.fillRect(0, 0, W, H);
   const warm = x.createLinearGradient(0, 0, 0, H);
@@ -2683,12 +2697,14 @@ function renderCharacter() {
           <div class="port-col${c.rank ? ` rank-v${c.rank}` : ''}">
           ${c.rank ? `<div class="rank-line">
             <span class="rank-key">IMPORTANCE</span>
-            <span class="rank-val"><em>${c.rank}/3</em>${rankName(c.rank)}</span>
+            <span class="rank-val"><span class="rank-gauge"><i></i><i></i><i></i></span>${rankName(c.rank)}</span>
           </div>` : ''}
+          <div class="port-rule top"></div>
           <div class="portrait">
             ${img ? `<img src="${img}" alt="${esc(c.name)}">`
                   : `<div class="ph"><svg width="52" height="52" viewBox="0 0 32 32"><polygon points="16,4 27,11 23,26 9,26 5,11" fill="none" stroke="#A6ABB2" stroke-width="1"/></svg></div>`}
           </div>
+          <div class="port-rule bottom"></div>
           </div>
           <button class="port-nav right" id="char-next" title="${nextChar ? esc(nextChar.name || '') : ''}"
             ${nextChar ? '' : 'disabled'}>›</button>
@@ -4081,9 +4097,7 @@ async function exportExcerpt(e) {
   }
   const memoH = showMemo ? LH + 90 - MLH + memoLines.length * MLH : 0;   // 본문 마지막 줄 아래 여백까지 포함
   const H = Math.max(520, PAD + 351 + (lines.length - 1) * LH + (cut ? 40 : 0) + memoH);
-  const cv = document.createElement('canvas');
-  cv.width = W; cv.height = H;
-  const x = cv.getContext('2d');
+  const { cv, x } = makePlate(W, H);
 
   x.fillStyle = '#FBFAF7'; x.fillRect(0, 0, W, H);
   x.strokeStyle = HAIR; x.lineWidth = 1.5;
@@ -4318,9 +4332,7 @@ async function exportCard(c, set) {
   if (hasRadar) { ruleY = fy + 12; cy = ruleY + 116 + R; bottom = cy + R + 80; }
   const H = Math.round(bottom + 128);
 
-  const cv = document.createElement('canvas');
-  cv.width = W; cv.height = H;
-  const x = cv.getContext('2d');
+  const { cv, x } = makePlate(W, H);
 
   // 바탕
   x.fillStyle = '#FFFFFF'; x.fillRect(0, 0, W, H);
@@ -4361,13 +4373,13 @@ async function exportCard(c, set) {
     coverDraw(x, photo, PAD, photoTop, pw, photoH);
 
     // 오른쪽에서 스며드는 어둠
-    const shade = x.createLinearGradient(pr, 0, pr - 470, 0);
+    const shade = x.createLinearGradient(pr, 0, pr - 410, 0);
     shade.addColorStop(0, 'rgba(6,8,10,.82)');
     shade.addColorStop(.3, 'rgba(6,8,10,.46)');
     shade.addColorStop(.62, 'rgba(6,8,10,.18)');
     shade.addColorStop(.85, 'rgba(6,8,10,.05)');
     shade.addColorStop(1, 'rgba(6,8,10,0)');
-    x.fillStyle = shade; x.fillRect(pr - 470, photoTop, 470, photoH);
+    x.fillStyle = shade; x.fillRect(pr - 410, photoTop, 410, photoH);
 
     // 아래에서 올라오는 어둠
     const pb = photoTop + photoH;
@@ -4381,7 +4393,7 @@ async function exportCard(c, set) {
     // 어둠 위에 얹는 선 — 세로 둘, 그와 엇갈리는 가로 하나
     x.fillStyle = 'rgba(24,88,79,.97)';
     x.fillRect(pr - 44, photoTop, 3.5, photoH);
-    x.fillRect(PAD, pb - 44, pw, 3.5);
+    x.fillRect(PAD, pb - 34, pw, 3);
     x.fillStyle = 'rgba(24,88,79,.62)';
     x.fillRect(pr - 56, photoTop, 3, photoH);
     x.restore();
@@ -4931,9 +4943,7 @@ async function exportMemoCard(c, opts = {}, onBack) {
   const args = { c, photo, W, PAD, cfg: MC_SOLO, sets, showStats: !!opts.stats, labels: opts.labels };
   const H = Math.round(renderPlate(probe, { ...args, top, draw: false }) + 134);
 
-  const cv = document.createElement('canvas');
-  cv.width = W; cv.height = H;
-  const x = cv.getContext('2d');
+  const { cv, x } = makePlate(W, H);
   paperPlate(x, W, H);
   mcHead(x, W, PAD, headY, spread('MEMO CARD'), profile.nickname);
   renderPlate(x, { ...args, top, draw: true });
@@ -4975,9 +4985,7 @@ async function exportMemoCompare(chars, tag, opts = {}, onBack) {
   });
   const H = Math.round(y + 134);
 
-  const cv = document.createElement('canvas');
-  cv.width = W; cv.height = H;
-  const x = cv.getContext('2d');
+  const { cv, x } = makePlate(W, H);
   paperPlate(x, W, H);
   const shared = (chars[0]?.tags || []).filter(t => chars.every(p => (p.tags || []).includes(t)));
   const headTags = (shared.length ? shared : [tag].filter(Boolean)).slice(0, 5).map(t => '#' + t).join('   ');
