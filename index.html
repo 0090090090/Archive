@@ -190,20 +190,18 @@ details.setup-more[open] > summary::before{content:"− "}
 .card-body{padding:11px 2px 0}
 .card-body h3{font-family:var(--serif);font-size:16px;font-weight:500;letter-spacing:-.01em;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.card-body p{margin:5px 0 0;padding-top:5px;border-top:1px solid var(--hair);
+.card-line{display:flex;align-items:baseline;gap:9px;margin-top:3px;padding-bottom:6px;
+  border-bottom:1px solid var(--hair)}
+.card-line p{margin:0;flex:1;min-width:0;
   font-family:var(--mono);font-size:10.5px;color:var(--faint);letter-spacing:.07em;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.card-ex{flex:none;padding-left:9px;border-left:1px solid var(--hair);
+  font-family:var(--mono);font-size:9px;letter-spacing:.08em;color:var(--teal)}
 .card-pin{
   position:absolute;top:10px;right:10px;width:22px;height:22px;border-radius:var(--r);
   background:rgba(255,255,255,.92);display:grid;place-items:center;font-size:10px;color:var(--teal);
   box-shadow:0 1px 3px rgba(20,22,26,.12);
 }
-.card-count{
-  position:absolute;left:10px;bottom:10px;padding:3px 8px;border-radius:var(--r);
-  background:rgba(255,255,255,.92);font-family:var(--mono);font-size:10px;
-  color:var(--ink-2);letter-spacing:.06em;box-shadow:0 1px 3px rgba(20,22,26,.12);
-}
-
 .empty{border:1px solid var(--hair);background:var(--paper);border-radius:var(--r);
   padding:64px 26px;text-align:center;box-shadow:var(--lift)}
 .empty svg{margin:0 auto 20px;opacity:.75}
@@ -347,6 +345,7 @@ details.setup-more[open] > summary::before{content:"− "}
 .img-toggle[aria-pressed="true"]{color:var(--faint)}
 .kv-row .input{padding:8px 11px;font-size:13.5px}
 .stat-edit-row{display:grid;grid-template-columns:minmax(0,1fr) 30px;gap:8px;margin-bottom:8px}
+#s-labels .stat-edit-row{grid-template-columns:minmax(0,1fr) 22px 30px}
 
 /* ─────────────── 토스트 ─────────────── */
 .toasts{position:fixed;left:50%;bottom:30px;transform:translateX(-50%);z-index:90;
@@ -1768,11 +1767,13 @@ function cardHTML(c) {
       ${c.thumb ? `<img src="${c.thumb}" alt="" loading="lazy">`
                 : `<div class="ph"><svg width="46" height="46" viewBox="0 0 32 32"><polygon points="16,4 27,11 23,26 9,26 5,11" fill="none" stroke="#A6ABB2" stroke-width="1"/></svg></div>`}
       ${c.pinned ? '<span class="card-pin">★</span>' : ''}
-      ${c.excerptCount ? `<span class="card-count">발췌 ${c.excerptCount}</span>` : ''}
     </div>
     <div class="card-body">
       <h3>${esc(c.name || '이름 없음')}</h3>
-      <p>${esc(c.subtitle || fmtDate(c.createdAt))}</p>
+      <div class="card-line">
+        <p>${esc(c.subtitle || fmtDate(c.createdAt))}</p>
+        ${c.excerptCount ? `<span class="card-ex">발췌 ${c.excerptCount}</span>` : ''}
+      </div>
     </div>
   </button>`;
 }
@@ -4124,10 +4125,15 @@ function openStatSets(selectedId) {
         <div id="s-labels">${draft.labels.map((l, i) => `
           <div class="stat-edit-row">
             <input class="input" data-l="${i}" value="${esc(l)}" placeholder="항목 이름" maxlength="12">
+            <span class="ord">
+              <button data-lup="${i}" title="위로" ${i === 0 ? 'disabled' : ''}>▲</button>
+              <button data-ldn="${i}" title="아래로" ${i === draft.labels.length - 1 ? 'disabled' : ''}>▼</button>
+            </span>
             <button class="icon-btn" data-lrm="${i}" title="지우기">✕</button>
           </div>`).join('')}</div>
         <button class="btn btn-sm btn-ghost" id="add-label">＋ 항목 추가</button>
-        <p class="hint">3개 이상이면 방사형 그래프가 그려져요. 5~8개가 보기 좋아요.</p>
+        <p class="hint">3개 이상이면 방사형 그래프가 그려져요. 5~8개가 보기 좋아요.
+          ▲▼로 순서를 바꾸면 그래프와 표에도 그 차례로 나와요.</p>
       </div>
       ${draft.id ? `<div style="display:flex;gap:8px;border-top:1px solid var(--hair);padding-top:14px">
         <button class="btn btn-sm btn-ghost" id="dup-set">복제해서 새 세트로</button>
@@ -4141,6 +4147,8 @@ function openStatSets(selectedId) {
       if (!draft.labels.length) draft.labels.push('');
       drawForm();
     });
+    m.querySelectorAll('[data-lup]').forEach(el => el.onclick = () => { move(draft.labels, +el.dataset.lup, -1); drawForm(); });
+    m.querySelectorAll('[data-ldn]').forEach(el => el.onclick = () => { move(draft.labels, +el.dataset.ldn, 1); drawForm(); });
     m.querySelector('#add-label').onclick = () => { draft.labels.push(''); drawForm(); };
     m.querySelector('#dup-set')?.addEventListener('click', () => {
       draft = { name: draft.name + ' 사본', max: draft.max, labels: [...draft.labels] };
@@ -4304,27 +4312,29 @@ async function exportCard(c, set) {
     x.fillStyle = halo;
     x.fillRect(0, ruleY + 1, W, Math.min(cy + R * 2.05, H - 92.5) - ruleY - 1);
 
-    // 양옆 여백 — 최대값과 최소값을 좌우에 나눠 세워요
+    // 양옆 여백 — 평균은 왼쪽 위, 총합은 오른쪽 아래
     const nums = labels.map(l => Number(vals[l] || 0));
-    const sideMark = (cap, val, ax, align) => {
+    const sum = nums.reduce((n, v) => n + v, 0);
+    const avg = Math.round((sum / nums.length) * 10) / 10;
+    const sideMark = (cap, val, note, ax, capY, align) => {
       const bw = 118;
       const x1 = align === 'left' ? ax : ax - bw;
       x.textAlign = align;
       x.font = '500 15px "IBM Plex Mono", monospace';
       x.fillStyle = FAINT;
-      x.fillText(cap.split('').join(' '), ax, cy - 36);
+      x.fillText(cap.split('').join(' '), ax, capY);
       x.strokeStyle = LINE; x.lineWidth = 1;
-      x.beginPath(); x.moveTo(x1, cy - 20.5); x.lineTo(x1 + bw, cy - 20.5); x.stroke();
+      x.beginPath(); x.moveTo(x1, capY + 15.5); x.lineTo(x1 + bw, capY + 15.5); x.stroke();
       x.font = '300 46px "Noto Serif KR", serif';
       x.fillStyle = TEAL;
-      x.fillText(String(val), ax, cy + 24);
+      x.fillText(String(val), ax, capY + 60);
       x.font = '400 14px "IBM Plex Mono", monospace';
       x.fillStyle = FAINT;
-      x.fillText(`/ ${max}`, ax, cy + 50);
+      x.fillText(note, ax, capY + 86);
       x.textAlign = 'left';
     };
-    sideMark('MAX', Math.max(...nums), PAD, 'left');
-    sideMark('MIN', Math.min(...nums), W - PAD, 'right');
+    sideMark('AVERAGE', avg, `/ ${max}`, PAD, cy - R + 14, 'left');
+    sideMark('TOTAL', sum, `/ ${max * nums.length}`, W - PAD, cy + R - 100, 'right');
 
     x.save(); x.translate(W / 2, cy);
     const path = k => { x.beginPath(); g.forEach((p, i) => {
@@ -4569,9 +4579,16 @@ function renderPlate(x, o) {
   const runRight = () => {
     let ry = bodyTop;
     if (!solo) {
+      const badge = [
+        ...((c.tags || []).filter(Boolean).slice(0, 1).map(t => '#' + t)),
+        String((index || 0) + 1).padStart(2, '0'),
+      ].join('   ');
+      x.font = fMono(500, 15);
+      const bw = x.measureText(badge).width;
       const nameFont = fSerif(300, cfg.nameSize);
-      const lines = mcWrapLines(x, c.name || '이름 없음', nameFont, rw, 2);
+      const lines = mcWrapLines(x, c.name || '이름 없음', nameFont, rw - bw - 28, 2);
       let base = bodyTop + Math.round(cfg.nameSize * 0.82);
+      txt(badge, W - PAD, bodyTop + 20, fMono(500, 15), MC_FAINT, 'right');
       lines.forEach((ln, i) => txt(ln, rx, base + i * cfg.nameLH, nameFont, MC_INK));
       base += (lines.length - 1) * cfg.nameLH;
       if (c.subtitle) {
@@ -4625,36 +4642,35 @@ function renderPlate(x, o) {
 
   let y = bodyTop + blockH;
 
-  /* 번호와 태그 — 비교판에서만, 칸 높이에 영향을 주지 않는 자리에 */
-  const marker = solo ? '' : [
-    ...((c.tags || []).filter(Boolean).slice(0, 3).map(t => '#' + t)),
-    String((index || 0) + 1).padStart(2, '0'),
-  ].join('   ');
-  const markerW = () => { x.font = fMono(500, 15); return x.measureText(marker).width; };
-
   /* 두 칸을 한 줄로 닫아요 — 길이가 달라도 바닥이 맞아 보이게 */
   if (solo || !memos.length) {
     y += 26;
-    if (marker) txt(marker, W - PAD, y - 8, fMono(500, 15), MC_FAINT, 'right');
     rule(PAD, y + 0.5, W - PAD, MC_HAIR, 1);
   }
 
   /* ── 비교판의 메모 띠 — 라벨과 칩이 한 줄기로 이어져요 ── */
   if (!solo && memos.length) {
     y += 28;
-    const innerL = PAD + cfg.stripPadX, innerW = CW - cfg.stripPadX * 2;
-    const reserve = markerW() + 26;
+    const innerL = PAD + cfg.stripPadX, innerW = CW - cfg.stripPadX * 2 - 46;
 
     const wasPen = pen; pen = false;
-    const bottom = flowMemos(memos, innerL, y + cfg.stripPadY, innerW, { reserve });
+    const bottom = flowMemos(memos, innerL, y + cfg.stripPadY + 3, innerW);
     pen = wasPen;
-    const stripH = bottom - y + cfg.stripPadY;
+    const stripH = bottom - y + cfg.stripPadY + 3;
 
     box(PAD, y, CW, stripH, MC_WARM);
-    rule(PAD, y + 0.5, W - PAD, MC_HAIR, 1);
-    rule(PAD, y + stripH - 0.5, W - PAD, MC_HAIR, 1);
-    txt(marker, W - PAD - cfg.stripPadX, y + cfg.stripPadY + 18, fMono(500, 15), MC_FAINT, 'right');
-    flowMemos(memos, innerL, y + cfg.stripPadY, innerW, { reserve });
+    box(PAD, y, CW, 3, MC_TEAL);
+    box(PAD, y + stripH - 3, CW, 3, MC_TEAL);
+    if (pen) {                                   // 오른쪽 여백에 세로로 세운 표기
+      x.save();
+      x.translate(W - PAD - 42, y + cfg.stripPadY + 2);
+      x.rotate(Math.PI / 2);
+      x.font = fMono(500, 13);
+      x.fillStyle = MC_TEAL; x.textAlign = 'left';
+      x.fillText(spread('MEMO'), 0, 0);
+      x.restore();
+    }
+    flowMemos(memos, innerL, y + cfg.stripPadY + 3, innerW);
     y += stripH;
   }
 
@@ -4677,12 +4693,16 @@ function renderPlate(x, o) {
       x.font = fSerif(500, cfg.setSize);
       const nm = fit(x, st.name, CW - 220);
       const nw = txt(nm, PAD, nameBase, fSerif(500, cfg.setSize), MC_INK);
-      txt(`${si + 1}.`, PAD + nw + 12, nameBase - cfg.setSize * 0.3, fMono(500, 14), MC_TEAL);
+      txt(`${si + 1}.`, PAD + nw + 14, nameBase, fMono(500, 15), MC_TEAL);
       txt(`MAX ${st.max || 10}`, W - PAD, nameBase - 1, fMono(400, cfg.pillSize), MC_FAINT, 'right');
       y = nameBase + cfg.pillPad;
 
       if (!flat) {
-        const hi = labels[vals.indexOf(mx)], lo = labels[vals.indexOf(mn)];
+        const tied = t => {
+          const ns = labels.filter((l, i) => vals[i] === t);
+          return ns.length > 3 ? ns.slice(0, 3).join(' · ') + ' 외' : ns.join(' · ');
+        };
+        const hi = tied(mx), lo = tied(mn);
         const w1 = pill(`최고 — ${hi} ${mx}`, PAD, y, fSans(500, cfg.pillSize + 1),
                         MC_TEAL, MC_TEAL, 'rgba(15,76,71,.06)');
         pill(`최저 — ${lo} ${mn}`, PAD + w1 + 10, y, fSans(400, cfg.pillSize + 1),
