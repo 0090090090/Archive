@@ -2463,7 +2463,7 @@ async function exportCompare(set, labels, max, series, onBack) {
   const probe = document.createElement('canvas').getContext('2d');
   const fieldBlocks = series.map(sr => layoutFields(probe, sr.fields || [], W - PAD * 2, 2))
     .filter(l => l.length);
-  const fieldsH = fieldBlocks.length ? 34 + fieldBlocks.reduce((n, l) => n + l.length * 32 + 6, 0) + 8 : 0;
+  const fieldsH = fieldBlocks.length ? 30 + fieldBlocks.reduce((n, l) => n + l.length * 32 + 20, 0) + 16 : 0;
   const H = 128 + 78 + (R * 2 + 130) + legendH + tableH + fieldsH + 60;
 
   const cv = document.createElement('canvas');
@@ -2585,15 +2585,15 @@ async function exportCompare(set, labels, max, series, onBack) {
       if (!lines.length) return;
       const col = CMP_COLORS[series.indexOf(sr) % CMP_COLORS.length];
       const bx = PAD - 22, bw = W - (PAD - 22) * 2;
-      const bh = lines.length * 32 + 20, top = y - 26;
+      const bh = lines.length * 32 + 20, top = y;
       const wash = x.createLinearGradient(bx, 0, bx + bw, 0);   // 오른쪽으로 갈수록 옅어져요
       wash.addColorStop(0, col + '18');
       wash.addColorStop(.55, col + '0C');
       wash.addColorStop(1, col + '05');
       x.fillStyle = wash; x.fillRect(bx, top, bw, bh);
       x.fillStyle = col; x.fillRect(bx, top, 3, bh);          // 왼쪽 색 세로선
-      drawFieldLines(x, lines, PAD, y, 32, col, INK2, col + '3A');
-      y = top + bh + 12;
+      drawFieldLines(x, lines, PAD, top + 32, 32, col, INK2, col + '3A');
+      y = top + bh;
     });
   }
 
@@ -4330,9 +4330,9 @@ async function exportCard(c, set) {
 
     // 어둠 위에 얹는 세로선 — 위아래 끝까지 같은 굵기로
     x.fillStyle = 'rgba(24,88,79,.97)';
-    x.fillRect(pr - 44, photoTop, 2.5, photoH);
-    x.fillStyle = 'rgba(24,88,79,.6)';
-    x.fillRect(pr - 54, photoTop, 1, photoH);
+    x.fillRect(pr - 44, photoTop, 4, photoH);
+    x.fillStyle = 'rgba(24,88,79,.62)';
+    x.fillRect(pr - 56, photoTop, 2, photoH);
     x.restore();
 
     x.strokeStyle = 'rgba(20,22,26,.14)'; x.lineWidth = 1;
@@ -4394,8 +4394,8 @@ async function exportCard(c, set) {
       x.fillText(note, ax, capY + 86);
       x.textAlign = 'left';
     };
-    sideMark('AVERAGE', avg, `/ ${max}`, PAD, cy - R - 97, 'left');
-    sideMark('TOTAL', sum, `/ ${max * nums.length}`, W - PAD, cy + R + 18, 'right');
+    sideMark('AVERAGE', avg, `/ ${max}`, PAD, cy - R + 11, 'left');
+    sideMark('TOTAL', sum, `/ ${max * nums.length}`, W - PAD, cy + R - 90, 'right');
 
     x.save(); x.translate(W / 2, cy);
     const path = k => { x.beginPath(); g.forEach((p, i) => {
@@ -4620,9 +4620,9 @@ function renderPlate(x, o) {
     const nameFont = fSerif(300, cfg.nameSize);
     let subW = 0, subT = '';
     if (c.subtitle) {
-      subT = '— ' + c.subtitle;
+      subT = c.subtitle;
       x.font = fMono(400, cfg.subSize);
-      subW = Math.min(x.measureText(subT).width, CW * 0.44) + 46;
+      subW = Math.min(x.measureText(subT).width, CW * 0.44) + 64;
     }
     const lines = mcWrapLines(x, c.name || '이름 없음', nameFont, CW - subW, 2);
     let base = o.top + Math.round(cfg.nameSize * 0.8);
@@ -4630,7 +4630,10 @@ function renderPlate(x, o) {
     base += (lines.length - 1) * cfg.nameLH;
     if (subT) {
       x.font = fMono(400, cfg.subSize);
-      txt(fit(x, subT, CW * 0.44), W - PAD, base, fMono(400, cfg.subSize), MC_TEAL, 'right');
+      const st = fit(x, subT, CW * 0.44);
+      const stw = x.measureText(st).width;
+      txt(st, W - PAD, base, fMono(400, cfg.subSize), MC_TEAL, 'right');
+      txt('/', W - PAD - stw - 16, base, fMono(400, cfg.subSize), MC_LINE);
     }
     twinRule(PAD, base + 40, W - PAD);
     bodyTop = base + 40 + 56;
@@ -4703,11 +4706,14 @@ function renderPlate(x, o) {
     box(Math.round(PAD + pw + cfg.gutter / 2), bodyTop, 1, blockH, MC_TEAL);
   }
 
-  let y = bodyTop + blockH + 26;
-  rule(PAD, y + 0.5, W - PAD, MC_HAIR, 1);
+  const useSets = showStats ? (sets || []).filter(st => (st.labels || []).filter(Boolean).length) : [];
+  let y = bodyTop + blockH;
+  if (!useSets.length) {
+    y += 26;
+    rule(PAD, y + 0.5, W - PAD, MC_HAIR, 1);
+  }
 
   /* ── 스탯 ── */
-  const useSets = showStats ? (sets || []).filter(st => (st.labels || []).filter(Boolean).length) : [];
   if (useSets.length) {
     y += cfg.statGap;
     twinRule(PAD, y, W - PAD);
@@ -4812,7 +4818,7 @@ function renderMemoDigest(x, o) {
     .filter(r => r.memos.length);
   if (!rows.length) return o.top;
 
-  const n = rows.length, gap = 32;
+  const n = rows.length, gap = 46;
   const colW = Math.min((CW - gap * (n - 1)) / n, n === 1 ? 560 : Infinity);
 
   /* 한 칸 — 이름 아래로 라벨과 칩이 세로로 쌓여요 */
@@ -4821,9 +4827,7 @@ function renderMemoDigest(x, o) {
     txt(String(r.i + 1).padStart(2, '0'), left, cy + 13, fMono(500, 14), MC_FAINT);
     x.font = fSans(500, 17);
     txt(fit(x, r.c.name || '이름 없음', colW - 32), left + 32, cy + 14, fSans(500, 17), MC_INK);
-    cy += 24;
-    rule(left, cy + 0.5, left + colW, MC_LINE, 1);
-    cy += 22;
+    cy += 38;
     r.memos.forEach((mo, k) => {
       x.font = fMono(500, cfg.memoLab);
       txt(fit(x, mo.label, colW), left, cy + cfg.memoLab * 0.9, fMono(500, cfg.memoLab), MC_TEAL);
@@ -4845,17 +4849,13 @@ function renderMemoDigest(x, o) {
   let y = o.top;
   txt(spread('MEMO'), PAD, y + 12, fMono(500, cfg.eyeSize), MC_TEAL);
   rule(PAD, y + 26.5, W - PAD, MC_HAIR, 1);
-  y += 46;
+  y += 44;
 
   pen = false;
   const ends = rows.map((r, k) => column(r, PAD + k * (colW + gap), y));
   pen = draw;
   const h = Math.max(...ends) - y;
   rows.forEach((r, k) => column(r, PAD + k * (colW + gap), y));
-  for (let k = 1; k < n; k++) {
-    const gx = Math.round(PAD + k * (colW + gap) - gap / 2);
-    if (pen) { x.fillStyle = MC_HAIR; x.fillRect(gx, y - 6, 1, h + 12); }
-  }
   return y + h;
 }
 
@@ -4911,7 +4911,7 @@ async function exportMemoCompare(chars, tag, opts = {}, onBack) {
   const digestTop = titleY + 62;
   const digestEnd = renderMemoDigest(probe, { ...digestArgs, top: digestTop, draw: false });
   const hasDigest = digestEnd > digestTop;
-  const top0 = hasDigest ? digestEnd + 58 : digestTop + 4;
+  const top0 = hasDigest ? digestEnd + 76 : digestTop + 4;
   const tops = [];
   let y = top0;
   chars.forEach((c, i) => {
@@ -4946,7 +4946,7 @@ async function exportMemoCompare(chars, tag, opts = {}, onBack) {
     renderMemoDigest(x, { ...digestArgs, top: digestTop, draw: true });
     x.strokeStyle = MC_LINE; x.lineWidth = 1.5;
     x.beginPath();
-    x.moveTo(PAD, digestEnd + 28.5); x.lineTo(W - PAD, digestEnd + 28.5); x.stroke();
+    x.moveTo(PAD, digestEnd + 32.5); x.lineTo(W - PAD, digestEnd + 32.5); x.stroke();
   }
 
   chars.forEach((c, i) => {
