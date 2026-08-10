@@ -224,17 +224,16 @@ details.setup-more[open] > summary::before{content:"− "}
   aspect-ratio:3/4;position:relative;box-shadow:var(--lift);
 }
 .portrait img{width:100%;height:100%;object-fit:cover}
-.rank-mark{
-  position:absolute;left:0;top:16px;padding:6px 13px 6px 11px;
-  background:rgba(18,20,24,.76);border-left:2px solid var(--teal);
-  font-family:var(--mono);font-size:9.5px;letter-spacing:.24em;color:#F2F3F3;
-  text-transform:uppercase;pointer-events:none;
-}
-.card-rank{
-  position:absolute;left:0;top:10px;padding:3px 8px 3px 6px;
-  background:rgba(18,20,24,.72);border-left:2px solid var(--teal);
-  font-family:var(--mono);font-size:8px;letter-spacing:.18em;color:#F2F3F3;
-}
+/* 중요도 — 사진 위, 잡지의 표제 줄처럼 */
+.rank-line{display:flex;align-items:center;gap:11px;margin:0 0 13px;padding:0 2px}
+.rank-key{font-family:var(--mono);font-size:9px;letter-spacing:.3em;color:var(--faint);flex:none}
+.rank-rule{flex:1;height:5px;border-bottom:1px solid var(--hair);border-top:1px solid var(--hair)}
+.rank-val{flex:none;display:flex;align-items:center;gap:7px;
+  font-family:var(--serif);font-size:15px;font-weight:500;letter-spacing:.1em;color:var(--teal)}
+.rank-val i{width:6px;height:6px;transform:rotate(45deg);background:var(--teal);display:block}
+.rank-v2 i{background:none;border:1px solid var(--teal)}
+.rank-v1{color:var(--muted)}
+.rank-v1 i{width:5px;height:5px;background:none;border:1px solid var(--line)}
 .rank-seg{display:flex;flex-wrap:wrap;gap:0}
 .rank-seg .seg{flex:1;min-width:0}
 .rank-seg .seg button{flex:1;font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;padding:7px 4px}
@@ -836,7 +835,7 @@ const BASE_PRESET = {
 const MEMO_LABELS = ['장르', '포지션', '특이사항'];
 
 /* 캐릭터 중요도 — 이미지 위에는 영문으로 새겨요 */
-const RANKS = [[3, 'CENTRAL'], [2, 'MAJOR'], [1, 'MINOR'], [0, '없음']];
+const RANKS = [[3, 'HIGH'], [2, 'MEDIUM'], [1, 'LOW'], [0, '없음']];
 const rankName = r => (RANKS.find(([v]) => v === Number(r || 0)) || [])[1] || '';
 
 const state = {
@@ -1827,7 +1826,6 @@ function cardHTML(c) {
       ${c.thumb ? `<img src="${c.thumb}" alt="" loading="lazy">`
                 : `<div class="ph"><svg width="46" height="46" viewBox="0 0 32 32"><polygon points="16,4 27,11 23,26 9,26 5,11" fill="none" stroke="#A6ABB2" stroke-width="1"/></svg></div>`}
       ${c.pinned ? '<span class="card-pin">★</span>' : ''}
-      ${c.rank ? `<span class="card-rank">${rankName(c.rank)}</span>` : ''}
     </div>
     <div class="card-body">
       <h3>${esc(c.name || '이름 없음')}</h3>
@@ -2486,7 +2484,7 @@ async function exportCompare(set, labels, max, series, onBack) {
   const probe = document.createElement('canvas').getContext('2d');
   const fieldBlocks = series.map(sr => layoutFields(probe, sr.fields || [], W - PAD * 2, 2))
     .filter(l => l.length);
-  const fieldsH = fieldBlocks.length ? 16 + fieldBlocks.reduce((n, l) => n + l.length * 32 + 14, 0) + 10 : 0;
+  const fieldsH = fieldBlocks.length ? 48 + fieldBlocks.reduce((n, l) => n + l.length * 32 + 14, 0) : 0;
   const H = 128 + 78 + (R * 2 + 130) + legendH + tableH + fieldsH + 34;
 
   const cv = document.createElement('canvas');
@@ -2567,7 +2565,7 @@ async function exportCompare(set, labels, max, series, onBack) {
   });
   // 캐릭터별 프로필 항목 — 이름 목록 바로 아래에 한 덩어리로
   if (fieldBlocks.length) {
-    y += 16;
+    y += 26;
     series.forEach(sr => {
       const lines = layoutFields(probe, sr.fields || [], W - PAD * 2, 2);
       if (!lines.length) return;
@@ -2583,14 +2581,16 @@ async function exportCompare(set, labels, max, series, onBack) {
       drawFieldLines(x, lines, PAD, top + 29, 32, col, INK2, col + '3A');
       y = top + bh;
     });
-    y += 10;
+    y += 26;
+  } else {
+    y += 8;
   }
-  y += 48;
 
   // 표 — 굵은 선 위아래 여백을 넉넉히
   const colW = (W - PAD * 2 - 300) / series.length;
   x.strokeStyle = LINE; x.lineWidth = 1.5;
-  x.beginPath(); x.moveTo(PAD, y - 52.5); x.lineTo(W - PAD, y - 52.5); x.stroke();
+  x.beginPath(); x.moveTo(PAD, y + 0.5); x.lineTo(W - PAD, y + 0.5); x.stroke();
+  y += 40;
   labels.forEach(l => {
     const nums = series.map(sr => Number(sr.vals[l] || 0));
     const top = Math.max(...nums);
@@ -2676,13 +2676,17 @@ function renderCharacter() {
 
     <div class="detail">
       <div class="char-side">
+        ${c.rank ? `<div class="rank-line">
+          <span class="rank-key">IMPORTANCE</span>
+          <span class="rank-rule"></span>
+          <span class="rank-val rank-v${c.rank}"><i></i>${rankName(c.rank)}</span>
+        </div>` : ''}
         <div class="portrait-wrap">
           <button class="port-nav left" id="char-prev" title="${prevChar ? esc(prevChar.name || '') : ''}"
             ${prevChar ? '' : 'disabled'}>‹</button>
           <div class="portrait">
             ${img ? `<img src="${img}" alt="${esc(c.name)}">`
                   : `<div class="ph"><svg width="52" height="52" viewBox="0 0 32 32"><polygon points="16,4 27,11 23,26 9,26 5,11" fill="none" stroke="#A6ABB2" stroke-width="1"/></svg></div>`}
-            ${c.rank ? `<span class="rank-mark">${rankName(c.rank)}</span>` : ''}
           </div>
           <button class="port-nav right" id="char-next" title="${nextChar ? esc(nextChar.name || '') : ''}"
             ${nextChar ? '' : 'disabled'}>›</button>
@@ -4367,7 +4371,7 @@ async function exportCard(c, set) {
     x.fillStyle = 'rgba(24,88,79,.97)';
     x.fillRect(pr - 44, photoTop, 3.5, photoH);
     x.fillStyle = 'rgba(24,88,79,.62)';
-    x.fillRect(pr - 56, photoTop, 2.5, photoH);
+    x.fillRect(pr - 56, photoTop, 3, photoH);
     x.restore();
 
     x.strokeStyle = 'rgba(20,22,26,.14)'; x.lineWidth = 1;
@@ -4527,7 +4531,7 @@ const MC_CMP = {
   photoW: 304, photoMin: 280, photoMax: 620, gutter: 40,
   eyeSize: 12.5, kSize: 13.5, vSize: 20, vLH: 28, pairPad: 18, fieldMax: 5,
   memoLab: 13, chipSize: 14.5, chipH: 28, chipGap: 6, chipLH: 34, entryGap: 8, memoMax: 9,
-  statGap: 28, statHead: 40, setSize: 23, pillSize: 14, pillPad: 20,
+  statGap: 28, statHead: 40, setSize: 23, pillSize: 14, pillPad: 20, groupGap: 34,
   rowH: 40, rowSize: 20, valSize: 21, statCols: 2,
 };
 
@@ -4817,33 +4821,59 @@ function renderPlate(x, o) {
   return y;
 }
 
-/* 여러 사람의 메모를 한자리에 — 같은 크기의 칸을 나란히 세워요 */
+/* 여러 사람의 메모를 한자리에 — 사람마다 한 줄기로 이어 붙여요 */
 function renderMemoDigest(x, o) {
   const { chars, W, PAD, cfg, labels, draw } = o;
   const CW = W - PAD * 2;
-  let pen = draw;
+  const IND = 36;
 
   const txt = (t, px, py, font, color) => {
     x.font = font;
-    if (pen) { x.fillStyle = color; x.textAlign = 'left'; x.fillText(t, px, py); }
+    if (draw) { x.fillStyle = color; x.textAlign = 'left'; x.fillText(t, px, py); }
     return x.measureText(t).width;
   };
   const rule = (x1, y1, x2, color, w) => {
-    if (!pen) return;
+    if (!draw) return;
     x.strokeStyle = color; x.lineWidth = w || 1;
     x.beginPath(); x.moveTo(x1, y1); x.lineTo(x2, y1); x.stroke();
   };
   const chip = (t, l, top) => {
     x.font = fSans(400, cfg.chipSize);
-    const w = x.measureText(t).width + 24;
-    if (pen) {
+    const w = x.measureText(t).width + 26;
+    if (draw) {
       roundRect(x, l, top, w, cfg.chipH, 3);
       x.fillStyle = '#FFFFFF'; x.fill();
       x.strokeStyle = MC_LINE; x.lineWidth = 1; x.stroke();
       x.fillStyle = MC_INK2; x.textAlign = 'left';
-      x.fillText(t, l + 12, top + cfg.chipH / 2 + cfg.chipSize * 0.36);
+      x.fillText(t, l + 13, top + cfg.chipH / 2 + cfg.chipSize * 0.36);
     }
     return w;
+  };
+
+  /* 라벨과 칩이 줄바꿈 없이 이어지다, 폭이 찰 때만 넘어가요 */
+  const flow = (list, left, top, maxW) => {
+    const labFont = fMono(500, cfg.memoLab), chipFont = fSans(400, cfg.chipSize);
+    let cx = left, cy = top, first = true;
+    list.forEach(mo => {
+      if (!first) cx += cfg.groupGap;
+      const lab = mo.label + '  ─';
+      x.font = labFont;
+      const lw = x.measureText(lab).width;
+      x.font = chipFont;
+      const fw = x.measureText(mo.words[0] || '').width + 26;
+      if (cx > left && cx + lw + 12 + fw > left + maxW) { cx = left; cy += cfg.chipLH; }
+      txt(lab, cx, cy + cfg.chipH / 2 + cfg.memoLab * 0.36, labFont, MC_TEAL);
+      cx += lw + 12;
+      mo.words.forEach(wd => {
+        x.font = chipFont;
+        const w = x.measureText(wd).width + 26;
+        if (cx > left && cx + w > left + maxW) { cx = left; cy += cfg.chipLH; }
+        chip(wd, cx, cy);
+        cx += w + cfg.chipGap;
+      });
+      first = false;
+    });
+    return cy + cfg.chipH;
   };
 
   const rows = chars
@@ -4851,51 +4881,21 @@ function renderMemoDigest(x, o) {
     .filter(r => r.memos.length);
   if (!rows.length) return o.top;
 
-  const n = rows.length, gap = 24, pad = 24;
-  const colW = (CW - gap * (n - 1)) / n;
-  const inW = colW - pad * 2;
-
   let y = o.top;
   txt(spread('MEMO'), PAD, y + 12, fMono(500, cfg.eyeSize), MC_TEAL);
   rule(PAD, y + 26.5, W - PAD, MC_HAIR, 1);
-  y += 52;
+  y += 46;
 
-  /* 한 칸 — 이름 아래로 라벨과 칩이 세로로 쌓여요 */
-  const column = (r, left, top) => {
-    const l = left + pad;
-    let cy = top + pad;
-    txt(String(r.i + 1).padStart(2, '0'), l, cy + 12, fMono(500, 13), MC_FAINT);
-    x.font = fSans(500, 16);
-    txt(fit(x, r.c.name || '이름 없음', inW - 30), l + 30, cy + 13, fSans(500, 16), MC_INK);
-    cy += 34;
-    r.memos.forEach((mo, k) => {
-      x.font = fMono(500, cfg.memoLab);
-      txt(fit(x, mo.label, inW), l, cy + cfg.memoLab * 0.9, fMono(500, cfg.memoLab), MC_TEAL);
-      cy += 20;
-      let cx = l;
-      mo.words.forEach(wd => {
-        x.font = fSans(400, cfg.chipSize);
-        const t = fit(x, wd, inW - 24);
-        const w = x.measureText(t).width + 24;
-        if (cx > l && cx + w > l + inW) { cx = l; cy += cfg.chipLH; }
-        chip(t, cx, cy);
-        cx += w + cfg.chipGap;
-      });
-      cy += cfg.chipH + (k < r.memos.length - 1 ? 16 : 0);
-    });
-    return cy + pad;
-  };
-
-  pen = false;
-  const ends = rows.map((r, k) => column(r, PAD + k * (colW + gap), y));
-  pen = draw;
-  const h = Math.max(...ends) - y;
   rows.forEach((r, k) => {
-    const left = PAD + k * (colW + gap);
-    if (pen) { roundRect(x, left, y, colW, h, 3); x.fillStyle = MC_WARM; x.fill(); }
-    column(r, left, y);
+    txt(String(r.i + 1).padStart(2, '0'), PAD, y + 14, fMono(500, 15), MC_TEAL);
+    x.font = fSans(500, 17);
+    txt(fit(x, r.c.name || '이름 없음', CW - IND), PAD + IND, y + 14, fSans(500, 17), MC_INK);
+    y += 26;
+    y = flow(r.memos, PAD + IND, y, CW - IND);
+    y += 22;
+    if (k < rows.length - 1) { rule(PAD, y + 0.5, W - PAD, MC_HAIR, 1); y += 22; }
   });
-  return y + h;
+  return y;
 }
 
 /* 머리글 한 줄 */
