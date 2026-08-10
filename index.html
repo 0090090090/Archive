@@ -4286,10 +4286,13 @@ async function exportCard(c, set) {
   fields.forEach((f, i) => {
     x.font = '400 19px "IBM Plex Mono", monospace';
     x.fillStyle = FAINT;
-    x.fillText(fit(x, f.k, 200), PAD, y + 20);
+    const kw = fit(x, f.k, 280);
+    x.fillText(kw, PAD, y + 20);
+    const kww = x.measureText(kw).width;
     x.font = '400 25px "Pretendard Variable", Pretendard, sans-serif';
-    x.fillStyle = INK2;
-    x.fillText(fit(x, f.v, W - PAD * 2 - 240), PAD + 240, y + 21);
+    x.fillStyle = INK2; x.textAlign = 'right';
+    x.fillText(fit(x, f.v, W - PAD * 2 - kww - 40), W - PAD, y + 21);
+    x.textAlign = 'left';
     if (i < fields.length - 1) {
       x.strokeStyle = HAIR; x.lineWidth = 1;
       x.beginPath(); x.moveTo(PAD, y + 38.5); x.lineTo(W - PAD, y + 38.5); x.stroke();
@@ -4333,8 +4336,8 @@ async function exportCard(c, set) {
       x.fillText(note, ax, capY + 86);
       x.textAlign = 'left';
     };
-    sideMark('AVERAGE', avg, `/ ${max}`, PAD, cy - R + 14, 'left');
-    sideMark('TOTAL', sum, `/ ${max * nums.length}`, W - PAD, cy + R - 100, 'right');
+    sideMark('AVERAGE', avg, `/ ${max}`, W - PAD, cy - R + 8, 'right');
+    sideMark('TOTAL', sum, `/ ${max * nums.length}`, PAD, cy + R - 94, 'left');
 
     x.save(); x.translate(W / 2, cy);
     const path = k => { x.beginPath(); g.forEach((p, i) => {
@@ -4427,9 +4430,8 @@ const MC_CMP = {
   photoW: 304, photoMin: 280, photoMax: 620, gutter: 40,
   eyeSize: 12.5, kSize: 13.5, vSize: 20, vLH: 28, pairPad: 18, fieldMax: 5,
   memoLab: 13, chipSize: 14.5, chipH: 28, chipGap: 6, chipLH: 34, entryGap: 8, memoMax: 9,
-  statGap: 26, statHead: 54, setSize: 23, pillSize: 14, pillPad: 20,
+  statGap: 44, statHead: 40, setSize: 23, pillSize: 14, pillPad: 20,
   rowH: 40, rowSize: 20, valSize: 21, statCols: 2,
-  stripPadX: 30, stripPadY: 26, groupGap: 34,
 };
 
 const loadPhoto = src => src
@@ -4499,28 +4501,21 @@ function renderPlate(x, o) {
   };
 
   /* 라벨 ─ 칩 을 한 줄기로 흘려요 */
-  const flowMemos = (list, left, top, maxW, opt = {}) => {
+  const flowMemos = (list, left, top, maxW) => {
     const labFont = fMono(500, cfg.memoLab);
     const chipFont = fSans(400, cfg.chipSize);
     let cx = left, cy = top, first = true;
-    const limit = () => left + ((cy === top && opt.reserve) ? maxW - opt.reserve : maxW);
     list.forEach(mo => {
-      if (!first) {
-        if (opt.perEntry) { cx = left; cy += cfg.chipLH + cfg.entryGap; }
-        else cx += cfg.groupGap;
-      }
+      if (!first) { cx = left; cy += cfg.chipLH + cfg.entryGap; }
       const lab = mo.label + '  ─';
       x.font = labFont;
       const lw = x.measureText(lab).width;
-      x.font = chipFont;
-      const fw = x.measureText(mo.words[0] || '').width + 26;
-      if (cx > left && cx + lw + 12 + fw > limit()) { cx = left; cy += cfg.chipLH; }
       txt(lab, cx, cy + cfg.chipH / 2 + cfg.memoLab * 0.36, labFont, MC_TEAL);
       cx += lw + 12;
       mo.words.forEach(wd => {
         x.font = chipFont;
         const w = x.measureText(wd).width + 26;
-        if (cx > left && cx + w > limit()) { cx = left; cy += cfg.chipLH; }
+        if (cx > left && cx + w > left + maxW) { cx = left; cy += cfg.chipLH; }
         chip(wd, cx, cy);
         cx += w + cfg.chipGap;
       });
@@ -4548,6 +4543,19 @@ function renderPlate(x, o) {
     return w;
   };
 
+  /* 부제 줄 — 왼쪽 두꺼운 막대, 오른쪽 끝에 태그 하나 */
+  const tag1 = (c.tags || []).filter(Boolean)[0] || '';
+  const subLine = (left, base, width) => {
+    let tw = 0;
+    if (tag1) { x.font = fMono(400, cfg.subSize - 4); tw = x.measureText('#' + tag1).width + 26; }
+    if (c.subtitle) {
+      box(left, Math.round(base - cfg.subSize * 0.76), 4, Math.round(cfg.subSize * 0.96), MC_TEAL);
+      x.font = fMono(400, cfg.subSize);
+      txt(fit(x, c.subtitle, width - 18 - tw), left + 18, base, fMono(400, cfg.subSize), MC_TEAL);
+    }
+    if (tag1) txt('#' + tag1, left + width, base, fMono(400, cfg.subSize - 4), MC_FAINT, 'right');
+  };
+
   /* ── 이름 ── */
   let bodyTop = o.top;
   if (solo) {
@@ -4556,11 +4564,7 @@ function renderPlate(x, o) {
     let base = o.top + Math.round(cfg.nameSize * 0.8);
     lines.forEach((ln, i) => txt(ln, PAD, base + i * cfg.nameLH, nameFont, MC_INK));
     base += (lines.length - 1) * cfg.nameLH;
-    if (c.subtitle) {
-      base += 40;
-      x.font = fMono(400, cfg.subSize);
-      txt(fit(x, c.subtitle, CW), PAD, base, fMono(400, cfg.subSize), MC_TEAL);
-    }
+    if (c.subtitle || tag1) { base += 40; subLine(PAD, base, CW); }
     twinRule(PAD, base + 40, W - PAD);
     bodyTop = base + 40 + 56;
   }
@@ -4579,23 +4583,15 @@ function renderPlate(x, o) {
   const runRight = () => {
     let ry = bodyTop;
     if (!solo) {
-      const badge = [
-        ...((c.tags || []).filter(Boolean).slice(0, 1).map(t => '#' + t)),
-        String((index || 0) + 1).padStart(2, '0'),
-      ].join('   ');
-      x.font = fMono(500, 15);
-      const bw = x.measureText(badge).width;
+      const num = String((index || 0) + 1).padStart(2, '0');
+      const nw2 = txt(num, rx, bodyTop + 17, fMono(500, 20), MC_TEAL);
+      rule(rx + nw2 + 14, bodyTop + 10.5, W - PAD, MC_LINE, 1.5);
       const nameFont = fSerif(300, cfg.nameSize);
-      const lines = mcWrapLines(x, c.name || '이름 없음', nameFont, rw - bw - 28, 2);
-      let base = bodyTop + Math.round(cfg.nameSize * 0.82);
-      txt(badge, W - PAD, bodyTop + 20, fMono(500, 15), MC_FAINT, 'right');
+      const lines = mcWrapLines(x, c.name || '이름 없음', nameFont, rw, 2);
+      let base = bodyTop + 43 + Math.round(cfg.nameSize * 0.82);
       lines.forEach((ln, i) => txt(ln, rx, base + i * cfg.nameLH, nameFont, MC_INK));
       base += (lines.length - 1) * cfg.nameLH;
-      if (c.subtitle) {
-        base += 32;
-        x.font = fMono(400, cfg.subSize);
-        txt(fit(x, c.subtitle, rw), rx, base, fMono(400, cfg.subSize), MC_TEAL);
-      }
+      if (c.subtitle || tag1) { base += 32; subLine(rx, base, rw); }
       ry = base + 26;
       rule(rx, ry + 0.5, W - PAD, MC_HAIR, 1);
       ry += 34;
@@ -4616,7 +4612,7 @@ function renderPlate(x, o) {
     if (solo && memos.length) {
       ry += 24;
       ry = colMark('MEMO', rx, ry, rw);
-      ry = flowMemos(memos, rx, ry, rw, { perEntry: true }) + 4;
+      ry = flowMemos(memos, rx, ry, rw) + 4;
     }
     return ry;
   };
@@ -4640,38 +4636,14 @@ function renderPlate(x, o) {
     box(Math.round(PAD + pw + cfg.gutter / 2), bodyTop, 1, blockH, MC_TEAL);
   }
 
-  let y = bodyTop + blockH;
+  let y = bodyTop + blockH + 26;
+  rule(PAD, y + 0.5, W - PAD, MC_HAIR, 1);
 
-  /* 두 칸을 한 줄로 닫아요 — 길이가 달라도 바닥이 맞아 보이게 */
-  if (solo || !memos.length) {
-    y += 26;
-    rule(PAD, y + 0.5, W - PAD, MC_HAIR, 1);
-  }
-
-  /* ── 비교판의 메모 띠 — 라벨과 칩이 한 줄기로 이어져요 ── */
+  /* ── 비교판의 메모 — 단독과 같은 얼굴로, 자리만 아래에 ── */
   if (!solo && memos.length) {
-    y += 28;
-    const innerL = PAD + cfg.stripPadX, innerW = CW - cfg.stripPadX * 2 - 46;
-
-    const wasPen = pen; pen = false;
-    const bottom = flowMemos(memos, innerL, y + cfg.stripPadY + 3, innerW);
-    pen = wasPen;
-    const stripH = bottom - y + cfg.stripPadY + 3;
-
-    box(PAD, y, CW, stripH, MC_WARM);
-    box(PAD, y, CW, 3, MC_TEAL);
-    box(PAD, y + stripH - 3, CW, 3, MC_TEAL);
-    if (pen) {                                   // 오른쪽 여백에 세로로 세운 표기
-      x.save();
-      x.translate(W - PAD - 42, y + cfg.stripPadY + 2);
-      x.rotate(Math.PI / 2);
-      x.font = fMono(500, 13);
-      x.fillStyle = MC_TEAL; x.textAlign = 'left';
-      x.fillText(spread('MEMO'), 0, 0);
-      x.restore();
-    }
-    flowMemos(memos, innerL, y + cfg.stripPadY + 3, innerW);
-    y += stripH;
+    y += 34;
+    y = colMark('MEMO', PAD, y, CW);
+    y = flowMemos(memos, PAD, y, CW) + 4;
   }
 
   /* ── 스탯 ── */
@@ -4690,10 +4662,9 @@ function renderPlate(x, o) {
       const flat = mx === mn;
 
       const nameBase = y + cfg.setSize * 0.78;
+      const numW = txt(`${si + 1}.`, PAD, nameBase, fMono(500, 15), MC_TEAL);
       x.font = fSerif(500, cfg.setSize);
-      const nm = fit(x, st.name, CW - 220);
-      const nw = txt(nm, PAD, nameBase, fSerif(500, cfg.setSize), MC_INK);
-      txt(`${si + 1}.`, PAD + nw + 14, nameBase, fMono(500, 15), MC_TEAL);
+      txt(fit(x, st.name, CW - 220 - numW), PAD + numW + 12, nameBase, fSerif(500, cfg.setSize), MC_INK);
       txt(`MAX ${st.max || 10}`, W - PAD, nameBase - 1, fMono(400, cfg.pillSize), MC_FAINT, 'right');
       y = nameBase + cfg.pillPad;
 
@@ -4702,10 +4673,9 @@ function renderPlate(x, o) {
           const ns = labels.filter((l, i) => vals[i] === t);
           return ns.length > 3 ? ns.slice(0, 3).join(' · ') + ' 외' : ns.join(' · ');
         };
-        const hi = tied(mx), lo = tied(mn);
-        const w1 = pill(`최고 — ${hi} ${mx}`, PAD, y, fSans(500, cfg.pillSize + 1),
+        const w1 = pill(`최고 — ${tied(mx)} ${mx}`, PAD, y, fSans(500, cfg.pillSize + 1),
                         MC_TEAL, MC_TEAL, 'rgba(15,76,71,.06)');
-        pill(`최저 — ${lo} ${mn}`, PAD + w1 + 10, y, fSans(400, cfg.pillSize + 1),
+        pill(`최저 — ${tied(mn)} ${mn}`, PAD + w1 + 10, y, fSans(400, cfg.pillSize + 1),
              MC_MUTED, MC_LINE, null);
         y += 30 + cfg.pillPad;
       } else {
@@ -4748,7 +4718,7 @@ function renderPlate(x, o) {
 /* 머리글 한 줄 */
 function mcHead(x, W, PAD, y, left, right) {
   x.font = fMono(500, 19); x.fillStyle = MC_FAINT; x.textAlign = 'left';
-  x.fillText(spread(left), PAD, y);
+  x.fillText(fit(x, left, W - PAD * 2 - 420), PAD, y);
   x.textAlign = 'right'; x.fillStyle = MC_INK2;
   x.fillText(fit(x, right, 380), W - PAD, y);
   x.textAlign = 'left';
@@ -4770,7 +4740,7 @@ async function exportMemoCard(c, opts = {}, onBack) {
   cv.width = W; cv.height = H;
   const x = cv.getContext('2d');
   paperPlate(x, W, H);
-  mcHead(x, W, PAD, headY, 'MEMO CARD', profile.nickname);
+  mcHead(x, W, PAD, headY, spread('MEMO CARD'), profile.nickname);
   renderPlate(x, { ...args, top, draw: true });
   plateFooter(x, W, H, PAD,
     opts.stats && sets.length ? sets.map(s => s.name).join('  ·  ') : '', fmtDate(Date.now()));
@@ -4809,10 +4779,12 @@ async function exportMemoCompare(chars, tag, opts = {}, onBack) {
   cv.width = W; cv.height = H;
   const x = cv.getContext('2d');
   paperPlate(x, W, H);
-  mcHead(x, W, PAD, headY, 'TAG COMPARE', profile.nickname);
+  const shared = (chars[0]?.tags || []).filter(t => chars.every(p => (p.tags || []).includes(t)));
+  const headTags = (shared.length ? shared : [tag].filter(Boolean)).slice(0, 5).map(t => '#' + t).join('   ');
+  mcHead(x, W, PAD, headY, headTags, profile.nickname);
 
-  x.fillStyle = MC_INK; x.font = fSerif(300, 52); x.textAlign = 'left';
-  x.fillText(fit(x, '#' + tag, W - PAD * 2 - 200), PAD, titleY);
+  x.fillStyle = MC_INK; x.font = fSerif(300, 46); x.textAlign = 'left';
+  x.fillText(fit(x, 'CHARACTER COMPARE', W - PAD * 2 - 200), PAD, titleY);
   x.textAlign = 'right'; x.font = fMono(400, 19); x.fillStyle = MC_FAINT;
   x.fillText(`${chars.length} 명 대조`, W - PAD, titleY);
   x.textAlign = 'left';
