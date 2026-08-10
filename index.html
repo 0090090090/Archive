@@ -751,7 +751,7 @@ const state = {
   excerpts: [],
   fullImg: null,
   q: '',
-  sort: 'recent',        // recent | old | name
+  sort: 'recent',        // recent | old | newest
   exQ: '',               // 발췌 검색어
   exFolder: null,        // null = 전체 폴더
   statEdit: false,       // 스탯 슬라이더 펼침 (기본은 닫힘 — 스크롤 중 오터치 방지)
@@ -1247,8 +1247,8 @@ function visibleChars() {
     list = list.filter(c => state.tagFilter.every(t => (c.tags || []).includes(t)));
   const by = { recent: (a, b) => (b.updatedAt || 0) - (a.updatedAt || 0),
                old: (a, b) => (a.createdAt || 0) - (b.createdAt || 0),
-               name: (a, b) => (a.name || '').localeCompare(b.name || '', 'ko') };
-  list.sort(by[state.sort]);
+               newest: (a, b) => (b.createdAt || 0) - (a.createdAt || 0) };
+  list.sort(by[state.sort] || by.recent);
   list.sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
   return list;
 }
@@ -1282,7 +1282,7 @@ function renderGallery() {
     </div>
     ${state.adv ? advPanelHTML(tagCounts(state.chars), state.tagFilter, '캐릭터에 붙인 태그', 'char') : ''}
     <div class="chipbar">
-      ${[['recent', '최근 수정순'], ['old', '오래된순'], ['name', '이름순']].map(([k, l]) =>
+      ${[['recent', '최근 수정순'], ['old', '오래된순'], ['newest', '최신순']].map(([k, l]) =>
         `<button class="chip" data-sort="${k}" aria-pressed="${state.sort === k}">${l}</button>`).join('')}
     </div>
     ${list.length ? `<div class="grid">${list.map(cardHTML).join('')}</div>` : emptyHTML(total)}
@@ -1311,9 +1311,9 @@ function renderGallery() {
   if (gmg) gmg.onclick = () => openTagLevels('char', tagCounts(state.chars), renderGallery);
   $('#bk-now')?.addEventListener('click', () => exportBackup(true));
   $('#bk-later')?.addEventListener('click', () => {
-    bkSet({ snooze: Date.now() + 7 * DAY });
+    bkSet({ snooze: Date.now() + 30 * DAY });
     renderGallery();
-    toast('일주일 뒤에 다시 알려드릴게요');
+    toast('한 달 뒤에 다시 알려드릴게요');
   });
   bindNotice();
   $('#add-char').onclick = () => openCharEditor(null);
@@ -1945,7 +1945,7 @@ function openStatTools(tab) {
           fields: cmpPick.map(k => ({ k, v: ((p?.fields || []).find(f => f.k === k) || {}).v || '' }))
             .filter(f => f.v),
         };
-      }), cmpPick, back);
+      }), back);
     } else if (tab === 'sets') {
       const chosen = state.statSets.filter(x => setsPicked.includes(x.id));
       if (!chosen.length) return toast('세트를 하나 이상 골라 주세요', 1);
@@ -1965,7 +1965,7 @@ async function exportSets(c, sets, fields = [], onBack) {
   const rows = sets.reduce((n, st) => n + st.labels.length, 0);
   const probe = document.createElement('canvas').getContext('2d');
   const flines = layoutFields(probe, fields, W - PAD * 2);
-  const H = 128 + 74 + flines.length * 34 + sets.length * 92 + rows * 56 + 116;
+  const H = 128 + 74 + flines.length * 34 + sets.length * 92 + rows * 56 + 72;
 
   const cv = document.createElement('canvas');
   cv.width = W; cv.height = H;
@@ -2038,8 +2038,7 @@ async function exportRank(c, info, fields = [], showPeers = true, onBack) {
   const INK = '#14161A', INK2 = '#3E434B', FAINT = '#A6ABB2', HAIR = '#E5E7E8', LINE = '#D2D6D9', TEAL = '#0F4C47';
   const probe = document.createElement('canvas').getContext('2d');
   const flines = layoutFields(probe, fields, W - PAD * 2);
-  const firstRow = 296 + flines.length * 34;                 // 첫 항목 줄의 기준선
-  const H = Math.round(firstRow + (info.rows.length - 1) * 70 + 206);
+  const H = 128 + 176 + flines.length * 34 + info.rows.length * 70 + 84;
 
   const cv = document.createElement('canvas');
   cv.width = W; cv.height = H;
@@ -2138,15 +2137,13 @@ function layoutFields(x, fields, maxW, limit = 3) {
   return lines.slice(0, limit);
 }
 
-function drawFieldLines(x, lines, left, y, lineH, faint, ink) {
+function drawFieldLines(x, lines, left, y, lineH, faint, ink, sep = '#C3C8CB') {
   lines.forEach(line => {
     let cx = left;
     line.forEach((f, i) => {
       if (i) {
-        x.save();
-        x.strokeStyle = '#D2D6D9'; x.lineWidth = 1;
-        x.beginPath(); x.moveTo(cx + FL_SEP / 2, y - 15); x.lineTo(cx + FL_SEP / 2, y + 3); x.stroke();
-        x.restore();
+        x.font = FL_LABEL; x.fillStyle = sep;
+        x.fillText('|', cx + (FL_SEP - x.measureText('|').width) / 2, y);
         cx += FL_SEP;
       }
       if (f.k) {
@@ -2189,40 +2186,20 @@ function plateFooter(x, W, H, PAD, left, right) {
   x.textAlign = 'left';
 }
 
-async function exportCompare(set, labels, max, series, keys, onBack) {
+async function exportCompare(set, labels, max, series, onBack) {
   if (labels.length < 3) return toast('항목이 3개 이상일 때 저장할 수 있어요');
   toast('이미지를 그리는 중…');
   try { await document.fonts.ready; } catch {}
   const W = 1080, PAD = 84;
   const INK = '#14161A', INK2 = '#3E434B', FAINT = '#A6ABB2', HAIR = '#E5E7E8', LINE = '#D2D6D9', TEAL = '#0F4C47';
   const R = 224;
-  // 값이 하나라도 있는 프로필 항목만 남겨요
-  const fieldKeys = (keys || []).filter(k => series.some(sr =>
-    ((sr.fields || []).find(f => f.k === k) || {}).v));
-
-  // 자리부터 계산 — 아래 여백이 남지 않도록
-  let ly = 100;                    // 머리말
-  ly += 62;                        // 제목
-  ly += 40;
-  const cy = ly + R + 46;          // 그래프 중심
-  ly = cy + R + 84;                // 범례 첫 줄
-  const legendTop = ly;
-  ly += series.length * 44 + 48;
-  const tableTop = ly;             // 표 첫 줄 (굵은 선은 이 위 52.5)
-  let bottom = tableTop + (labels.length - 1) * 46 + 17;
-  // 프로필은 캐릭터마다 한 덩이씩 — 필요한 줄 수를 미리 재요
+  const legendH = series.length * 44 + 18;
+  const tableH = labels.length * 46 + 104;
   const probe = document.createElement('canvas').getContext('2d');
-  const blocks = series.map((sr, i) => ({
-    color: CMP_COLORS[i % CMP_COLORS.length],
-    lines: layoutFields(probe, (sr.fields || []).filter(f => f.v), W - PAD * 2 - 26, 2),
-  })).filter(bk => bk.lines.length);
-  const fieldTop = bottom + 62;
-  if (blocks.length) {
-    bottom = fieldTop - 22;
-    blocks.forEach(bk => { bottom += bk.lines.length * 34 + 18; });
-    bottom -= 18;
-  }
-  const H = Math.round(bottom + 196);
+  const fieldBlocks = series.map(sr => layoutFields(probe, sr.fields || [], W - PAD * 2, 2))
+    .filter(l => l.length);
+  const fieldsH = fieldBlocks.length ? 34 + fieldBlocks.reduce((n, l) => n + l.length * 32 + 6, 0) + 8 : 0;
+  const H = 128 + 78 + (R * 2 + 130) + legendH + tableH + fieldsH + 60;
 
   const cv = document.createElement('canvas');
   cv.width = W; cv.height = H;
@@ -2254,7 +2231,8 @@ async function exportCompare(set, labels, max, series, keys, onBack) {
   y += 40;
 
   // 그래프
-  x.save(); x.translate(W / 2, cy);
+  const cx = W / 2, cy = y + R + 46;
+  x.save(); x.translate(cx, cy);
   const base = radarGeom(labels, {}, max, R);
   const path = k => { x.beginPath(); base.forEach((p, i) => {
     const px = Math.cos(p.a) * R * k, py = Math.sin(p.a) * R * k;
@@ -2283,7 +2261,7 @@ async function exportCompare(set, labels, max, series, keys, onBack) {
   });
   x.restore();
   x.textAlign = 'left';
-  y = legendTop;
+  y = cy + R + 84;
 
   // 범례
   series.forEach((sr, i) => {
@@ -2299,7 +2277,7 @@ async function exportCompare(set, labels, max, series, keys, onBack) {
     x.textAlign = 'left';
     y += 44;
   });
-  y = tableTop;
+  y += 48;
 
   // 표 — 굵은 선 위아래 여백을 넉넉히
   const colW = (W - PAD * 2 - 300) / series.length;
@@ -2334,16 +2312,27 @@ async function exportCompare(set, labels, max, series, keys, onBack) {
     y += 46;
   });
 
-  // 프로필 항목 — 캐릭터마다 한 덩이, 색 막대로 주인을 표시
-  if (blocks.length) {
-    y = fieldTop;
-    x.textAlign = 'left';
-    blocks.forEach(bk => {
-      const h = bk.lines.length * 34;
-      x.fillStyle = bk.color;
-      x.fillRect(PAD, y - 21, 3, h - 6);
-      drawFieldLines(x, bk.lines, PAD + 26, y, 34, '#9AA0A6', bk.color);
-      y += h + 18;
+  // 캐릭터별 프로필 항목 — 각자의 색 띠로
+  if (fieldBlocks.length) {
+    y += 30;
+    series.forEach(sr => {
+      const lines = layoutFields(probe, sr.fields || [], W - PAD * 2, 2);
+      if (!lines.length) return;
+      const col = CMP_COLORS[series.indexOf(sr) % CMP_COLORS.length];
+      const bx = PAD - 22, bw = W - (PAD - 22) * 2;
+      const bh = lines.length * 32 + 20, top = y - 26;
+      const wash = x.createLinearGradient(bx, 0, bx + bw, 0);   // 오른쪽으로 갈수록 옅어져요
+      wash.addColorStop(0, col + '18');
+      wash.addColorStop(.55, col + '0C');
+      wash.addColorStop(1, col + '05');
+      x.fillStyle = wash; x.fillRect(bx, top, bw, bh);
+      const edge = x.createLinearGradient(0, top, 0, top + bh);  // 왼쪽 색 세로선
+      edge.addColorStop(0, col + 'BB');
+      edge.addColorStop(.5, col);
+      edge.addColorStop(1, col + 'BB');
+      x.fillStyle = edge; x.fillRect(bx, top, 3, bh);
+      drawFieldLines(x, lines, PAD, y, 32, col, INK2, col + '3A');
+      y = top + bh + 12;
     });
   }
 
@@ -3687,20 +3676,10 @@ async function exportCard(c, set) {
   x.textAlign = 'right'; x.fillStyle = INK2;
   x.fillText(fit(x, profile.nickname, 400), W - PAD, 100);
 
-  // 이름 · 부제 (오른쪽 맞춤, 사진 위) — 왼쪽 여백은 가는 선으로 이어줘요
+  // 이름 · 부제 (오른쪽 맞춤, 사진 위)
   x.fillStyle = INK;
   x.font = '300 66px "Noto Serif KR", serif';
-  const nameTxt = fit(x, c.name || '이름 없음', W - PAD * 2 - 120);
-  const nameW = x.measureText(nameTxt).width;
-  const lineEnd = W - PAD - nameW - 34;
-  if (lineEnd > PAD + 60) {
-    x.strokeStyle = LINE; x.lineWidth = 1;
-    x.beginPath(); x.moveTo(PAD, nameY - 24.5); x.lineTo(lineEnd, nameY - 24.5); x.stroke();
-    x.strokeStyle = HAIR;
-    x.beginPath(); x.moveTo(PAD, nameY - 18.5); x.lineTo(PAD + (lineEnd - PAD) * 0.55, nameY - 18.5); x.stroke();
-    x.fillStyle = INK;
-  }
-  x.fillText(nameTxt, W - PAD, nameY);
+  x.fillText(fit(x, c.name || '이름 없음', W - PAD * 2), W - PAD, nameY);
   if (c.subtitle) {
     x.font = '400 22px "IBM Plex Mono", monospace';
     x.fillStyle = TEAL;
@@ -3708,28 +3687,30 @@ async function exportCard(c, set) {
   }
   x.textAlign = 'left';
 
-  // 사진 — 오른쪽에 어둠을 깔고 청록 세로선으로 마무리
+  // 사진
   if (photo) {
-    const pw = W - PAD * 2;
+    const pw = W - PAD * 2, pr = PAD + pw;
     x.save();
     x.beginPath(); x.rect(PAD, photoTop, pw, photoH); x.clip();
     coverDraw(x, photo, PAD, photoTop, pw, photoH);
-    const shade = x.createLinearGradient(W - PAD - pw * 0.42, 0, W - PAD, 0);
-    shade.addColorStop(0, 'rgba(8,10,14,0)');
-    shade.addColorStop(1, 'rgba(8,10,14,.62)');
-    x.fillStyle = shade;
-    x.fillRect(W - PAD - pw * 0.42, photoTop, pw * 0.42, photoH);
-    // 어둠 위를 지나가는 청록 선 — 위아래에 짧은 가로 눈금
-    const lx = W - PAD - 58, lTop = photoTop + 76, lBot = photoTop + photoH - 76;
-    x.save();
-    x.shadowColor = 'rgba(70,200,170,.4)'; x.shadowBlur = 9;
-    x.fillStyle = '#49C6A8';
-    x.fillRect(lx, lTop, 2.5, lBot - lTop);
+
+    // 오른쪽에서 스며드는 어둠
+    const shade = x.createLinearGradient(pr, 0, pr - 320, 0);
+    shade.addColorStop(0, 'rgba(8,10,12,.62)');
+    shade.addColorStop(.34, 'rgba(8,10,12,.26)');
+    shade.addColorStop(.72, 'rgba(8,10,12,.07)');
+    shade.addColorStop(1, 'rgba(8,10,12,0)');
+    x.fillStyle = shade; x.fillRect(pr - 320, photoTop, 320, photoH);
+
+    // 어둠 위에 얹는 녹색 세로선 — 위아래로 사라져요
+    const rule = x.createLinearGradient(0, photoTop, 0, photoTop + photoH);
+    rule.addColorStop(0, 'rgba(88,168,157,0)');
+    rule.addColorStop(.16, 'rgba(88,168,157,.9)');
+    rule.addColorStop(.84, 'rgba(88,168,157,.9)');
+    rule.addColorStop(1, 'rgba(88,168,157,0)');
+    x.fillStyle = rule; x.fillRect(pr - 44, photoTop, 2.5, photoH);
     x.restore();
-    x.fillStyle = 'rgba(73,198,168,.7)';
-    x.fillRect(lx - 8, lTop, 19, 2);
-    x.fillRect(lx - 8, lBot - 2, 19, 2);
-    x.restore();
+
     x.strokeStyle = 'rgba(20,22,26,.14)'; x.lineWidth = 1;
     x.strokeRect(PAD + .5, photoTop + .5, pw - 1, photoH - 1);
   }
@@ -3755,8 +3736,53 @@ async function exportCard(c, set) {
     x.strokeStyle = LINE; x.lineWidth = 1.5;
     x.beginPath(); x.moveTo(PAD, ruleY + .5); x.lineTo(W - PAD, ruleY + .5); x.stroke();
 
-    x.save(); x.translate(W / 2, cy);
     const g = radarGeom(labels, vals, max, R);
+
+    // 그래프 둘레의 은은한 확산 — 가장자리에서 완전히 사라져요
+    const halo = x.createRadialGradient(W / 2, cy, R * .3, W / 2, cy, R * 2.05);
+    halo.addColorStop(0, 'rgba(15,76,71,.06)');
+    halo.addColorStop(.5, 'rgba(15,76,71,.028)');
+    halo.addColorStop(1, 'rgba(15,76,71,0)');
+    x.fillStyle = halo;
+    x.fillRect(0, ruleY + 1, W, Math.min(cy + R * 2.05, H - 92.5) - ruleY - 1);
+
+    /* 이름표가 어디까지 뻗는지 먼저 재요 — 결이 글씨를 건드리지 않게 */
+    x.font = '400 22px "Pretendard Variable", Pretendard, sans-serif';
+    let lEdge = W / 2 - R - 24, rEdge = W / 2 + R + 24;
+    g.forEach(p => {
+      const lx = Math.cos(p.a) * (R + 44), w = x.measureText(p.label).width;
+      if (lx < -14) lEdge = Math.min(lEdge, W / 2 + lx - w);
+      else if (lx > 14) rEdge = Math.max(rEdge, W / 2 + lx + w);
+    });
+
+    // 양옆 여백 — 바깥에서 그래프 쪽으로 사라지는 결
+    const sideRule = (outerX, innerX) => {
+      const vg = x.createLinearGradient(0, cy - R - 24, 0, cy + R + 24);
+      vg.addColorStop(0, 'rgba(15,76,71,0)');
+      vg.addColorStop(.5, 'rgba(15,76,71,.34)');
+      vg.addColorStop(1, 'rgba(15,76,71,0)');
+      x.strokeStyle = vg; x.lineWidth = 1.4;
+      x.beginPath();
+      x.moveTo(outerX + .5, cy - R - 24); x.lineTo(outerX + .5, cy + R + 24); x.stroke();
+      if (Math.abs(innerX - outerX) < 80) return;
+      const N = 6;                       // 가운데가 가장 길고 위아래로 짧아지는 결
+      for (let i = -N; i <= N; i++) {
+        const k = Math.abs(i) / N;
+        const yy = Math.round(cy + (i / N) * R) + .5;
+        const ex = outerX + (innerX - outerX) * (1 - .58 * Math.pow(k, 1.15));
+        const a = .27 * (1 - .62 * k);
+        const hg = x.createLinearGradient(outerX, 0, ex, 0);
+        hg.addColorStop(0, `rgba(15,76,71,${a.toFixed(3)})`);
+        hg.addColorStop(.6, `rgba(15,76,71,${(a * .38).toFixed(3)})`);
+        hg.addColorStop(1, 'rgba(15,76,71,0)');
+        x.strokeStyle = hg; x.lineWidth = 1;
+        x.beginPath(); x.moveTo(outerX, yy); x.lineTo(ex, yy); x.stroke();
+      }
+    };
+    sideRule(PAD, lEdge - 26);
+    sideRule(W - PAD, rEdge + 26);
+
+    x.save(); x.translate(W / 2, cy);
     const path = k => { x.beginPath(); g.forEach((p, i) => {
       const px = Math.cos(p.a) * R * k, py = Math.sin(p.a) * R * k;
       i ? x.lineTo(px, py) : x.moveTo(px, py); }); x.closePath(); };
@@ -3781,22 +3807,6 @@ async function exportCard(c, set) {
       x.fillStyle = TEAL; x.fillText(String(p.value), lx, ly2 + 27);
     });
     x.restore();
-    x.textAlign = 'left';
-
-    // 그래프 자리를 감싸는 꺾쇠 — 판면 모서리와 같은 언어로
-    const gTop = ruleY + 46, gBot = cy + R + 46, gL = PAD + 34, gR = W - PAD - 34;
-    x.strokeStyle = '#BCC1C5'; x.lineWidth = 1.3;
-    const arm = 26;
-    [[gL, gTop, 1, 1], [gR, gTop, -1, 1], [gL, gBot, 1, -1], [gR, gBot, -1, -1]].forEach(([px, py, sx, sy]) => {
-      x.beginPath(); x.moveTo(px + sx * arm, py); x.lineTo(px, py); x.lineTo(px, py + sy * arm); x.stroke();
-    });
-    x.font = '400 16px "IBM Plex Mono", monospace';
-    x.fillStyle = FAINT;
-    x.textAlign = 'center';
-    x.save(); x.translate(gL + 16, (gTop + gBot) / 2); x.rotate(-Math.PI / 2);
-    x.fillText(fit(x, set?.name || 'STAT', gBot - gTop - 90), 0, 0); x.restore();
-    x.save(); x.translate(gR - 16, (gTop + gBot) / 2); x.rotate(Math.PI / 2);
-    x.fillText(`MAX ${max}`, 0, 0); x.restore();
     x.textAlign = 'left';
   }
 
