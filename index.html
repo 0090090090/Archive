@@ -315,6 +315,12 @@ details.setup-more[open] > summary::before{content:"− "}
   border-radius:var(--r);box-shadow:var(--lift-2);animation:rise .22s cubic-bezier(.2,.7,.3,1);
 }
 .modal.wide{max-width:700px}
+/* 편집 창을 닫지 않고 그 위에 겹치는 작은 확인창 */
+.scrim.mini{z-index:96;align-items:center;padding:20px;background:rgba(20,22,26,.42)}
+.scrim.mini .modal{max-width:404px}
+.mini-msg{margin:0;color:var(--ink-2);font-size:14px;line-height:1.8}
+.mini-msg b{color:var(--ink);font-weight:600}
+.mini-msg .q{font-family:var(--serif);color:var(--ink);font-weight:500}
 @keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
 .modal-head{display:flex;align-items:center;gap:10px;padding:19px 22px;border-bottom:1px solid var(--hair)}
 .modal-head h2{font-family:var(--serif);font-weight:500;font-size:17px}
@@ -377,6 +383,59 @@ details.setup-more[open] > summary::before{content:"− "}
 .sub-edit{border-top:1px dashed var(--line);margin-top:11px;padding-top:11px}
 .det-row{border:1px solid var(--hair);border-radius:var(--r);padding:13px;margin-bottom:10px;background:var(--warm)}
 .det-row .det-top{display:grid;grid-template-columns:minmax(0,1fr) 22px 30px;gap:8px;margin-bottom:8px}
+
+/* ─────────────── 마크다운 렌더 ─────────────── */
+.md{font-size:14.5px;line-height:1.92;color:var(--ink-2);margin-top:11px;word-break:break-word}
+.md > :first-child{margin-top:0}
+.md p{margin:0 0 .85em}
+.md > p:last-child{margin-bottom:0}
+.md h3,.md h4,.md h5{font-family:var(--serif);color:var(--ink);margin:1.25em 0 .5em;line-height:1.5}
+.md h3{font-size:1.14em;font-weight:600}
+.md h4{font-size:1.05em;font-weight:500}
+.md h5{font-size:.98em;font-weight:500;color:var(--ink-2)}
+.md ul,.md ol{margin:0 0 .85em;padding-left:1.4em}
+.md li{margin:.2em 0}
+.md blockquote{margin:0 0 .9em;padding:.15em 0 .15em .95em;border-left:2px solid var(--teal);color:var(--muted)}
+.md hr{border:none;border-top:1px solid var(--hair);margin:1.4em 0}
+.md strong{font-weight:600;color:var(--ink)}
+.md em{font-style:italic}
+.md del{color:var(--faint)}
+.md u{text-decoration:underline;text-underline-offset:.18em;text-decoration-color:var(--line)}
+.md mark{background:#F6EFC9;color:inherit;padding:.06em .2em;border-radius:2px}
+.md code{font-family:var(--mono);font-size:.86em;background:var(--warm);
+  border:1px solid var(--hair);border-radius:2px;padding:.06em .34em}
+.sub-item .md{font-size:13.5px;margin-top:6px;padding-bottom:9px}
+
+/* 마크다운 도구막대 */
+.md-bar{display:flex;flex-wrap:wrap;gap:5px;margin:0 0 7px}
+.md-bar button{font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--muted);
+  border:1px solid var(--hair);background:var(--paper);border-radius:2px;padding:3px 9px;line-height:1.6}
+.md-bar button:hover{border-color:var(--teal);color:var(--teal)}
+.det-editor .det-row{padding:15px;margin-bottom:14px}
+.det-editor .textarea{font-size:14.5px;line-height:1.9}
+.md-help{font-size:12.5px;color:var(--muted);line-height:2}
+.md-help code{font-family:var(--mono);font-size:11.5px;background:var(--paper);
+  border:1px solid var(--hair);border-radius:2px;padding:1px 5px}
+
+/* ─────────────── 메모란 ─────────────── */
+.memo-list{display:grid;gap:13px}
+.memo-row{display:grid;grid-template-columns:92px minmax(0,1fr);gap:12px;align-items:start;
+  padding-bottom:12px;border-bottom:1px solid var(--hair)}
+.memo-row:last-child{border-bottom:none;padding-bottom:0}
+.memo-label{font-family:var(--mono);font-size:11px;color:var(--faint);letter-spacing:.1em;
+  padding-top:5px;overflow-wrap:anywhere}
+.memo-words{display:flex;flex-wrap:wrap;gap:6px}
+.memo-word{display:inline-block;padding:3px 10px;border-radius:var(--r);border:1px solid var(--hair);
+  background:var(--warm);font-size:12.5px;color:var(--ink-2)}
+.memo-edit-row{border:1px solid var(--hair);border-radius:var(--r);padding:13px;
+  margin-bottom:10px;background:var(--warm)}
+.memo-edit-top{display:grid;grid-template-columns:minmax(0,1fr) 22px 30px;gap:8px;margin-bottom:9px}
+.memo-chip{display:inline-flex;align-items:center;gap:5px;padding:3px 5px 3px 10px;border-radius:var(--r);
+  border:1px solid var(--hair);background:var(--paper);font-size:12.5px}
+.memo-chip button{color:var(--faint);font-size:10px;line-height:1;padding:3px}
+.memo-chip button:hover{color:var(--danger)}
+.memo-add{display:flex;gap:7px;margin-top:9px}
+.memo-add .input{flex:1;padding:7px 11px;font-size:13.5px}
 
 /* ─────────────── 발췌 도구 ─────────────── */
 .ex-tools{display:grid;gap:11px;margin-bottom:18px}
@@ -532,6 +591,13 @@ details.setup-more[open] > summary::before{content:"− "}
 /* 태그 중요도 */
 .adv-group{display:flex;align-items:flex-start;gap:11px;padding:7px 0}
 .adv-group + .adv-group{border-top:1px solid var(--hair);margin-top:4px;padding-top:11px}
+/* 메모 카드 만들기 창 */
+.mc-sum{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.mc-sum span{font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;color:var(--muted);
+  border:1px solid var(--hair);border-radius:var(--r);padding:5px 11px;background:var(--warm)}
+.mc-switch{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;color:var(--ink-2)}
+.mc-switch input{accent-color:var(--teal)}
+
 .lv-badge{flex:none;width:22px;height:22px;border-radius:var(--r);display:grid;place-items:center;
   font-size:11px;font-weight:500;margin-top:1px}
 .lv-high{background:var(--teal);color:#fff}
@@ -613,6 +679,13 @@ details.setup-more[open] > summary::before{content:"− "}
   .fab{right:18px;bottom:18px}
   .dl-row{grid-template-columns:96px minmax(0,1fr)}
   .kv-row{grid-template-columns:88px minmax(0,1fr) 20px 26px 26px;gap:6px}
+  .det-title{font-size:15.5px}
+  .detail-item .txt,.detail-item .md{font-size:13.4px;line-height:1.86}
+  .sub-item > summary{font-size:11px}
+  .sub-item .txt,.sub-item .md{font-size:12.6px;line-height:1.82}
+  .memo-row{grid-template-columns:1fr;gap:6px}
+  .memo-label{padding-top:0}
+  .memo-edit-top{grid-template-columns:minmax(0,1fr) 20px 26px;gap:6px}
   .cmt-box{max-width:100%;padding:12px 13px}
   .rel-row{grid-template-columns:minmax(0,1fr) 30px}
   .rel-row .select{grid-column:1/-1}
@@ -743,6 +816,9 @@ const BASE_PRESET = {
   details: ['외모', '성격', '과거', '인간관계', '기타'],
 };
 
+/* 메모란 기본 라벨 — 계정마다 자유롭게 고칠 수 있어요 */
+const MEMO_LABELS = ['장르', '포지션', '관계'];
+
 const state = {
   view: 'gallery',       // gallery | character
   chars: [],
@@ -795,6 +871,91 @@ const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c =>
   ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const uidgen = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+
+/* ─────────── 마크다운 (세부 묘사 전용) ───────────
+   esc() 로 먼저 막은 뒤 표기만 서식으로 바꿔요. 원문은 그대로 저장됩니다. */
+function mdInline(t) {
+  const codes = [];
+  let s = String(t).replace(/`([^`\n]+)`/g, (_, a) => { codes.push(a); return '\u0001' + (codes.length - 1) + '\u0001'; });
+  s = s
+    .replace(/\*\*\*([^*\n]+)\*\*\*/g, '<strong><em>$1</em></strong>')
+    .replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/(^|[^\w*])\*([^*\n]+)\*(?![\w*])/g, '$1<em>$2</em>')
+    .replace(/~~([^~\n]+)~~/g, '<del>$1</del>')
+    .replace(/==([^=\n]+)==/g, '<mark>$1</mark>')
+    .replace(/__([^_\n]+)__/g, '<u>$1</u>')
+    .replace(/(^|[^\w_])_([^_\n]+)_(?![\w_])/g, '$1<em>$2</em>');
+  return s.replace(/\u0001(\d+)\u0001/g, (_, i) => '<code>' + codes[+i] + '</code>');
+}
+
+function mdHTML(src) {
+  const lines = esc(String(src ?? '')).split(/\r?\n/);
+  let out = '', para = [], quote = [], list = null;
+  const flushPara = () => { if (para.length) { out += '<p>' + para.map(mdInline).join('<br>') + '</p>'; para = []; } };
+  const flushQuote = () => { if (quote.length) { out += '<blockquote>' + quote.map(mdInline).join('<br>') + '</blockquote>'; quote = []; } };
+  const flushList = () => {
+    if (list) { out += '<' + list.tag + '>' + list.items.map(t => '<li>' + mdInline(t) + '</li>').join('') + '</' + list.tag + '>'; list = null; }
+  };
+  const flushAll = () => { flushPara(); flushQuote(); flushList(); };
+  for (const raw of lines) {
+    const line = raw.replace(/\s+$/, '');
+    if (!line) { flushAll(); continue; }
+    let mm;
+    if (/^\s*(-{3,}|_{3,})\s*$/.test(line)) { flushAll(); out += '<hr>'; continue; }
+    if ((mm = line.match(/^(#{1,3})\s+(.*)$/))) {
+      flushAll(); const lv = mm[1].length + 2;
+      out += '<h' + lv + '>' + mdInline(mm[2]) + '</h' + lv + '>'; continue;
+    }
+    if ((mm = line.match(/^\s*&gt;\s?(.*)$/))) { flushPara(); flushList(); quote.push(mm[1]); continue; }
+    if ((mm = line.match(/^\s*[-*+]\s+(.*)$/))) {
+      flushPara(); flushQuote();
+      if (!list || list.tag !== 'ul') { flushList(); list = { tag: 'ul', items: [] }; }
+      list.items.push(mm[1]); continue;
+    }
+    if ((mm = line.match(/^\s*\d+[.)]\s+(.*)$/))) {
+      flushPara(); flushQuote();
+      if (!list || list.tag !== 'ol') { flushList(); list = { tag: 'ol', items: [] }; }
+      list.items.push(mm[1]); continue;
+    }
+    flushList(); flushQuote(); para.push(line);
+  }
+  flushAll();
+  return out;
+}
+
+/* 마크다운 도구막대 */
+const MD_TOOLS = [
+  ['굵게', 'wrap', '**', '**'],
+  ['기울임', 'wrap', '*', '*'],
+  ['밑줄', 'wrap', '__', '__'],
+  ['취소선', 'wrap', '~~', '~~'],
+  ['형광', 'wrap', '==', '=='],
+  ['소제목', 'line', '## '],
+  ['목록', 'line', '- '],
+  ['인용', 'line', '> '],
+];
+const mdBarHTML = target => '<div class="md-bar">' + MD_TOOLS.map((t, i) =>
+  `<button type="button" data-mdt="${i}" data-mdfor="${target}">${t[0]}</button>`).join('') + '</div>';
+
+function applyMdTool(ta, tool) {
+  const kind = tool[1], a = tool[2], b = tool[3] || '';
+  const s = ta.selectionStart, e = ta.selectionEnd, v = ta.value;
+  if (kind === 'wrap') {
+    const sel = v.slice(s, e) || '내용';
+    ta.value = v.slice(0, s) + a + sel + b + v.slice(e);
+    ta.selectionStart = s + a.length;
+    ta.selectionEnd = s + a.length + sel.length;
+  } else {
+    const ls = v.lastIndexOf('\n', Math.max(0, s - 1)) + 1;
+    let le = v.indexOf('\n', e); if (le < 0) le = v.length;
+    const block = v.slice(ls, le).split('\n')
+      .map(l => l.startsWith(a) ? l.slice(a.length) : a + l).join('\n');
+    ta.value = v.slice(0, ls) + block + v.slice(le);
+    ta.selectionStart = ls; ta.selectionEnd = ls + block.length;
+  }
+  ta.focus();
+  ta.dispatchEvent(new Event('input', { bubbles: true }));
+}
 const move = (arr, i, d) => {
   const j = i + d;
   if (j < 0 || j >= arr.length) return;
@@ -843,6 +1004,8 @@ function closeModal() {
 }
 document.addEventListener('keydown', e => {
   if (e.key !== 'Escape') return;
+  const mini = document.querySelector('.scrim.mini');
+  if (mini) { mini.querySelector('[data-no]')?.click(); return; }
   if ($('#modal-root').children.length) closeModal();
   else if ($('#sheet-root').children.length) closeSheet();
 });
@@ -874,6 +1037,32 @@ function confirmTypeDialog(title, msg, phrase, okLabel = '삭제') {
     setTimeout(() => input.focus(), 60);
   });
 }
+
+/* 작은 확인창 — 열려 있는 편집 창을 그대로 둔 채 위에 겹쳐요 */
+function confirmMini(html, okLabel = '삭제') {
+  return new Promise(res => {
+    const el = document.createElement('div');
+    el.className = 'scrim mini';
+    el.innerHTML = `<div class="modal" role="dialog" aria-modal="true">
+      <div class="modal-body"><p class="mini-msg">${html}</p></div>
+      <div class="modal-foot">
+        <button class="btn btn-ghost" data-no>취소</button>
+        <button class="btn btn-danger" data-yes>${esc(okLabel)}</button>
+      </div></div>`;
+    const done = v => { el.remove(); res(v); };
+    el.addEventListener('click', e => { if (e.target === el) done(false); });
+    el.querySelector('[data-no]').onclick = () => done(false);
+    el.querySelector('[data-yes]').onclick = () => done(true);
+    document.body.append(el);
+    setTimeout(() => el.querySelector('[data-yes]').focus(), 40);
+  });
+}
+
+/* 확인창에 보여줄 짧은 미리보기 */
+const snip = (t, n = 34) => {
+  const v = String(t || '').replace(/\s+/g, ' ').trim();
+  return v.length > n ? v.slice(0, n) + '…' : v;
+};
 
 function confirmDialog(title, msg, okLabel = '삭제') {
   return new Promise(res => {
@@ -1119,12 +1308,13 @@ async function bootUser(u) {
     const snap = await F.getDoc(uref);
     if (!snap.exists()) {
       profile = { nickname: (u.displayName || '나') + '의 아카이브', notice: '', formPreset: null,
-                  tagLevels: { char: {}, ex: {} } };
+                  tagLevels: { char: {}, ex: {} }, memoLabels: [...MEMO_LABELS] };
       await F.setDoc(uref, { ...profile, createdAt: Date.now() });
     } else {
       const d = snap.data();
       profile = { nickname: d.nickname || '내 아카이브', notice: d.notice || '', formPreset: d.formPreset || null,
-                  tagLevels: { char: {}, ex: {}, ...(d.tagLevels || {}) } };
+                  tagLevels: { char: {}, ex: {}, ...(d.tagLevels || {}) },
+                  memoLabels: (d.memoLabels || []).length ? d.memoLabels : [...MEMO_LABELS] };
     }
     $('#brand-sub').textContent = profile.nickname;
     await Promise.all([loadStatSets(), loadChars(), loadNotices()]);
@@ -1420,6 +1610,9 @@ function bindComments(root, redraw) {
   root.querySelectorAll('[data-cdel]').forEach(b => b.onclick = async () => {
     const [id, cid] = b.dataset.cdel.split('|');
     const n = state.notices.find(x => x.id === id); if (!n) return;
+    const cm = (n.comments || []).find(x => x.id === cid);
+    if (!await confirmMini(`이 댓글을 지울까요? 되돌릴 수 없어요.${
+      cm ? `<br><span class="q">“${esc(snip(cm.text, 46))}”</span>` : ''}`)) return;
     try {
       const list = (n.comments || []).filter(x => x.id !== cid);
       await F.updateDoc(ref('notices', id), { comments: list });
@@ -1762,12 +1955,15 @@ function openStatTools(tab) {
   let setsPicked = (memo.setsPicked || []).filter(id => state.statSets.some(x => x.id === id));
   if (!setsPicked.length) setsPicked = curSet ? [curSet.id] : [];
   let rankSet = state.statSets.some(x => x.id === memo.rankSet) ? memo.rankSet : curSet?.id;
+  let cmpSet = state.statSets.some(x => x.id === memo.cmpSet) ? memo.cmpSet : curSet?.id;
   let fieldPick = (memo.fieldPick || []).filter(i => (c.fields || [])[i]);
   let showPeers = memo.showPeers !== false;
   let cmpPick = memo.cmpPick || [];         // 비교 이미지 아래에 넣을 프로필 항목(이름 기준)
+  let cmpTags = memo.cmpTags || [];         // 비교 후보를 좁히는 태그(이 창 안에서만 써요)
   const remember = () => {
     statToolsMemo = { charId: c.id, tab, picked: [...picked], setsPicked: [...setsPicked],
-                      rankSet, fieldPick: [...fieldPick], showPeers, cmpPick: [...cmpPick] };
+                      rankSet, cmpSet, fieldPick: [...fieldPick], showPeers,
+                      cmpPick: [...cmpPick], cmpTags: [...cmpTags] };
   };
   const back = () => openStatTools();
 
@@ -1811,19 +2007,39 @@ function openStatTools(tab) {
     return seen;
   }
 
+  const cmpSetObj = () => state.statSets.find(x => x.id === cmpSet) || curSet;
+
   function drawCompare() {
-    const labels = curSet?.labels || [], max = curSet?.max || 10;
+    const cs = cmpSetObj();
+    const labels = cs?.labels || [], max = cs?.max || 10;
     const series = picked.map(id => {
       const p = state.chars.find(x => x.id === id);
       return { id, name: p?.name || '이름 없음', vals: p?.stats || {} };
     });
     const keys = cmpKeys();
     cmpPick = cmpPick.filter(k => keys.includes(k));
+    const allTags = tagCounts(state.chars);
+    cmpTags = cmpTags.filter(t => allTags.some(([n]) => n === t));
+    const cands = state.chars.filter(x =>
+      picked.includes(x.id) || cmpTags.every(t => (x.tags || []).includes(t)));
     $('#st-body').innerHTML = `
-      <p class="hint" style="margin:0 0 14px"><b>${esc(curSet?.name || '')}</b> 세트의 항목으로 최대 3명까지 겹쳐 봐요.
-        다른 세트를 쓰는 캐릭터는 같은 이름의 항목만 값이 잡히고, 없는 항목은 0으로 그려져요.</p>
-      <div class="chipbar" id="cmp-chips">${state.chars.map(x =>
-        `<button class="chip" data-c="${x.id}" aria-pressed="${picked.includes(x.id)}">${esc(x.name || '이름 없음')}</button>`).join('')}</div>
+      <div class="set-bar">
+        <select class="select" id="cmp-set">${state.statSets.map(x =>
+          `<option value="${x.id}" ${x.id === cs?.id ? 'selected' : ''}>${esc(x.name)} · ${x.labels.length}항목 · 최대 ${x.max}</option>`).join('')}</select>
+      </div>
+      <p class="hint" style="margin:0 0 14px">비교의 기준이 될 <b>스탯 세트</b>를 고르고, 최대 3명까지 겹쳐 봐요.
+        다른 세트를 쓰는 캐릭터는 같은 이름의 항목만 값이 잡히고, 없는 항목은 0으로 그려져요.
+        ${esc(curSet?.name || '')} 외의 세트를 골라도 이 캐릭터의 설정은 바뀌지 않아요.</p>
+      ${allTags.length ? `<div class="adv" style="margin:0 0 12px">
+        <div class="adv-head"><span class="eyebrow">태그로 후보 좁히기</span><div class="spacer"></div>
+          ${cmpTags.length ? `<button class="linkish" id="cmp-tclear">해제</button>` : ''}</div>
+        <div class="chipbar" style="margin:0">${allTags.map(([t, n]) =>
+          `<button class="chip" data-ct="${esc(t)}" aria-pressed="${cmpTags.includes(t)}">${esc(t)} ${n}</button>`).join('')}</div>
+        ${cmpTags.length ? `<p class="hint">고른 태그를 <b>모두</b> 가진 캐릭터만 아래에 남아요. 이미 고른 인물은 그대로 보여요.</p>` : ''}
+      </div>` : ''}
+      <div class="chipbar" id="cmp-chips">${cands.length
+        ? cands.map(x => `<button class="chip" data-c="${x.id}" aria-pressed="${picked.includes(x.id)}">${esc(x.name || '이름 없음')}</button>`).join('')
+        : `<span class="hint" style="margin:0">이 태그 조합을 가진 캐릭터가 없어요.</span>`}</div>
       ${keys.length ? `<div class="adv" style="margin:0 0 16px">
         <div class="adv-head"><span class="eyebrow">이미지 아래에 넣을 프로필 항목</span><div class="spacer"></div>
           ${cmpPick.length ? `<button class="linkish" id="cmp-fclear">모두 빼기</button>` : ''}</div>
@@ -1843,6 +2059,14 @@ function openStatTools(tab) {
             `<tr><th>${esc(l)}</th>${series.map(sr => `<td>${Number(sr.vals[l] || 0)}</td>`).join('')}</tr>`).join('')}</tbody></table>` : ''}
         </div>
       </div>`;
+    $('#cmp-set').onchange = e2 => { cmpSet = e2.target.value; drawCompare(); };
+    $$('#st-body [data-ct]').forEach(b2 => b2.onclick = () => {
+      const t = b2.dataset.ct;
+      cmpTags = cmpTags.includes(t) ? cmpTags.filter(x => x !== t) : [...cmpTags, t];
+      drawCompare();
+    });
+    const tcl = $('#cmp-tclear');
+    if (tcl) tcl.onclick = () => { cmpTags = []; drawCompare(); };
     $$('#st-body [data-cf]').forEach(b2 => b2.onclick = () => {
       const k = b2.dataset.cf;
       cmpPick = cmpPick.includes(k) ? cmpPick.filter(x => x !== k) : [...cmpPick, k];
@@ -1937,8 +2161,9 @@ function openStatTools(tab) {
   m.querySelector('#st-img').onclick = () => {
     remember();
     if (tab === 'compare') {
-      if ((curSet?.labels || []).length < 3) return toast('항목이 3개 이상일 때 저장할 수 있어요', 1);
-      exportCompare(curSet, curSet.labels, curSet.max || 10, picked.map(id => {
+      const cs = cmpSetObj();
+      if ((cs?.labels || []).length < 3) return toast('항목이 3개 이상일 때 저장할 수 있어요', 1);
+      exportCompare(cs, cs.labels, cs.max || 10, picked.map(id => {
         const p = state.chars.find(x => x.id === id);
         return {
           name: p?.name || '이름 없음', vals: p?.stats || {},
@@ -2368,6 +2593,7 @@ function renderCharacter() {
   const labels = set?.labels || [], max = set?.max || 10, vals = c.stats || {};
   const img = state.fullImg || c.thumb;
   const details = c.details || [];
+  const memos = (c.memos || []).filter(mo => mo.label && (mo.words || []).length);
 
   // 목록 순서대로 앞뒤 캐릭터
   let order = visibleChars();
@@ -2408,6 +2634,7 @@ function renderCharacter() {
         ${(c.tags || []).length ? `<div class="tags">${c.tags.map(t => `<span class="tag">#${esc(t)}</span>`).join('')}</div>` : ''}
         <div class="side-actions">
           <button class="btn btn-key btn-sm" id="export-card">카드 이미지 저장</button>
+          <button class="btn btn-sm" id="export-memo">메모 카드</button>
           <button class="btn btn-sm btn-danger" id="del-char">삭제</button>
         </div>
         <p class="hint">만든 날 ${fmtDate(c.createdAt)} · 마지막 수정 ${fmtDate(c.updatedAt)}</p>
@@ -2444,22 +2671,38 @@ function renderCharacter() {
         </section>
 
         <section class="panel">
+          <div class="panel-head"><h2>메모</h2><div class="spacer"></div>
+            ${memos.length ? `<span class="eyebrow">${memos.length}줄</span>` : ''}
+            <button class="btn btn-sm" id="edit-memo">메모 수정</button></div>
+          ${memos.length
+            ? `<div class="memo-list">${memos.map(mo => `
+                <div class="memo-row">
+                  <span class="memo-label">${esc(mo.label)}</span>
+                  <div class="memo-words">${(mo.words || []).map(w =>
+                    `<span class="memo-word">${esc(w)}</span>`).join('')}</div>
+                </div>`).join('')}</div>`
+            : `<p class="hint" style="margin:0">장르 · 포지션 · 관계처럼 라벨을 골라 키워드만 짧게 모아두는 칸이에요.
+                라벨은 자유롭게 고치고 추가할 수 있어요.</p>`}
+        </section>
+
+        <section class="panel">
           <div class="panel-head"><h2>세부 묘사</h2><div class="spacer"></div>
-            ${details.length ? `<span class="eyebrow">${details.length}편</span>` : ''}</div>
+            ${details.length ? `<span class="eyebrow">${details.length}편</span>` : ''}
+            <button class="btn btn-sm" id="edit-det">묘사 수정</button></div>
           ${details.length
             ? details.map(d => `<details class="detail-item" open>
                 <summary><span class="det-title">${esc(d.t || '제목 없음')}</span>
                   ${(d.subs || []).length ? `<span class="sub-count">${d.subs.length}</span>` : ''}
                   <span class="arrow">▾</span></summary>
-                ${d.v ? `<div class="txt">${esc(d.v)}</div>` : ''}
+                ${d.v ? `<div class="md">${mdHTML(d.v)}</div>` : ''}
                 ${(d.subs || []).length ? `<div class="sub-list">${d.subs.map(sb => `
                   <details class="sub-item">
                     <summary><span style="flex:1">${esc(sb.t || '세부 제목')}</span><span class="arrow">▾</span></summary>
-                    <div class="txt">${esc(sb.v)}</div>
+                    <div class="md">${mdHTML(sb.v)}</div>
                   </details>`).join('')}</div>` : ''}
               </details>`).join('')
             : `<p class="hint" style="margin:0">외모, 습관, 과거처럼 길게 풀어 쓸 이야기를 제목과 함께 적어두는 칸이에요.
-                프로필 수정에서 추가할 수 있어요.</p>`}
+                위의 <b>묘사 수정</b>에서 넓은 화면으로 쓰고, <b>**굵게**</b> 같은 마크다운도 쓸 수 있어요.</p>`}
         </section>
 
         <section class="panel">
@@ -2523,8 +2766,11 @@ function renderCharacter() {
   $('#edit-char').onclick = () => openCharEditor(c);
   $('#del-char').onclick = () => removeCharacter(c);
   $('#export-card').onclick = () => exportCard(c, set);
+  $('#export-memo').onclick = () => openMemoCardTool(c);
   $('#manage-sets').onclick = openStatSets;
   $('#edit-rel').onclick = () => openRelations(c);
+  $('#edit-det').onclick = () => openDetailEditor(c);
+  $('#edit-memo').onclick = () => openMemoEditor(c);
   $$('[data-rel]').forEach(b => b.onclick = () => openCharacter(b.dataset.rel));
   $('#toggle-stat').onclick = () => { state.statEdit = !state.statEdit; renderCharacter(); };
   $('#compare-stats').onclick = () => openStatTools(state.chars.length > 1 ? 'compare' : 'sets');
@@ -2737,7 +2983,8 @@ function openCharEditor(c) {
       <div class="field"><span>세부 묘사</span>
         <div id="det-wrap"></div>
         <button class="btn btn-sm btn-ghost" id="add-det" style="margin-top:4px">＋ 묘사 추가</button>
-        <p class="hint">제목을 달아 길게 풀어 쓰는 칸이에요. 줄바꿈이 그대로 유지되고, 카드 이미지에는 포함되지 않아요.</p>
+        <p class="hint">제목을 달아 길게 풀어 쓰는 칸이에요. 카드 이미지에는 포함되지 않아요.
+          긴 글은 캐릭터 화면의 <b>묘사 수정</b>에서 더 넓게 쓸 수 있고, <b>**굵게**</b> 같은 마크다운도 거기 안내가 있어요.</p>
       </div>`,
     foot: `<button class="btn btn-ghost" id="cancel">취소</button>
            <button class="btn btn-key" id="save">${isNew ? '만들기' : '저장'}</button>`,
@@ -2783,16 +3030,26 @@ function openCharEditor(c) {
     detWrap.querySelectorAll('[data-sv]').forEach(el => el.oninput = ev => {
       const [i, j] = pair(el.dataset.sv); draft.details[i].subs[j].v = ev.target.value;
     });
-    detWrap.querySelectorAll('[data-srm]').forEach(el => el.onclick = () => {
-      const [i, j] = pair(el.dataset.srm); draft.details[i].subs.splice(j, 1); drawDet();
+    detWrap.querySelectorAll('[data-srm]').forEach(el => el.onclick = async () => {
+      const [i, j] = pair(el.dataset.srm);
+      const sb = draft.details[i].subs[j] || {};
+      if (((sb.t || '').trim() || (sb.v || '').trim())
+        && !await confirmMini(`세부 제목 <b>${esc(snip(sb.t, 18) || '제목 없음')}</b> 을(를) 지울까요?${
+          (sb.v || '').trim() ? `<br>안에 적은 ${String(sb.v).length}자도 함께 사라져요.` : ''}`)) return;
+      draft.details[i].subs.splice(j, 1); drawDet();
     });
     detWrap.querySelectorAll('[data-addsub]').forEach(el => el.onclick = () => {
       const i = +el.dataset.addsub;
       draft.details[i].subs = [...(draft.details[i].subs || []), { t: '', v: '' }];
       drawDet();
     });
-    detWrap.querySelectorAll('[data-drm]').forEach(el => el.onclick = () => {
-      draft.details.splice(+el.dataset.drm, 1); drawDet();
+    detWrap.querySelectorAll('[data-drm]').forEach(el => el.onclick = async () => {
+      const i = +el.dataset.drm, d = draft.details[i] || {};
+      const bulk = String(d.v || '').length + (d.subs || []).reduce((n, sb) => n + String(sb.v || '').length, 0);
+      if (((d.t || '').trim() || bulk)
+        && !await confirmMini(`세부 묘사 <b>${esc(snip(d.t, 18) || '제목 없음')}</b> 을(를) 지울까요?${
+          bulk ? `<br>본문 ${bulk}자${(d.subs || []).length ? ` · 세부 제목 ${d.subs.length}개` : ''}가 함께 사라져요.` : ''}`)) return;
+      draft.details.splice(i, 1); drawDet();
     });
     detWrap.querySelectorAll('[data-dup]').forEach(el => el.onclick = () => { move(draft.details, +el.dataset.dup, -1); drawDet(); });
     detWrap.querySelectorAll('[data-ddn]').forEach(el => el.onclick = () => { move(draft.details, +el.dataset.ddn, 1); drawDet(); });
@@ -2857,8 +3114,12 @@ function openCharEditor(c) {
     });
     kvWrap.querySelectorAll('[data-k]').forEach(el => el.oninput = e => draft.fields[+el.dataset.k].k = e.target.value);
     kvWrap.querySelectorAll('[data-v]').forEach(el => el.oninput = e => draft.fields[+el.dataset.v].v = e.target.value);
-    kvWrap.querySelectorAll('[data-rm]').forEach(el => el.onclick = () => {
-      draft.fields.splice(+el.dataset.rm, 1);
+    kvWrap.querySelectorAll('[data-rm]').forEach(el => el.onclick = async () => {
+      const i = +el.dataset.rm, f = draft.fields[i] || {};
+      const filled = (f.k || '').trim() || (f.v || '').trim();
+      if (filled && !await confirmMini(`프로필 항목 <b>${esc(snip(f.k, 18) || '제목 없음')}</b> 을(를) 지울까요?${
+        (f.v || '').trim() ? `<br><span class="q">${esc(snip(f.v, 40))}</span>` : ''}`)) return;
+      draft.fields.splice(i, 1);
       if (!draft.fields.length) draft.fields.push({ k: '', v: '' });
       drawKV();
     });
@@ -2930,6 +3191,310 @@ function openCharEditor(c) {
       else openCharacter(id);
     } catch (e) {
       btn.disabled = false; btn.textContent = isNew ? '만들기' : '저장';
+      toast('저장하지 못했어요: ' + (e.code || e.message), 1);
+    }
+  };
+}
+
+/* ════════ 세부 묘사 전용 편집 ════════ */
+function openDetailEditor(c) {
+  const draft = (c.details || []).map(d => ({
+    t: d.t || '', v: d.v || '',
+    subs: (d.subs || []).map(sb => ({ t: sb.t || '', v: sb.v || '' })),
+  }));
+  if (!draft.length) draft.push({ t: '', v: '', subs: [] });
+  let preview = false;
+
+  const m = openModal({
+    title: '세부 묘사 수정',
+    wide: true,
+    body: `<p class="hint" style="margin:0 0 14px">이 창은 <b>세부 묘사만</b> 고쳐요.
+        이름 · 태그 · 프로필 항목은 그대로 <b>프로필 수정</b>에서 다룹니다.
+        아래 표기법대로 적으면 저장한 뒤 서식으로 보여요.</p>
+      <div id="dte-wrap" class="det-editor"></div>
+      <button class="btn btn-sm btn-ghost" id="dte-add" style="margin-top:4px">＋ 묘사 추가</button>
+      <details class="setup-more" id="dte-help" style="margin-top:18px">
+        <summary>마크다운 표기법</summary>
+        <p class="md-help" style="margin:13px 0 0">
+          <code>**굵게**</code> <code>*기울임*</code> <code>__밑줄__</code>
+          <code>~~취소선~~</code> <code>==형광==</code> <code>\`고정폭\`</code><br>
+          <code># 소제목</code> — <code>#</code> 이 늘어날수록 작아져요 (<code>###</code> 까지)<br>
+          <code>- 목록</code> · <code>1. 번호 목록</code> · <code>&gt; 인용</code> · <code>---</code> 가로줄<br>
+          빈 줄은 문단을 나누고, 그 밖의 줄바꿈은 그대로 유지돼요.
+        </p></details>`,
+    foot: `<button class="btn btn-ghost" id="dte-cancel">취소</button>
+           <button class="btn btn-sm" id="dte-prev" aria-pressed="false">미리보기</button>
+           <button class="btn btn-key" id="dte-save">저장</button>`,
+  });
+
+  const wrap = m.querySelector('#dte-wrap');
+  const pair = v => v.split('.').map(Number);
+
+  function drawPreview() {
+    const live = draft.filter(d => d.t.trim() || d.v.trim() || d.subs.some(sb => sb.t.trim() || sb.v.trim()));
+    wrap.innerHTML = live.length ? live.map(d => `
+      <div class="detail-item">
+        <div class="det-title">${esc(d.t || '제목 없음')}</div>
+        ${d.v.trim() ? `<div class="md">${mdHTML(d.v)}</div>` : ''}
+        ${d.subs.length ? `<div class="sub-list">${d.subs.map(sb => `
+          <div class="sub-item">
+            <div style="font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;color:var(--teal);padding:9px 0 0">
+              ${esc(sb.t || '세부 제목')}</div>
+            <div class="md">${mdHTML(sb.v)}</div>
+          </div>`).join('')}</div>` : ''}
+      </div>`).join('') : `<p class="hint" style="margin:0">아직 보여줄 내용이 없어요.</p>`;
+  }
+
+  function drawDte() {
+    if (preview) return drawPreview();
+    wrap.innerHTML = draft.map((d, i) => `
+      <div class="det-row">
+        <div class="det-top">
+          <input class="input" data-dt="${i}" value="${esc(d.t)}" placeholder="제목 (예: 외모 · 말버릇 · 과거)" maxlength="40">
+          <span class="ord">
+            <button data-dup="${i}" title="위로" ${i === 0 ? 'disabled' : ''}>▲</button>
+            <button data-ddn="${i}" title="아래로" ${i === draft.length - 1 ? 'disabled' : ''}>▼</button>
+          </span>
+          <button class="icon-btn" data-drm="${i}" title="이 묘사 지우기">✕</button>
+        </div>
+        ${mdBarHTML('dte-v-' + i)}
+        <textarea class="textarea" id="dte-v-${i}" data-dv="${i}" style="min-height:250px"
+          placeholder="길게 풀어 써도 괜찮아요.">${esc(d.v)}</textarea>
+        ${d.subs.map((sb, j) => `
+          <div class="sub-edit">
+            <div class="det-top">
+              <input class="input" data-st="${i}.${j}" value="${esc(sb.t)}" placeholder="세부 제목" maxlength="40">
+              <span class="ord">
+                <button data-sup="${i}.${j}" title="위로" ${j === 0 ? 'disabled' : ''}>▲</button>
+                <button data-sdn="${i}.${j}" title="아래로" ${j === d.subs.length - 1 ? 'disabled' : ''}>▼</button>
+              </span>
+              <button class="icon-btn" data-srm="${i}.${j}" title="세부 제목 지우기">✕</button>
+            </div>
+            ${mdBarHTML(`dte-s-${i}-${j}`)}
+            <textarea class="textarea" id="dte-s-${i}-${j}" data-sv="${i}.${j}"
+              style="min-height:170px;font-size:13.5px"
+              placeholder="이 세부 제목 안에 들어갈 내용.">${esc(sb.v)}</textarea>
+          </div>`).join('')}
+        <button class="btn btn-sm btn-ghost" data-addsub="${i}" style="margin-top:2px">＋ 세부 제목</button>
+      </div>`).join('');
+
+    wrap.querySelectorAll('[data-mdt]').forEach(el => el.onclick = () => {
+      const ta = wrap.querySelector('#' + el.dataset.mdfor);
+      if (ta) applyMdTool(ta, MD_TOOLS[+el.dataset.mdt]);
+    });
+    wrap.querySelectorAll('[data-dt]').forEach(el => el.oninput = ev => draft[+el.dataset.dt].t = ev.target.value);
+    wrap.querySelectorAll('[data-dv]').forEach(el => el.oninput = ev => draft[+el.dataset.dv].v = ev.target.value);
+    wrap.querySelectorAll('[data-st]').forEach(el => el.oninput = ev => {
+      const [i, j] = pair(el.dataset.st); draft[i].subs[j].t = ev.target.value;
+    });
+    wrap.querySelectorAll('[data-sv]').forEach(el => el.oninput = ev => {
+      const [i, j] = pair(el.dataset.sv); draft[i].subs[j].v = ev.target.value;
+    });
+    wrap.querySelectorAll('[data-addsub]').forEach(el => el.onclick = () => {
+      draft[+el.dataset.addsub].subs.push({ t: '', v: '' }); drawDte();
+    });
+    wrap.querySelectorAll('[data-srm]').forEach(el => el.onclick = async () => {
+      const [i, j] = pair(el.dataset.srm);
+      const sb = draft[i].subs[j] || {};
+      if ((sb.t.trim() || sb.v.trim())
+        && !await confirmMini(`세부 제목 <b>${esc(snip(sb.t, 18) || '제목 없음')}</b> 을(를) 지울까요?${
+          sb.v.trim() ? `<br>안에 적은 ${sb.v.length}자도 함께 사라져요.` : ''}`)) return;
+      draft[i].subs.splice(j, 1); drawDte();
+    });
+    wrap.querySelectorAll('[data-drm]').forEach(el => el.onclick = async () => {
+      const i = +el.dataset.drm, d = draft[i] || { t: '', v: '', subs: [] };
+      const bulk = d.v.length + d.subs.reduce((n, sb) => n + sb.v.length, 0);
+      if ((d.t.trim() || bulk)
+        && !await confirmMini(`세부 묘사 <b>${esc(snip(d.t, 18) || '제목 없음')}</b> 을(를) 지울까요?${
+          bulk ? `<br>본문 ${bulk}자${d.subs.length ? ` · 세부 제목 ${d.subs.length}개` : ''}가 함께 사라져요.` : ''}`)) return;
+      draft.splice(i, 1);
+      if (!draft.length) draft.push({ t: '', v: '', subs: [] });
+      drawDte();
+    });
+    wrap.querySelectorAll('[data-dup]').forEach(el => el.onclick = () => { move(draft, +el.dataset.dup, -1); drawDte(); });
+    wrap.querySelectorAll('[data-ddn]').forEach(el => el.onclick = () => { move(draft, +el.dataset.ddn, 1); drawDte(); });
+    wrap.querySelectorAll('[data-sup]').forEach(el => el.onclick = () => {
+      const [i, j] = pair(el.dataset.sup); move(draft[i].subs, j, -1); drawDte();
+    });
+    wrap.querySelectorAll('[data-sdn]').forEach(el => el.onclick = () => {
+      const [i, j] = pair(el.dataset.sdn); move(draft[i].subs, j, 1); drawDte();
+    });
+  }
+  drawDte();
+
+  m.querySelector('#dte-add').onclick = () => { draft.push({ t: '', v: '', subs: [] }); drawDte(); };
+  m.querySelector('#dte-prev').onclick = () => {
+    preview = !preview;
+    const pb = m.querySelector('#dte-prev');
+    pb.setAttribute('aria-pressed', preview);
+    pb.textContent = preview ? '계속 쓰기' : '미리보기';
+    m.querySelector('#dte-add').classList.toggle('hidden', preview);
+    m.querySelector('#dte-help').classList.toggle('hidden', preview);
+    drawDte();
+  };
+  m.querySelector('#dte-cancel').onclick = closeModal;
+  m.querySelector('#dte-save').onclick = async () => {
+    const btn = m.querySelector('#dte-save');
+    btn.disabled = true; btn.textContent = '저장하는 중…';
+    try {
+      const details = draft
+        .filter(d => d.t.trim() || d.v.trim() || d.subs.some(sb => sb.t.trim() || sb.v.trim()))
+        .map(d => ({
+          t: d.t.trim(), v: d.v.replace(/\s+$/, ''),
+          subs: d.subs.filter(sb => sb.t.trim() || sb.v.trim())
+            .map(sb => ({ t: sb.t.trim(), v: sb.v.replace(/\s+$/, '') })),
+        }));
+      const now = Date.now();
+      await F.updateDoc(ref('characters', c.id), { details, updatedAt: now });
+      c.details = details; c.updatedAt = now;
+      const i = state.chars.findIndex(x => x.id === c.id);
+      if (i >= 0) state.chars[i] = { ...state.chars[i], details, updatedAt: now };
+      closeModal();
+      toast(`세부 묘사를 저장했어요 · ${details.length}편`);
+      renderCharacter();
+    } catch (e) {
+      btn.disabled = false; btn.textContent = '저장';
+      toast('저장하지 못했어요: ' + (e.code || e.message), 1);
+    }
+  };
+}
+
+/* ════════ 메모란 편집 ════════ */
+function openMemoEditor(c) {
+  const draft = (c.memos || []).map(mo => ({ label: mo.label || '', words: [...(mo.words || [])] }));
+  let labels = [...((profile.memoLabels || []).length ? profile.memoLabels : MEMO_LABELS)];
+  if (!draft.length) draft.push({ label: labels[0] || '메모', words: [] });
+
+  const m = openModal({
+    title: '메모 수정',
+    wide: true,
+    body: `<p class="hint" style="margin:0 0 14px">라벨을 고르고 키워드만 짧게 담아두는 칸이에요.
+        키워드는 엔터나 쉼표로 하나씩 담깁니다.</p>
+      <div id="mem-wrap"></div>
+      <button class="btn btn-sm btn-ghost" id="mem-add" style="margin-top:4px">＋ 메모 줄 추가</button>
+      <div class="adv" style="margin-top:20px">
+        <div class="adv-head"><span class="eyebrow">라벨 관리</span></div>
+        <div class="memo-words" id="mem-labels" style="margin-bottom:10px"></div>
+        <div class="memo-add" style="margin-top:0">
+          <input class="input" id="mem-newlabel" placeholder="새 라벨 (예: 진영 · 무기 · 테마)" maxlength="16">
+          <button class="btn btn-sm" id="mem-addlabel">라벨 추가</button>
+        </div>
+        <p class="hint">라벨은 모든 캐릭터가 함께 써요. 라벨을 지워도 이미 적어둔 메모는 남습니다.</p>
+      </div>`,
+    foot: `<button class="btn btn-ghost" id="mem-cancel">취소</button>
+           <button class="btn btn-key" id="mem-save">저장</button>`,
+  });
+
+  const wrap = m.querySelector('#mem-wrap');
+  const pair = v => v.split('.').map(Number);
+
+  const addWords = (i, text) => {
+    const got = String(text).split(/[,\uFF0C\n]+/).map(w => w.trim()).filter(Boolean);
+    if (!got.length) return false;
+    const row = draft[i];
+    got.forEach(w => { if (!row.words.includes(w) && row.words.length < 40) row.words.push(w); });
+    return true;
+  };
+
+  function drawMem() {
+    wrap.innerHTML = draft.map((mo, i) => {
+      const opts = [...new Set([...labels, mo.label].filter(Boolean))];
+      return `<div class="memo-edit-row">
+        <div class="memo-edit-top">
+          <select class="select" data-mlab="${i}">
+            ${opts.map(l => `<option value="${esc(l)}" ${l === mo.label ? 'selected' : ''}>${esc(l)}</option>`).join('')}
+          </select>
+          <span class="ord">
+            <button data-mup="${i}" title="위로" ${i === 0 ? 'disabled' : ''}>▲</button>
+            <button data-mdn="${i}" title="아래로" ${i === draft.length - 1 ? 'disabled' : ''}>▼</button>
+          </span>
+          <button class="icon-btn" data-mrm="${i}" title="이 줄 지우기">✕</button>
+        </div>
+        <div class="memo-words">${mo.words.map((w, j) =>
+          `<span class="memo-chip">${esc(w)}<button data-wrm="${i}.${j}" title="이 키워드 빼기">✕</button></span>`).join('')
+          || `<span class="hint" style="margin:0">아직 키워드가 없어요.</span>`}</div>
+        <div class="memo-add">
+          <input class="input" data-wi="${i}" placeholder="키워드 입력 후 엔터" maxlength="24">
+          <button class="btn btn-sm" data-wadd="${i}">담기</button>
+        </div>
+      </div>`;
+    }).join('');
+
+    wrap.querySelectorAll('[data-mlab]').forEach(el => el.onchange = () => {
+      draft[+el.dataset.mlab].label = el.value;
+    });
+    wrap.querySelectorAll('[data-mrm]').forEach(el => el.onclick = () => {
+      draft.splice(+el.dataset.mrm, 1);
+      if (!draft.length) draft.push({ label: labels[0] || '메모', words: [] });
+      drawMem();
+    });
+    wrap.querySelectorAll('[data-mup]').forEach(el => el.onclick = () => { move(draft, +el.dataset.mup, -1); drawMem(); });
+    wrap.querySelectorAll('[data-mdn]').forEach(el => el.onclick = () => { move(draft, +el.dataset.mdn, 1); drawMem(); });
+    wrap.querySelectorAll('[data-wrm]').forEach(el => el.onclick = () => {
+      const [i, j] = pair(el.dataset.wrm); draft[i].words.splice(j, 1); drawMem();
+    });
+    wrap.querySelectorAll('[data-wadd]').forEach(el => el.onclick = () => {
+      const i = +el.dataset.wadd;
+      const inp = wrap.querySelector(`[data-wi="${i}"]`);
+      if (addWords(i, inp.value)) { drawMem(); wrap.querySelector(`[data-wi="${i}"]`).focus(); }
+    });
+    wrap.querySelectorAll('[data-wi]').forEach(el => el.onkeydown = ev => {
+      if (ev.key !== 'Enter') return;
+      ev.preventDefault();
+      const i = +el.dataset.wi;
+      if (addWords(i, el.value)) { drawMem(); wrap.querySelector(`[data-wi="${i}"]`).focus(); }
+    });
+  }
+
+  function drawLabels() {
+    const box = m.querySelector('#mem-labels');
+    box.innerHTML = labels.map((l, i) =>
+      `<span class="memo-chip">${esc(l)}<button data-lrm="${i}" title="이 라벨 빼기">✕</button></span>`).join('')
+      || `<span class="hint" style="margin:0">라벨이 없어요. 아래에서 하나 추가해 주세요.</span>`;
+    box.querySelectorAll('[data-lrm]').forEach(el => el.onclick = () => {
+      labels.splice(+el.dataset.lrm, 1); drawLabels(); drawMem();
+    });
+  }
+
+  drawMem(); drawLabels();
+
+  m.querySelector('#mem-add').onclick = () => {
+    draft.push({ label: labels[0] || '메모', words: [] }); drawMem();
+  };
+  const newLab = m.querySelector('#mem-newlabel');
+  const addLabel = () => {
+    const v = newLab.value.trim();
+    if (!v) return;
+    if (labels.includes(v)) return toast('이미 있는 라벨이에요');
+    if (labels.length >= 20) return toast('라벨은 20개까지 담을 수 있어요', 1);
+    labels.push(v); newLab.value = '';
+    drawLabels(); drawMem();
+  };
+  m.querySelector('#mem-addlabel').onclick = addLabel;
+  newLab.onkeydown = ev => { if (ev.key === 'Enter') { ev.preventDefault(); addLabel(); } };
+
+  m.querySelector('#mem-cancel').onclick = closeModal;
+  m.querySelector('#mem-save').onclick = async () => {
+    const btn = m.querySelector('#mem-save');
+    btn.disabled = true; btn.textContent = '저장하는 중…';
+    try {
+      const memos = draft
+        .map(mo => ({ label: (mo.label || '').trim(), words: mo.words.map(w => w.trim()).filter(Boolean) }))
+        .filter(mo => mo.label && mo.words.length);
+      const now = Date.now();
+      await F.updateDoc(ref('characters', c.id), { memos, updatedAt: now });
+      c.memos = memos; c.updatedAt = now;
+      const i = state.chars.findIndex(x => x.id === c.id);
+      if (i >= 0) state.chars[i] = { ...state.chars[i], memos, updatedAt: now };
+      if (JSON.stringify(labels) !== JSON.stringify(profile.memoLabels || [])) {
+        await F.setDoc(F.doc(db, 'users', uid), { memoLabels: labels }, { merge: true });
+        profile.memoLabels = labels;
+      }
+      closeModal();
+      toast(`메모를 저장했어요 · ${memos.length}줄`);
+      renderCharacter();
+    } catch (e) {
+      btn.disabled = false; btn.textContent = '저장';
       toast('저장하지 못했어요: ' + (e.code || e.message), 1);
     }
   };
@@ -3846,6 +4411,463 @@ function fit(x, text, maxW) {
   return t + '…';
 }
 
+/* ════════ 메모 카드 이미지 ════════ */
+const MC_INK = '#14161A', MC_INK2 = '#3E434B', MC_MUTED = '#7B8189', MC_FAINT = '#A6ABB2',
+      MC_HAIR = '#E5E7E8', MC_LINE = '#D2D6D9', MC_TEAL = '#0F4C47';
+const SERIF = 'Noto Serif KR", serif', MONO = 'IBM Plex Mono", monospace',
+      SANS = 'Pretendard Variable", Pretendard, sans-serif';
+const fSerif = (w, px) => `${w} ${px}px "${SERIF}`;
+const fMono = (w, px) => `${w} ${px}px "${MONO}`;
+const fSans = (w, px) => `${w} ${px}px "${SANS}`;
+const spread = t => String(t).split('').join(' ');
+
+const MC_SOLO = {
+  photoW: 424, photoH: 546, gap: 46, nameSize: 54, subSize: 21, kSize: 18, vSize: 23,
+  fieldMax: 8, fieldH: 46, memoTop: 42, memoGap: 36, memoLabelW: 196, labSize: 18,
+  kwSize: 26, kwLineH: 44, kwSep: 30, kwPad: 22, memoMax: 12,
+  statTop: 18, setSize: 20, capSize: 17, statCols: 2, rowH: 44, rowSize: 21, showIndex: false,
+};
+const MC_CMP = {
+  photoW: 304, photoH: 384, gap: 38, nameSize: 40, subSize: 18, kSize: 16, vSize: 20,
+  fieldMax: 5, fieldH: 40, memoTop: 34, memoGap: 30, memoLabelW: 164, labSize: 16,
+  kwSize: 22, kwLineH: 37, kwSep: 26, kwPad: 18, memoMax: 6,
+  statTop: 15, setSize: 18, capSize: 15, statCols: 2, rowH: 36, rowSize: 19, showIndex: true,
+};
+
+const loadPhoto = src => src
+  ? new Promise(res => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = src; })
+  : Promise.resolve(null);
+
+/* 한글은 띄어쓰기가 드물어 글자 단위로도 접어요 */
+function mcWrapLines(x, text, font, maxW, maxLines = 99) {
+  x.font = font;
+  const src = String(text || '').replace(/\s+/g, ' ').trim();
+  if (!src) return [];
+  const lines = [];
+  let cur = '';
+  for (const ch of src) {
+    if (cur && x.measureText(cur + ch).width > maxW) {
+      const sp = cur.lastIndexOf(' ');
+      if (sp > cur.length * 0.5) { lines.push(cur.slice(0, sp)); cur = cur.slice(sp + 1) + ch; }
+      else { lines.push(cur); cur = ch; }
+      if (lines.length >= maxLines) return lines;
+    } else cur += ch;
+  }
+  if (cur) lines.push(cur);
+  return lines.slice(0, maxLines);
+}
+
+/* 키워드를 줄 단위로 흘려요 */
+function wrapItems(x, items, font, sepW, maxW) {
+  x.font = font;
+  const lines = [];
+  let cur = [], w = 0;
+  items.forEach(it => {
+    const iw = x.measureText(it).width;
+    if (cur.length && w + sepW + iw > maxW) { lines.push(cur); cur = []; w = 0; }
+    w += (cur.length ? sepW : 0) + iw;
+    cur.push(it);
+  });
+  if (cur.length) lines.push(cur);
+  return lines;
+}
+
+/* 한 사람 분량의 판면 — draw:false 로 부르면 높이만 재요 */
+function renderPlate(x, o) {
+  const { c, photo, W, PAD, cfg, sets, showStats, draw, index } = o;
+  const CW = W - PAD * 2;
+
+  const txt = (t, px, py, font, color, align) => {
+    x.font = font;
+    if (draw) {
+      x.fillStyle = color; x.textAlign = align || 'left';
+      x.fillText(t, px, py); x.textAlign = 'left';
+    }
+    return x.measureText(t).width;
+  };
+  const rule = (x1, y1, x2, color, w) => {
+    if (!draw) return;
+    x.strokeStyle = color; x.lineWidth = w || 1;
+    x.beginPath(); x.moveTo(x1, y1); x.lineTo(x2, y1); x.stroke();
+  };
+
+  /* ── 위쪽: 사진 + 이름 · 프로필 ── */
+  const pw = photo ? cfg.photoW : 0, ph = photo ? cfg.photoH : 0;
+  const rx = PAD + (photo ? pw + cfg.gap : 0);
+  const rw = W - PAD - rx;
+  let ry = o.top;
+
+  if (cfg.showIndex && index != null) {
+    txt(String(index + 1).padStart(2, '0'), rx, ry + 19, fMono(500, 21), MC_FAINT);
+    rule(rx + 34, ry + 12.5, rx + rw, MC_HAIR, 1);
+    ry += 42;
+  }
+
+  const nameFont = fSerif(300, cfg.nameSize);
+  const nameLines = mcWrapLines(x, c.name || '이름 없음', nameFont, rw, 2);
+  ry += Math.round(cfg.nameSize * 0.84);
+  nameLines.forEach((ln, i) => txt(ln, rx, ry + i * Math.round(cfg.nameSize * 1.2), nameFont, MC_INK));
+  ry += (nameLines.length - 1) * Math.round(cfg.nameSize * 1.2);
+
+  if (c.subtitle) {
+    ry += cfg.subSize + 16;
+    x.font = fMono(400, cfg.subSize);
+    txt(fit(x, c.subtitle, rw), rx, ry, fMono(400, cfg.subSize), MC_TEAL);
+  }
+
+  ry += 28;
+  rule(rx, ry + 0.5, rx + rw, MC_LINE, 1.5);
+  ry += 10;
+
+  const fields = (c.fields || [])
+    .filter(f => !f.hide && ((f.k || '').trim() || (f.v || '').trim()))
+    .slice(0, cfg.fieldMax);
+  fields.forEach((f, i) => {
+    const yy = ry + cfg.fieldH * i, base = yy + Math.round(cfg.fieldH * 0.64);
+    x.font = fMono(400, cfg.kSize);
+    const kw = txt(fit(x, f.k || '', rw * 0.44), rx, base, fMono(400, cfg.kSize), MC_FAINT);
+    x.font = fSans(400, cfg.vSize);
+    txt(fit(x, f.v || '', rw - kw - 20), rx + rw, base, fSans(400, cfg.vSize), MC_INK2, 'right');
+    if (i < fields.length - 1) rule(rx, yy + cfg.fieldH - 0.5, rx + rw, MC_HAIR, 1);
+  });
+  ry += cfg.fieldH * fields.length;
+
+  const blockH = Math.max(ph, ry - o.top);
+
+  if (photo && draw) {
+    x.save();
+    x.beginPath(); x.rect(PAD, o.top, pw, ph); x.clip();
+    coverDraw(x, photo, PAD, o.top, pw, ph);
+    const veil = x.createLinearGradient(0, o.top + ph * 0.55, 0, o.top + ph);
+    veil.addColorStop(0, 'rgba(8,10,12,0)');
+    veil.addColorStop(1, 'rgba(8,10,12,.28)');
+    x.fillStyle = veil; x.fillRect(PAD, o.top, pw, ph);
+    x.restore();
+    x.strokeStyle = 'rgba(20,22,26,.16)'; x.lineWidth = 1;
+    x.strokeRect(PAD + 0.5, o.top + 0.5, pw - 1, ph - 1);
+
+    // 사진과 글 사이의 가느다란 결 — 위아래로 사라져요
+    const gx = PAD + pw + cfg.gap / 2;
+    const g = x.createLinearGradient(0, o.top, 0, o.top + blockH);
+    g.addColorStop(0, 'rgba(15,76,71,0)');
+    g.addColorStop(.18, 'rgba(15,76,71,.5)');
+    g.addColorStop(.82, 'rgba(15,76,71,.5)');
+    g.addColorStop(1, 'rgba(15,76,71,0)');
+    x.fillStyle = g; x.fillRect(gx, o.top, 1.5, blockH);
+  }
+
+  let y = o.top + blockH;
+
+  /* ── 메모 ── */
+  const memos = (c.memos || [])
+    .filter(mo => mo.label && (mo.words || []).length)
+    .slice(0, cfg.memoMax);
+  if (memos.length) {
+    y += cfg.memoTop;
+    rule(PAD, y + 0.5, W - PAD, MC_LINE, 1.5);
+    y += cfg.memoGap;
+    const kx = PAD + cfg.memoLabelW, kwW = W - PAD - kx;
+    const kwFont = fSerif(400, cfg.kwSize);
+    memos.forEach((mo, mi) => {
+      const lines = wrapItems(x, mo.words, kwFont, cfg.kwSep, kwW);
+      const base = y + Math.round(cfg.kwSize * 0.8);
+      x.font = fMono(400, cfg.labSize);
+      txt(fit(x, mo.label, cfg.memoLabelW - 24), PAD, base, fMono(400, cfg.labSize), MC_TEAL);
+      lines.forEach((ln, li) => {
+        let cx = kx;
+        const by = base + li * cfg.kwLineH;
+        ln.forEach((w2, wi) => {
+          if (wi) {
+            if (draw) {
+              x.strokeStyle = MC_LINE; x.lineWidth = 1;
+              x.beginPath();
+              x.moveTo(Math.round(cx + cfg.kwSep / 2) + 0.5, by - cfg.kwSize * 0.74);
+              x.lineTo(Math.round(cx + cfg.kwSep / 2) + 0.5, by + cfg.kwSize * 0.14);
+              x.stroke();
+            }
+            cx += cfg.kwSep;
+          }
+          cx += txt(w2, cx, by, kwFont, MC_INK);
+        });
+      });
+      y += lines.length * cfg.kwLineH + cfg.kwPad;
+      if (mi < memos.length - 1) rule(kx, y - cfg.kwPad / 2 + 0.5, W - PAD, MC_HAIR, 1);
+    });
+    y -= cfg.kwPad * 0.4;
+  }
+
+  /* ── 스탯 (선택) ── */
+  const useSets = showStats ? (sets || []).filter(st => (st.labels || []).filter(Boolean).length) : [];
+  if (useSets.length) {
+    y += cfg.statTop;
+    rule(PAD, y + 0.5, W - PAD, MC_LINE, 1.5);
+    y += cfg.statTop + 16;
+    useSets.forEach((st, si) => {
+      const labels = (st.labels || []).filter(Boolean);
+      const vals = labels.map(l => Number((c.stats || {})[l] || 0));
+      const mx = Math.max(...vals), mn = Math.min(...vals);
+      const flat = mx === mn;
+
+      x.font = fMono(500, cfg.setSize);
+      txt(fit(x, spread(st.name), CW - 190), PAD, y, fMono(500, cfg.setSize), MC_TEAL);
+      txt(`MAX ${st.max || 10}`, W - PAD, y, fMono(400, cfg.capSize), MC_FAINT, 'right');
+      y += 26;
+
+      if (!flat) {
+        const hi = labels[vals.indexOf(mx)], lo = labels[vals.indexOf(mn)];
+        let cx = PAD;
+        cx += txt('최고', cx, y, fMono(400, cfg.capSize), MC_FAINT) + 9;
+        cx += txt(`${hi} ${mx}`, cx, y, fSans(500, cfg.capSize + 2), MC_TEAL) + 24;
+        cx += txt('최저', cx, y, fMono(400, cfg.capSize), MC_FAINT) + 9;
+        txt(`${lo} ${mn}`, cx, y, fSans(500, cfg.capSize + 2), MC_MUTED);
+        y += 20;
+      }
+      y += 12;
+
+      const cols = labels.length > 5 ? cfg.statCols : 1;
+      const colGap = 44;
+      const cellW = (CW - colGap * (cols - 1)) / cols;
+      const rows = Math.ceil(labels.length / cols);
+      labels.forEach((l, i) => {
+        const ci = Math.floor(i / rows), ri = i % rows;
+        const cx0 = PAD + ci * (cellW + colGap);
+        const yy = y + ri * cfg.rowH, base = yy + Math.round(cfg.rowH * 0.66);
+        const v = vals[i];
+        const isMax = !flat && v === mx, isMin = !flat && v === mn;
+        if (draw && (isMax || isMin)) {
+          x.fillStyle = isMax ? MC_TEAL : MC_LINE;
+          x.fillRect(cx0, yy + cfg.rowH * 0.3, 3, cfg.rowH * 0.4);
+        }
+        x.font = fSans(isMax ? 500 : 400, cfg.rowSize);
+        txt(fit(x, l, cellW - 96), cx0 + 15, base, fSans(isMax ? 500 : 400, cfg.rowSize), isMax ? MC_INK : MC_INK2);
+        txt(String(v), cx0 + cellW, base, fMono(isMax ? 500 : 400, cfg.rowSize + 1),
+            isMax ? MC_TEAL : (isMin ? MC_FAINT : MC_INK2), 'right');
+        rule(cx0, yy + cfg.rowH - 0.5, cx0 + cellW, MC_HAIR, 1);
+      });
+      y += rows * cfg.rowH + (si < useSets.length - 1 ? 34 : 4);
+    });
+  }
+
+  return y;
+}
+
+/* 한 사람 — 사진 · 프로필 · 메모 (+ 스탯) */
+async function exportMemoCard(c, opts = {}, onBack) {
+  toast('메모 카드를 그리는 중…');
+  try { await document.fonts.ready; } catch {}
+  const photo = await loadPhoto(state.fullImg || c.thumb);
+  const sets = (opts.sets || []).map(id => state.statSets.find(s => s.id === id)).filter(Boolean).slice(0, 5);
+  const W = 1080, PAD = 84, headY = 100, top = headY + 74;
+
+  const probe = document.createElement('canvas').getContext('2d');
+  const args = { c, photo, W, PAD, cfg: MC_SOLO, sets, showStats: !!opts.stats };
+  const H = Math.round(renderPlate(probe, { ...args, top, draw: false }) + 132);
+
+  const cv = document.createElement('canvas');
+  cv.width = W; cv.height = H;
+  const x = cv.getContext('2d');
+  paperPlate(x, W, H);
+
+  x.font = fMono(500, 19); x.fillStyle = MC_FAINT; x.textAlign = 'left';
+  x.fillText(spread('MEMO CARD'), PAD, headY);
+  x.textAlign = 'right'; x.fillStyle = MC_INK2;
+  x.fillText(fit(x, profile.nickname, 380), W - PAD, headY);
+  x.textAlign = 'left';
+
+  renderPlate(x, { ...args, top, draw: true });
+  plateFooter(x, W, H, PAD,
+    opts.stats && sets.length ? sets.map(s => s.name).join('  ·  ') : '', fmtDate(Date.now()));
+
+  cv.toBlob(b => {
+    if (!b) return toast('이미지를 만들지 못했어요', 1);
+    showImageModal(b, `${(c.name || 'character').replace(/[\\/:*?"<>|\s]/g, '')}_메모카드.png`, c.name, onBack);
+  }, 'image/png');
+}
+
+/* 같은 태그 안의 여러 사람을 한 장에 */
+async function exportMemoCompare(chars, tag, opts = {}, onBack) {
+  toast('비교 이미지를 그리는 중…');
+  try { await document.fonts.ready; } catch {}
+  const photos = await Promise.all(chars.map(c =>
+    loadPhoto(c.id === state.current?.id ? (state.fullImg || c.thumb) : c.thumb)));
+  const sets = (opts.sets || []).map(id => state.statSets.find(s => s.id === id)).filter(Boolean).slice(0, 5);
+  const W = 1080, PAD = 84, headY = 100;
+  const titleY = headY + 76, top0 = titleY + 62;
+  const GAPB = 58;
+
+  const probe = document.createElement('canvas').getContext('2d');
+  const tops = [];
+  let y = top0;
+  chars.forEach((c, i) => {
+    tops.push(y);
+    y = renderPlate(probe, {
+      c, photo: photos[i], W, PAD, cfg: MC_CMP, sets,
+      showStats: !!opts.stats, draw: false, top: y, index: i,
+    });
+    if (i < chars.length - 1) y += GAPB;
+  });
+  const H = Math.round(y + 132);
+
+  const cv = document.createElement('canvas');
+  cv.width = W; cv.height = H;
+  const x = cv.getContext('2d');
+  paperPlate(x, W, H);
+
+  x.font = fMono(500, 19); x.fillStyle = MC_FAINT; x.textAlign = 'left';
+  x.fillText(spread('TAG COMPARE'), PAD, headY);
+  x.textAlign = 'right'; x.fillStyle = MC_INK2;
+  x.fillText(fit(x, profile.nickname, 380), W - PAD, headY);
+
+  x.textAlign = 'left'; x.fillStyle = MC_INK;
+  x.font = fSerif(300, 50);
+  x.fillText(fit(x, '#' + tag, W - PAD * 2 - 180), PAD, titleY);
+  x.textAlign = 'right'; x.font = fMono(400, 19); x.fillStyle = MC_FAINT;
+  x.fillText(`${chars.length} 명`, W - PAD, titleY);
+  x.textAlign = 'left';
+  x.strokeStyle = MC_TEAL; x.lineWidth = 1.5;
+  x.beginPath(); x.moveTo(PAD, titleY + 26.5); x.lineTo(PAD + 96, titleY + 26.5); x.stroke();
+
+  chars.forEach((c, i) => {
+    if (i) {
+      x.strokeStyle = MC_HAIR; x.lineWidth = 1;
+      x.beginPath();
+      x.moveTo(PAD, tops[i] - GAPB / 2 + 0.5); x.lineTo(W - PAD, tops[i] - GAPB / 2 + 0.5);
+      x.stroke();
+    }
+    renderPlate(x, {
+      c, photo: photos[i], W, PAD, cfg: MC_CMP, sets,
+      showStats: !!opts.stats, draw: true, top: tops[i], index: i,
+    });
+  });
+
+  plateFooter(x, W, H, PAD,
+    opts.stats && sets.length ? sets.map(s => s.name).join('  ·  ') : '', fmtDate(Date.now()));
+
+  cv.toBlob(b => {
+    if (!b) return toast('이미지를 만들지 못했어요', 1);
+    showImageModal(b, `${String(tag).replace(/[\\/:*?"<>|\s]/g, '')}_비교.png`, '#' + tag, onBack);
+  }, 'image/png');
+}
+
+/* 메모 카드 만들기 창 */
+let memoCardMemo = null;
+function openMemoCardTool(c) {
+  const saved = memoCardMemo && memoCardMemo.charId === c.id ? memoCardMemo : {};
+  const myTags = (c.tags || []).filter(Boolean);
+  let mode = myTags.length ? (saved.mode || 'solo') : 'solo';
+  let stats = !!saved.stats;
+  let sets = (saved.sets || (c.statSetId ? [c.statSetId] : [])).filter(id => state.statSets.some(s => s.id === id));
+  if (!sets.length && state.statSets[0]) sets = [state.statSets[0].id];
+  let tag = myTags.includes(saved.tag) ? saved.tag : myTags[0] || null;
+  let picks = (saved.picks || []).filter(id => state.chars.some(x => x.id === id));
+
+  const inTag = () => state.chars.filter(x => (x.tags || []).includes(tag));
+  const resetPicks = () => { picks = inTag().slice(0, 4).map(x => x.id); if (!picks.includes(c.id)) picks = [c.id, ...picks].slice(0, 4); };
+  if (mode === 'tag' && !picks.length) resetPicks();
+
+  const remember = () => { memoCardMemo = { charId: c.id, mode, stats, sets: [...sets], tag, picks: [...picks] }; };
+  const back = () => { remember(); openMemoCardTool(c); };
+
+  const m = openModal({
+    title: '메모 카드',
+    wide: true,
+    body: `<div class="seg tabs" id="mc-tabs">
+        <button data-mm="solo" aria-pressed="${mode === 'solo'}">단독</button>
+        <button data-mm="tag" aria-pressed="${mode === 'tag'}" ${myTags.length ? '' : 'disabled'}>태그 비교</button>
+      </div>
+      <div id="mc-body"></div>`,
+    foot: `<button class="btn btn-ghost" id="mc-close">닫기</button>
+           <button class="btn btn-key" id="mc-make">이미지 만들기</button>`,
+  });
+
+  function statsBlock() {
+    return `<div class="adv" style="margin:16px 0 0">
+      <div class="adv-head"><span class="eyebrow">스탯 삽입</span><div class="spacer"></div>
+        <label class="mc-switch"><input type="checkbox" id="mc-stats" ${stats ? 'checked' : ''}
+          ${state.statSets.length ? '' : 'disabled'}> 넣기</label></div>
+      ${state.statSets.length ? `<div class="chipbar" id="mc-sets" style="margin:0;${stats ? '' : 'opacity:.4;pointer-events:none'}">
+          ${state.statSets.map(st => `<button class="chip" data-ms="${st.id}" aria-pressed="${sets.includes(st.id)}">${esc(st.name)} · ${st.labels.length}</button>`).join('')}
+        </div>
+        <p class="hint">세트는 5개까지 고를 수 있어요. 그래프가 아니라 숫자 표로 들어가고,
+          가장 높은 항목과 낮은 항목만 짧게 표시됩니다.</p>`
+        : `<p class="hint" style="margin:0">먼저 스탯 세트를 하나 만들어 주세요.</p>`}
+    </div>`;
+  }
+
+  function draw() {
+    const body = m.querySelector('#mc-body');
+    if (mode === 'solo') {
+      body.innerHTML = `<p class="hint" style="margin:0 0 6px">사진과 프로필은 늘 들어가고, 적어둔 메모가 그 아래 이어져요.
+          프로필에서 <b>◌</b>로 꺼둔 항목은 빠집니다.</p>
+        <div class="mc-sum">
+          <span>사진 ${state.fullImg || c.thumb ? '있음' : '없음'}</span>
+          <span>프로필 ${(c.fields || []).filter(f => !f.hide && (f.k || f.v)).length}</span>
+          <span>메모 ${(c.memos || []).filter(mo => mo.label && (mo.words || []).length).length}줄</span>
+        </div>
+        ${statsBlock()}`;
+    } else {
+      const cands = inTag();
+      body.innerHTML = `<p class="hint" style="margin:0 0 10px">같은 태그를 가진 사람들을 한 장에 세로로 이어 붙여요.
+          단독과 같은 구성이고, 라벨 자리가 맞춰져 아래로 훑어보기 좋아요.</p>
+        <div class="chipbar" id="mc-tags">${myTags.map(t =>
+          `<button class="chip" data-mt="${esc(t)}" aria-pressed="${t === tag}">#${esc(t)}</button>`).join('')}</div>
+        <div class="adv" style="margin:0">
+          <div class="adv-head"><span class="eyebrow">넣을 사람 · 최대 4명</span><div class="spacer"></div>
+            <span class="mono" style="font-size:11.5px;color:var(--faint)">${picks.length} / 4</span></div>
+          <div class="chipbar" id="mc-picks" style="margin:0">${cands.length
+            ? cands.map(p => `<button class="chip" data-mp="${p.id}" aria-pressed="${picks.includes(p.id)}">${esc(p.name || '이름 없음')}</button>`).join('')
+            : `<span class="hint" style="margin:0">이 태그를 가진 캐릭터가 없어요.</span>`}</div>
+        </div>
+        ${statsBlock()}`;
+    }
+    bind();
+  }
+
+  function bind() {
+    const sw = m.querySelector('#mc-stats');
+    if (sw) sw.onchange = () => { stats = sw.checked; draw(); };
+    m.querySelectorAll('[data-ms]').forEach(b => b.onclick = () => {
+      const id = b.dataset.ms;
+      if (sets.includes(id)) sets = sets.filter(x => x !== id);
+      else if (sets.length >= 5) return toast('세트는 5개까지 고를 수 있어요', 1);
+      else sets = [...sets, id];
+      draw();
+    });
+    m.querySelectorAll('[data-mt]').forEach(b => b.onclick = () => {
+      tag = b.dataset.mt; resetPicks(); draw();
+    });
+    m.querySelectorAll('[data-mp]').forEach(b => b.onclick = () => {
+      const id = b.dataset.mp;
+      if (picks.includes(id)) {
+        if (picks.length === 1) return toast('한 명은 남겨두세요');
+        picks = picks.filter(x => x !== id);
+      } else {
+        if (picks.length >= 4) return toast('한 번에 4명까지 담을 수 있어요', 1);
+        picks = [...picks, id];
+      }
+      draw();
+    });
+  }
+
+  m.querySelectorAll('[data-mm]').forEach(b => b.onclick = () => {
+    mode = b.dataset.mm;
+    m.querySelectorAll('[data-mm]').forEach(b2 => b2.setAttribute('aria-pressed', b2.dataset.mm === mode));
+    if (mode === 'tag' && !picks.length) resetPicks();
+    draw();
+  });
+  draw();
+
+  m.querySelector('#mc-close').onclick = closeModal;
+  m.querySelector('#mc-make').onclick = () => {
+    remember();
+    const opts = { stats: stats && sets.length > 0, sets };
+    if (mode === 'solo') return exportMemoCard(c, opts, back);
+    const list = state.chars.filter(x => picks.includes(x.id));
+    if (!list.length) return toast('넣을 사람을 골라 주세요', 1);
+    exportMemoCompare(list, tag, opts, back);
+  };
+}
+
 /* ════════ 계정 ════════ */
 function openAccount() {
   const u = auth.currentUser;
@@ -3954,6 +4976,7 @@ async function exportBackup(withImages) {
       app: 'chararchive', v: 1, exportedAt: Date.now(),
       nickname: profile.nickname, formPreset: profile.formPreset || null,
       tagLevels: profile.tagLevels || { char: {}, ex: {} },
+      memoLabels: profile.memoLabels || [...MEMO_LABELS],
       statSets: state.statSets.map(x => ({ ...x })),
       notices: state.notices.map(x => ({ ...x })),
       characters: [], images: {},
@@ -4044,6 +5067,7 @@ async function importBackup(file) {
     const userPatch = {};
     if (data.formPreset) userPatch.formPreset = data.formPreset;
     if (data.tagLevels) userPatch.tagLevels = { char: {}, ex: {}, ...data.tagLevels };
+    if (Array.isArray(data.memoLabels) && data.memoLabels.length) userPatch.memoLabels = data.memoLabels;
     if (Object.keys(userPatch).length) {
       await F.setDoc(F.doc(db, 'users', uid), userPatch, { merge: true });
       Object.assign(profile, userPatch);
