@@ -227,20 +227,19 @@ details.setup-more[open] > summary::before{content:"− "}
 /* 중요도 — 사진 폭에 맞춘 표제 줄 */
 .port-col{flex:1;min-width:0;display:flex;flex-direction:column}
 .portrait-wrap .port-col{max-width:none}
-.rank-line{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:0 1px 10px}
-.rank-key{font-family:var(--mono);font-size:8.5px;letter-spacing:.34em;color:var(--faint)}
-.rank-val{display:flex;align-items:center;gap:10px;
-  font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.26em;color:var(--teal)}
-.rank-gauge{display:flex;flex-direction:column-reverse;gap:2px}
-.rank-gauge i{display:block;width:10px;height:4px;border:1px solid var(--line);border-radius:1px}
+.rank-line{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:0 1px 8px}
+.rank-key{font-family:var(--mono);font-size:9.5px;letter-spacing:.34em;color:var(--faint)}
+.rank-val{display:flex;align-items:center;gap:9px;
+  font-family:var(--mono);font-size:9.5px;font-weight:500;letter-spacing:.26em;color:var(--teal)}
+.rank-gauge{display:flex;align-items:center;gap:3px}
+.rank-gauge i{display:block;width:4px;height:11px;border:1px solid var(--line);border-radius:1px}
 .rank-v3 .rank-gauge i:nth-child(-n+3),
-.rank-v2 .rank-gauge i:nth-child(-n+2){background:var(--teal);border-color:var(--teal)}
-.rank-v1 .rank-gauge i:nth-child(-n+1){background:var(--muted);border-color:var(--muted)}
-.rank-v1 .rank-val{color:var(--muted)}
-/* 사진 위아래 녹색 실선 — 사진과 사이를 띄워요 */
-.port-rule{height:2px;background:var(--teal);flex:none}
-.port-rule.top{margin-bottom:14px}
-.port-rule.bottom{margin-top:14px}
+.rank-v2 .rank-gauge i:nth-child(-n+2),
+.rank-v1 .rank-gauge i:nth-child(-n+1){background:var(--teal);border-color:var(--teal)}
+/* 사진 위아래 녹색 실선 — 사진과 살짝만 띄워요 */
+.port-rule{height:1.5px;background:var(--teal);flex:none}
+.port-rule.top{margin-bottom:7px}
+.port-rule.bottom{margin-top:7px}
 .rank-seg{display:flex;flex-wrap:wrap;gap:0}
 .rank-seg .seg{flex:1;min-width:0}
 .rank-seg .seg button{flex:1;font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;padding:7px 4px}
@@ -4373,22 +4372,22 @@ async function exportCard(c, set) {
     coverDraw(x, photo, PAD, photoTop, pw, photoH);
 
     // 오른쪽에서 스며드는 어둠
-    const shade = x.createLinearGradient(pr, 0, pr - 410, 0);
-    shade.addColorStop(0, 'rgba(6,8,10,.82)');
-    shade.addColorStop(.3, 'rgba(6,8,10,.46)');
-    shade.addColorStop(.62, 'rgba(6,8,10,.18)');
-    shade.addColorStop(.85, 'rgba(6,8,10,.05)');
+    const shade = x.createLinearGradient(pr, 0, pr - 360, 0);
+    shade.addColorStop(0, 'rgba(6,8,10,.7)');
+    shade.addColorStop(.3, 'rgba(6,8,10,.38)');
+    shade.addColorStop(.62, 'rgba(6,8,10,.14)');
+    shade.addColorStop(.85, 'rgba(6,8,10,.04)');
     shade.addColorStop(1, 'rgba(6,8,10,0)');
-    x.fillStyle = shade; x.fillRect(pr - 410, photoTop, 410, photoH);
+    x.fillStyle = shade; x.fillRect(pr - 360, photoTop, 360, photoH);
 
     // 아래에서 올라오는 어둠
     const pb = photoTop + photoH;
-    const rise = x.createLinearGradient(0, pb, 0, pb - 260);
-    rise.addColorStop(0, 'rgba(6,8,10,.5)');
-    rise.addColorStop(.4, 'rgba(6,8,10,.2)');
-    rise.addColorStop(.75, 'rgba(6,8,10,.05)');
+    const rise = x.createLinearGradient(0, pb, 0, pb - 210);
+    rise.addColorStop(0, 'rgba(6,8,10,.4)');
+    rise.addColorStop(.4, 'rgba(6,8,10,.15)');
+    rise.addColorStop(.75, 'rgba(6,8,10,.04)');
     rise.addColorStop(1, 'rgba(6,8,10,0)');
-    x.fillStyle = rise; x.fillRect(PAD, pb - 260, pw, 260);
+    x.fillStyle = rise; x.fillRect(PAD, pb - 210, pw, 210);
 
     // 어둠 위에 얹는 선 — 세로 둘, 그와 엇갈리는 가로 하나
     x.fillStyle = 'rgba(24,88,79,.97)';
