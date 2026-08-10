@@ -233,13 +233,13 @@ details.setup-more[open] > summary::before{content:"− "}
   font-family:var(--mono);font-size:9.5px;font-weight:500;letter-spacing:.26em;color:var(--teal)}
 .rank-gauge{display:flex;align-items:center;gap:3px}
 .rank-gauge i{display:block;width:4px;height:11px;border:1px solid var(--line);border-radius:1px}
-.rank-v3 .rank-gauge i:nth-child(-n+3),
-.rank-v2 .rank-gauge i:nth-child(-n+2),
-.rank-v1 .rank-gauge i:nth-child(-n+1){background:var(--teal);border-color:var(--teal)}
-/* 사진 위아래 녹색 실선 — 사진과 살짝만 띄워요 */
-.port-rule{height:1.5px;background:var(--teal);flex:none}
-.port-rule.top{margin-bottom:7px}
-.port-rule.bottom{margin-top:7px}
+.rank-v3 .rank-gauge i:nth-last-child(-n+3),
+.rank-v2 .rank-gauge i:nth-last-child(-n+2),
+.rank-v1 .rank-gauge i:nth-last-child(-n+1){background:var(--teal);border-color:var(--teal)}
+/* 사진을 감싸는 얇은 청록 액자 */
+.port-frame{border:1px solid #157F6E;border-radius:calc(var(--r) + 4px);padding:5px;
+  background:var(--paper)}
+.port-frame .portrait{box-shadow:none}
 .rank-seg{display:flex;flex-wrap:wrap;gap:0}
 .rank-seg .seg{flex:1;min-width:0}
 .rank-seg .seg button{flex:1;font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;padding:7px 4px}
@@ -2698,12 +2698,12 @@ function renderCharacter() {
             <span class="rank-key">IMPORTANCE</span>
             <span class="rank-val"><span class="rank-gauge"><i></i><i></i><i></i></span>${rankName(c.rank)}</span>
           </div>` : ''}
-          <div class="port-rule top"></div>
+          <div class="port-frame">
           <div class="portrait">
             ${img ? `<img src="${img}" alt="${esc(c.name)}">`
                   : `<div class="ph"><svg width="52" height="52" viewBox="0 0 32 32"><polygon points="16,4 27,11 23,26 9,26 5,11" fill="none" stroke="#A6ABB2" stroke-width="1"/></svg></div>`}
           </div>
-          <div class="port-rule bottom"></div>
+          </div>
           </div>
           <button class="port-nav right" id="char-next" title="${nextChar ? esc(nextChar.name || '') : ''}"
             ${nextChar ? '' : 'disabled'}>›</button>
