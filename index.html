@@ -227,7 +227,7 @@ details.setup-more[open] > summary::before{content:"− "}
 /* 중요도 — 사진 폭에 맞춘 표제 줄 */
 .port-col{flex:1;min-width:0;display:flex;flex-direction:column}
 .portrait-wrap .port-col{max-width:none}
-.rank-line{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:0 1px 8px}
+.rank-line{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:24px 1px 9px}
 .rank-key{font-family:var(--mono);font-size:9.5px;letter-spacing:.34em;color:var(--faint)}
 .rank-val{display:flex;align-items:center;gap:9px;
   font-family:var(--mono);font-size:9.5px;font-weight:500;letter-spacing:.26em;color:var(--teal)}
@@ -554,7 +554,8 @@ details.setup-more[open] > summary::before{content:"− "}
 .char-side{text-align:center}
 .char-side .portrait{margin:0 auto}
 .char-side .tags{justify-content:center}
-.char-side .side-actions,.char-side > .hint{text-align:left}
+.char-side .side-actions,.char-side > .hint{text-align:center}
+.char-side .side-actions{justify-content:center}
 .side-actions{display:flex;gap:8px;margin-top:20px;flex-wrap:wrap;justify-content:flex-start}
 
 /* 초상 · 그래프 좌우 이동 */
@@ -2453,8 +2454,7 @@ function drawFieldLines(x, lines, left, y, lineH, faint, ink, sep = '#C3C8CB') {
 /* 공통 판면 */
 /* 저장용 판 — 화면 좌표는 그대로 두고 픽셀만 배로 늘려 글씨를 또렷하게 */
 function makePlate(W, H) {
-  const area = W * H;
-  const S = H > 6200 || area > 7.2e6 ? 1.5 : 2;      // 아주 긴 판면은 배율을 낮춰요
+  const S = H > 2200 ? 1.5 : 1;      // 글씨가 작아지는 긴 판면만 촘촘하게
   const cv = document.createElement('canvas');
   cv.width = Math.round(W * S); cv.height = Math.round(H * S);
   const x = cv.getContext('2d');
@@ -3774,8 +3774,8 @@ function openExcerptEditor(ex) {
           placeholder="이미지에 함께 담고 싶은 짧은 말.">${esc(ex?.memo2 || '')}</textarea>
         <p class="hint">읽기 화면에서는 메모 아래에 작게 표시되고,
           이미지로 저장할 때 <b>MEMO</b> 라벨과 함께 넣을지 고를 수 있어요.</p></label>`,
-    foot: `<button class="btn btn-ghost" id="cancel">취소</button>
-           <button class="btn btn-key" id="save">${ex ? '저장' : '추가'}</button>`,
+    foot: `<button class="btn btn-ghost" id="ex-cancel">취소</button>
+           <button class="btn btn-key" id="ex-save">${ex ? '저장' : '추가'}</button>`,
   });
 
   bindTagSuggest(m.querySelector('#e-tags'), m.querySelector('#e-tags-sug'), tagCounts(state.excerpts));
@@ -3785,11 +3785,11 @@ function openExcerptEditor(ex) {
     nf.classList.toggle('hidden', sel.value !== '__new');
     if (sel.value === '__new') nf.focus();
   };
-  m.querySelector('#cancel').onclick = closeModal;
-  m.querySelector('#save').onclick = async () => {
+  m.querySelector('#ex-cancel').onclick = closeModal;
+  m.querySelector('#ex-save').onclick = async () => {
     const body = m.querySelector('#e-body').value;
     if (!body.trim()) return toast('본문을 입력해 주세요', 1);
-    const btn = m.querySelector('#save'); btn.disabled = true; btn.textContent = '저장하는 중…';
+    const btn = m.querySelector('#ex-save'); btn.disabled = true; btn.textContent = '저장하는 중…';
     const now = Date.now();
     try {
       let folderId = sel.value;
