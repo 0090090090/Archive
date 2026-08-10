@@ -224,6 +224,20 @@ details.setup-more[open] > summary::before{content:"− "}
   aspect-ratio:3/4;position:relative;box-shadow:var(--lift);
 }
 .portrait img{width:100%;height:100%;object-fit:cover}
+.rank-mark{
+  position:absolute;left:0;top:16px;padding:6px 13px 6px 11px;
+  background:rgba(18,20,24,.76);border-left:2px solid var(--teal);
+  font-family:var(--mono);font-size:9.5px;letter-spacing:.24em;color:#F2F3F3;
+  text-transform:uppercase;pointer-events:none;
+}
+.card-rank{
+  position:absolute;left:0;top:10px;padding:3px 8px 3px 6px;
+  background:rgba(18,20,24,.72);border-left:2px solid var(--teal);
+  font-family:var(--mono);font-size:8px;letter-spacing:.18em;color:#F2F3F3;
+}
+.rank-seg{display:flex;flex-wrap:wrap;gap:0}
+.rank-seg .seg{flex:1;min-width:0}
+.rank-seg .seg button{flex:1;font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;padding:7px 4px}
 .portrait .ph{position:absolute;inset:0;display:grid;place-items:center;gap:10px;
   color:var(--faint);font-size:12.5px;text-align:center}
 .name-block{margin:22px 0 0}
@@ -403,7 +417,7 @@ details.setup-more[open] > summary::before{content:"− "}
 .md em{font-style:italic}
 .md del{color:var(--faint)}
 .md u{text-decoration:underline;text-underline-offset:.18em;text-decoration-color:var(--line)}
-.md mark{background:#F6EFC9;color:inherit;padding:.06em .2em;border-radius:2px}
+.md mark{background:#D8EAE1;color:inherit;padding:.06em .2em;border-radius:2px}
 .md code{font-family:var(--mono);font-size:.86em;background:var(--warm);
   border:1px solid var(--hair);border-radius:2px;padding:.06em .34em}
 .sub-item .md{font-size:13.5px;margin-top:6px;padding-bottom:9px}
@@ -820,6 +834,10 @@ const BASE_PRESET = {
 
 /* 메모란 기본 라벨 — 계정마다 자유롭게 고칠 수 있어요 */
 const MEMO_LABELS = ['장르', '포지션', '특이사항'];
+
+/* 캐릭터 중요도 — 이미지 위에는 영문으로 새겨요 */
+const RANKS = [[3, 'CENTRAL'], [2, 'MAJOR'], [1, 'MINOR'], [0, '없음']];
+const rankName = r => (RANKS.find(([v]) => v === Number(r || 0)) || [])[1] || '';
 
 const state = {
   view: 'gallery',       // gallery | character
@@ -1475,7 +1493,10 @@ function visibleChars() {
     list = list.filter(c => state.tagFilter.every(t => (c.tags || []).includes(t)));
   const by = { recent: (a, b) => (b.updatedAt || 0) - (a.updatedAt || 0),
                old: (a, b) => (a.createdAt || 0) - (b.createdAt || 0),
-               newest: (a, b) => (b.createdAt || 0) - (a.createdAt || 0) };
+               newest: (a, b) => (b.createdAt || 0) - (a.createdAt || 0),
+               rank: (a, b) => (Number(b.rank || 0) - Number(a.rank || 0))
+                 || (a.subtitle || '').localeCompare(b.subtitle || '', 'ko')
+                 || ((b.createdAt || 0) - (a.createdAt || 0)) };
   list.sort(by[state.sort] || by.recent);
   list.sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
   return list;
@@ -1510,7 +1531,7 @@ function renderGallery() {
     </div>
     ${state.adv ? advPanelHTML(tagCounts(state.chars), state.tagFilter, '캐릭터에 붙인 태그', 'char') : ''}
     <div class="chipbar">
-      ${[['recent', '최근 수정순'], ['old', '오래된순'], ['newest', '최신순']].map(([k, l]) =>
+      ${[['recent', '최근 수정순'], ['old', '오래된순'], ['newest', '최신순'], ['rank', '중요도순']].map(([k, l]) =>
         `<button class="chip" data-sort="${k}" aria-pressed="${state.sort === k}">${l}</button>`).join('')}
     </div>
     ${list.length ? `<div class="grid">${list.map(cardHTML).join('')}</div>` : emptyHTML(total)}
@@ -1806,6 +1827,7 @@ function cardHTML(c) {
       ${c.thumb ? `<img src="${c.thumb}" alt="" loading="lazy">`
                 : `<div class="ph"><svg width="46" height="46" viewBox="0 0 32 32"><polygon points="16,4 27,11 23,26 9,26 5,11" fill="none" stroke="#A6ABB2" stroke-width="1"/></svg></div>`}
       ${c.pinned ? '<span class="card-pin">★</span>' : ''}
+      ${c.rank ? `<span class="card-rank">${rankName(c.rank)}</span>` : ''}
     </div>
     <div class="card-body">
       <h3>${esc(c.name || '이름 없음')}</h3>
@@ -1900,7 +1922,8 @@ function radarMultiSVG(labels, series, max) {
 /* 관계 편집 */
 function openRelations(c) {
   const draft = (c.relations || []).map(r => ({ ...r }));
-  const others = state.chars.filter(x => x.id !== c.id);
+  const others = state.chars.filter(x => x.id !== c.id)
+    .sort((a, b) => (a.name || '').localeCompare(b.name || '', 'ko'));
   const m = openModal({
     title: '관계',
     wide: true,
@@ -2463,8 +2486,8 @@ async function exportCompare(set, labels, max, series, onBack) {
   const probe = document.createElement('canvas').getContext('2d');
   const fieldBlocks = series.map(sr => layoutFields(probe, sr.fields || [], W - PAD * 2, 2))
     .filter(l => l.length);
-  const fieldsH = fieldBlocks.length ? 30 + fieldBlocks.reduce((n, l) => n + l.length * 32 + 20, 0) + 16 : 0;
-  const H = 128 + 78 + (R * 2 + 130) + legendH + tableH + fieldsH + 60;
+  const fieldsH = fieldBlocks.length ? 16 + fieldBlocks.reduce((n, l) => n + l.length * 32 + 14, 0) + 10 : 0;
+  const H = 128 + 78 + (R * 2 + 130) + legendH + tableH + fieldsH + 34;
 
   const cv = document.createElement('canvas');
   cv.width = W; cv.height = H;
@@ -2542,6 +2565,26 @@ async function exportCompare(set, labels, max, series, onBack) {
     x.textAlign = 'left';
     y += 44;
   });
+  // 캐릭터별 프로필 항목 — 이름 목록 바로 아래에 한 덩어리로
+  if (fieldBlocks.length) {
+    y += 16;
+    series.forEach(sr => {
+      const lines = layoutFields(probe, sr.fields || [], W - PAD * 2, 2);
+      if (!lines.length) return;
+      const col = CMP_COLORS[series.indexOf(sr) % CMP_COLORS.length];
+      const bx = PAD - 22, bw = W - (PAD - 22) * 2;
+      const bh = lines.length * 32 + 14, top = y;
+      const wash = x.createLinearGradient(bx, 0, bx + bw, 0);   // 오른쪽으로 갈수록 옅어져요
+      wash.addColorStop(0, col + '18');
+      wash.addColorStop(.55, col + '0C');
+      wash.addColorStop(1, col + '05');
+      x.fillStyle = wash; x.fillRect(bx, top, bw, bh);
+      x.fillStyle = col; x.fillRect(bx, top, 3, bh);          // 왼쪽 색 세로선
+      drawFieldLines(x, lines, PAD, top + 29, 32, col, INK2, col + '3A');
+      y = top + bh;
+    });
+    y += 10;
+  }
   y += 48;
 
   // 표 — 굵은 선 위아래 여백을 넉넉히
@@ -2576,26 +2619,6 @@ async function exportCompare(set, labels, max, series, onBack) {
     x.beginPath(); x.moveTo(PAD, y + 16.5); x.lineTo(W - PAD, y + 16.5); x.stroke();
     y += 46;
   });
-
-  // 캐릭터별 프로필 항목 — 각자의 색 띠로
-  if (fieldBlocks.length) {
-    y += 30;
-    series.forEach(sr => {
-      const lines = layoutFields(probe, sr.fields || [], W - PAD * 2, 2);
-      if (!lines.length) return;
-      const col = CMP_COLORS[series.indexOf(sr) % CMP_COLORS.length];
-      const bx = PAD - 22, bw = W - (PAD - 22) * 2;
-      const bh = lines.length * 32 + 20, top = y;
-      const wash = x.createLinearGradient(bx, 0, bx + bw, 0);   // 오른쪽으로 갈수록 옅어져요
-      wash.addColorStop(0, col + '18');
-      wash.addColorStop(.55, col + '0C');
-      wash.addColorStop(1, col + '05');
-      x.fillStyle = wash; x.fillRect(bx, top, bw, bh);
-      x.fillStyle = col; x.fillRect(bx, top, 3, bh);          // 왼쪽 색 세로선
-      drawFieldLines(x, lines, PAD, top + 32, 32, col, INK2, col + '3A');
-      y = top + bh;
-    });
-  }
 
   x.font = '400 18px "IBM Plex Mono", monospace';
   x.fillStyle = FAINT;
@@ -2659,6 +2682,7 @@ function renderCharacter() {
           <div class="portrait">
             ${img ? `<img src="${img}" alt="${esc(c.name)}">`
                   : `<div class="ph"><svg width="52" height="52" viewBox="0 0 32 32"><polygon points="16,4 27,11 23,26 9,26 5,11" fill="none" stroke="#A6ABB2" stroke-width="1"/></svg></div>`}
+            ${c.rank ? `<span class="rank-mark">${rankName(c.rank)}</span>` : ''}
           </div>
           <button class="port-nav right" id="char-next" title="${nextChar ? esc(nextChar.name || '') : ''}"
             ${nextChar ? '' : 'disabled'}>›</button>
@@ -2970,6 +2994,7 @@ function openCharEditor(c) {
     fields: (c?.fields || []).map(f => ({ ...f })),
     details: (c?.details || []).map(d => ({ ...d, subs: (d.subs || []).map(sb => ({ ...sb })) })),
     statSetId: c?.statSetId || state.statSets[0]?.id || '',
+    rank: Number(c?.rank || 0),
     thumb: c?.thumb || null, imageId: c?.imageId || null,
     newFull: null, removedImg: false,
   };
@@ -2991,6 +3016,11 @@ function openCharEditor(c) {
         <input class="input" id="f-name" value="${esc(draft.name)}" placeholder="캐릭터 이름" maxlength="60"></label>
       <label class="field"><span>부제</span>
         <input class="input" id="f-sub" value="${esc(draft.subtitle)}" placeholder="한 줄 설명 · 이명 · 소속" maxlength="80"></label>
+      <div class="field"><span>중요도</span>
+        <div class="rank-seg"><div class="seg" id="f-rank">
+          ${RANKS.map(([v, l]) => `<button type="button" data-rank="${v}" aria-pressed="${draft.rank === v}">${l}</button>`).join('')}
+        </div></div>
+        <p class="hint">이미지 위에 작게 새겨지고, 목록을 <b>중요도순</b>으로 볼 수 있어요.</p></div>
       <label class="field"><span>태그</span>
         <input class="input" id="f-tags" value="${esc(draft.tags)}" placeholder="띄어쓰기로 구분 (예: 주인공 검사 북부)">
         <div class="tag-sug" id="f-tags-sug"></div>
@@ -3161,6 +3191,10 @@ function openCharEditor(c) {
     });
   }
   drawKV();
+  m.querySelectorAll('[data-rank]').forEach(b => b.onclick = () => {
+    draft.rank = Number(b.dataset.rank);
+    m.querySelectorAll('[data-rank]').forEach(b2 => b2.setAttribute('aria-pressed', Number(b2.dataset.rank) === draft.rank));
+  });
   m.querySelector('#add-kv').onclick = () => { draft.fields.push({ k: '', v: '' }); drawKV(); };
 
   const fileInput = m.querySelector('#file');
@@ -3201,6 +3235,7 @@ function openCharEditor(c) {
               .map(sb => ({ t: sb.t.trim(), v: sb.v.replace(/\s+$/, '') })),
           })),
         statSetId: m.querySelector('#f-set').value,
+        rank: draft.rank,
         thumb: draft.thumb || null,
         updatedAt: now,
       };
@@ -4330,9 +4365,9 @@ async function exportCard(c, set) {
 
     // 어둠 위에 얹는 세로선 — 위아래 끝까지 같은 굵기로
     x.fillStyle = 'rgba(24,88,79,.97)';
-    x.fillRect(pr - 44, photoTop, 4, photoH);
+    x.fillRect(pr - 44, photoTop, 3.5, photoH);
     x.fillStyle = 'rgba(24,88,79,.62)';
-    x.fillRect(pr - 56, photoTop, 2, photoH);
+    x.fillRect(pr - 56, photoTop, 2.5, photoH);
     x.restore();
 
     x.strokeStyle = 'rgba(20,22,26,.14)'; x.lineWidth = 1;
@@ -4394,8 +4429,12 @@ async function exportCard(c, set) {
       x.fillText(note, ax, capY + 86);
       x.textAlign = 'left';
     };
-    sideMark('AVERAGE', avg, `/ ${max}`, PAD, cy - R + 11, 'left');
-    sideMark('TOTAL', sum, `/ ${max * nums.length}`, W - PAD, cy + R - 90, 'right');
+    const sinTop = Math.min(...g.map(p => Math.sin(p.a)));
+    const sinBot = Math.max(...g.map(p => Math.sin(p.a)));
+    const boxTop = cy + sinTop * (R + 44) - 16;          // 맨 위 항목 이름의 윗머리
+    const boxBot = cy + sinBot * (R + 44) + 27 + 6;      // 맨 아래 값의 아랫배
+    sideMark('AVERAGE', avg, `/ ${max}`, PAD, boxTop + 11, 'left');
+    sideMark('TOTAL', sum, `/ ${max * nums.length}`, W - PAD, boxBot - 90, 'right');
 
     x.save(); x.translate(W / 2, cy);
     const path = k => { x.beginPath(); g.forEach((p, i) => {
@@ -4478,7 +4517,7 @@ const MC_SOLO = {
   photoW: 442, photoMin: 320, photoMax: 1180, gutter: 48,
   eyeSize: 13, kSize: 14, vSize: 22, vLH: 30, pairPad: 22, fieldMax: 8,
   memoLab: 13, chipSize: 15, chipH: 29, chipGap: 7, chipLH: 36, entryGap: 10, memoMax: 8,
-  statGap: 46, statHead: 38, setSize: 26, pillSize: 15, pillPad: 22,
+  statGap: 30, statHead: 38, setSize: 26, pillSize: 15, pillPad: 22,
   rowH: 46, rowSize: 22, valSize: 24, statCols: 2,
 };
 /* 비교 — 사진 옆에 자리가 없으니 메모는 아래 띠에 한 줄기로 흘려요 */
@@ -4488,7 +4527,7 @@ const MC_CMP = {
   photoW: 304, photoMin: 280, photoMax: 620, gutter: 40,
   eyeSize: 12.5, kSize: 13.5, vSize: 20, vLH: 28, pairPad: 18, fieldMax: 5,
   memoLab: 13, chipSize: 14.5, chipH: 28, chipGap: 6, chipLH: 34, entryGap: 8, memoMax: 9,
-  statGap: 44, statHead: 40, setSize: 23, pillSize: 14, pillPad: 20,
+  statGap: 28, statHead: 40, setSize: 23, pillSize: 14, pillPad: 20,
   rowH: 40, rowSize: 20, valSize: 21, statCols: 2,
 };
 
@@ -4633,7 +4672,7 @@ function renderPlate(x, o) {
       const st = fit(x, subT, CW * 0.44);
       const stw = x.measureText(st).width;
       txt(st, W - PAD, base, fMono(400, cfg.subSize), MC_TEAL, 'right');
-      txt('/', W - PAD - stw - 16, base, fMono(400, cfg.subSize), MC_LINE);
+      txt('/', W - PAD - stw - 16, base, fMono(400, cfg.subSize), MC_MUTED);
     }
     twinRule(PAD, base + 40, W - PAD);
     bodyTop = base + 40 + 56;
@@ -4707,11 +4746,8 @@ function renderPlate(x, o) {
   }
 
   const useSets = showStats ? (sets || []).filter(st => (st.labels || []).filter(Boolean).length) : [];
-  let y = bodyTop + blockH;
-  if (!useSets.length) {
-    y += 26;
-    rule(PAD, y + 0.5, W - PAD, MC_HAIR, 1);
-  }
+  let y = bodyTop + blockH + cfg.statGap;
+  rule(PAD, y + 0.5, W - PAD, MC_HAIR, 1);
 
   /* ── 스탯 ── */
   if (useSets.length) {
@@ -4781,18 +4817,15 @@ function renderPlate(x, o) {
   return y;
 }
 
-/* 여러 사람의 메모를 한자리에 — 사람마다 한 칸씩 세로로 세워요 */
+/* 여러 사람의 메모를 한자리에 — 같은 크기의 칸을 나란히 세워요 */
 function renderMemoDigest(x, o) {
   const { chars, W, PAD, cfg, labels, draw } = o;
   const CW = W - PAD * 2;
   let pen = draw;
 
-  const txt = (t, px, py, font, color, align) => {
+  const txt = (t, px, py, font, color) => {
     x.font = font;
-    if (pen) {
-      x.fillStyle = color; x.textAlign = align || 'left';
-      x.fillText(t, px, py); x.textAlign = 'left';
-    }
+    if (pen) { x.fillStyle = color; x.textAlign = 'left'; x.fillText(t, px, py); }
     return x.measureText(t).width;
   };
   const rule = (x1, y1, x2, color, w) => {
@@ -4818,44 +4851,50 @@ function renderMemoDigest(x, o) {
     .filter(r => r.memos.length);
   if (!rows.length) return o.top;
 
-  const n = rows.length, gap = 46;
-  const colW = Math.min((CW - gap * (n - 1)) / n, n === 1 ? 560 : Infinity);
-
-  /* 한 칸 — 이름 아래로 라벨과 칩이 세로로 쌓여요 */
-  const column = (r, left, top) => {
-    let cy = top;
-    txt(String(r.i + 1).padStart(2, '0'), left, cy + 13, fMono(500, 14), MC_FAINT);
-    x.font = fSans(500, 17);
-    txt(fit(x, r.c.name || '이름 없음', colW - 32), left + 32, cy + 14, fSans(500, 17), MC_INK);
-    cy += 38;
-    r.memos.forEach((mo, k) => {
-      x.font = fMono(500, cfg.memoLab);
-      txt(fit(x, mo.label, colW), left, cy + cfg.memoLab * 0.9, fMono(500, cfg.memoLab), MC_TEAL);
-      cy += 20;
-      let cx = left;
-      mo.words.forEach(wd => {
-        x.font = fSans(400, cfg.chipSize);
-        const t = fit(x, wd, colW - 24);
-        const w = x.measureText(t).width + 24;
-        if (cx > left && cx + w > left + colW) { cx = left; cy += cfg.chipLH; }
-        chip(t, cx, cy);
-        cx += w + cfg.chipGap;
-      });
-      cy += cfg.chipH + (k < r.memos.length - 1 ? 18 : 0);
-    });
-    return cy;
-  };
+  const n = rows.length, gap = 24, pad = 24;
+  const colW = (CW - gap * (n - 1)) / n;
+  const inW = colW - pad * 2;
 
   let y = o.top;
   txt(spread('MEMO'), PAD, y + 12, fMono(500, cfg.eyeSize), MC_TEAL);
   rule(PAD, y + 26.5, W - PAD, MC_HAIR, 1);
-  y += 44;
+  y += 52;
+
+  /* 한 칸 — 이름 아래로 라벨과 칩이 세로로 쌓여요 */
+  const column = (r, left, top) => {
+    const l = left + pad;
+    let cy = top + pad;
+    txt(String(r.i + 1).padStart(2, '0'), l, cy + 12, fMono(500, 13), MC_FAINT);
+    x.font = fSans(500, 16);
+    txt(fit(x, r.c.name || '이름 없음', inW - 30), l + 30, cy + 13, fSans(500, 16), MC_INK);
+    cy += 34;
+    r.memos.forEach((mo, k) => {
+      x.font = fMono(500, cfg.memoLab);
+      txt(fit(x, mo.label, inW), l, cy + cfg.memoLab * 0.9, fMono(500, cfg.memoLab), MC_TEAL);
+      cy += 20;
+      let cx = l;
+      mo.words.forEach(wd => {
+        x.font = fSans(400, cfg.chipSize);
+        const t = fit(x, wd, inW - 24);
+        const w = x.measureText(t).width + 24;
+        if (cx > l && cx + w > l + inW) { cx = l; cy += cfg.chipLH; }
+        chip(t, cx, cy);
+        cx += w + cfg.chipGap;
+      });
+      cy += cfg.chipH + (k < r.memos.length - 1 ? 16 : 0);
+    });
+    return cy + pad;
+  };
 
   pen = false;
   const ends = rows.map((r, k) => column(r, PAD + k * (colW + gap), y));
   pen = draw;
   const h = Math.max(...ends) - y;
-  rows.forEach((r, k) => column(r, PAD + k * (colW + gap), y));
+  rows.forEach((r, k) => {
+    const left = PAD + k * (colW + gap);
+    if (pen) { roundRect(x, left, y, colW, h, 3); x.fillStyle = MC_WARM; x.fill(); }
+    column(r, left, y);
+  });
   return y + h;
 }
 
@@ -4911,7 +4950,7 @@ async function exportMemoCompare(chars, tag, opts = {}, onBack) {
   const digestTop = titleY + 62;
   const digestEnd = renderMemoDigest(probe, { ...digestArgs, top: digestTop, draw: false });
   const hasDigest = digestEnd > digestTop;
-  const top0 = hasDigest ? digestEnd + 76 : digestTop + 4;
+  const top0 = hasDigest ? digestEnd + 72 : digestTop + 4;
   const tops = [];
   let y = top0;
   chars.forEach((c, i) => {
@@ -4946,7 +4985,7 @@ async function exportMemoCompare(chars, tag, opts = {}, onBack) {
     renderMemoDigest(x, { ...digestArgs, top: digestTop, draw: true });
     x.strokeStyle = MC_LINE; x.lineWidth = 1.5;
     x.beginPath();
-    x.moveTo(PAD, digestEnd + 32.5); x.lineTo(W - PAD, digestEnd + 32.5); x.stroke();
+    x.moveTo(PAD, digestEnd + 26.5); x.lineTo(W - PAD, digestEnd + 26.5); x.stroke();
   }
 
   chars.forEach((c, i) => {
