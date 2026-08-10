@@ -228,10 +228,10 @@ details.setup-more[open] > summary::before{content:"− "}
   color:var(--faint);font-size:12.5px;text-align:center}
 .name-block{margin:22px 0 0}
 .name-block h1{font-family:var(--serif);font-weight:300;font-size:33px;letter-spacing:-.025em}
-.name-block .sub{font-family:var(--mono);font-size:11.5px;color:var(--teal);letter-spacing:.1em;margin-top:9px}
+.name-block .sub{font-family:var(--mono);font-size:11.5px;color:var(--muted);letter-spacing:.1em;margin-top:9px}
 .tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:14px}
 .tag{padding:3px 9px;border-radius:var(--r);border:1px solid var(--hair);
-  font-family:var(--mono);font-size:10.5px;color:var(--muted);letter-spacing:.06em}
+  font-family:var(--mono);font-size:10.5px;color:var(--teal);letter-spacing:.06em}
 
 .panel{background:var(--paper);border:1px solid var(--hair);border-radius:var(--r);
   padding:26px 28px;box-shadow:var(--lift)}
@@ -298,7 +298,10 @@ details.setup-more[open] > summary::before{content:"− "}
 .sheet h1{font-family:var(--serif);font-weight:400;font-size:25px;line-height:1.5;margin-bottom:14px}
 .sheet .sheet-meta{font-family:var(--mono);font-size:10.5px;color:var(--faint);letter-spacing:.14em;
   padding-bottom:26px;border-bottom:1px solid var(--hair);margin-bottom:34px}
-.sheet .sheet-body{font-family:var(--serif);font-weight:400;font-size:16.5px;line-height:2.12;white-space:pre-wrap}
+.sheet .sheet-body{font-family:var(--serif);font-weight:400;font-size:16.5px;line-height:2.12}
+.sheet-body.md{margin-top:0;color:inherit}
+.sheet-body.md > p:last-child{margin-bottom:0}
+.sheet-memo .md{margin-top:0;font-family:var(--ui);font-size:13.5px;color:var(--muted);line-height:1.85}
 .sheet-tools{position:sticky;top:0;display:flex;justify-content:flex-end;gap:8px;
   max-width:632px;margin:0 auto 14px;z-index:2}
 .sheet-tools .btn{box-shadow:var(--lift)}
@@ -405,7 +408,7 @@ details.setup-more[open] > summary::before{content:"− "}
   border:1px solid var(--hair);border-radius:2px;padding:.06em .34em}
 .sub-item .md{font-size:13.5px;margin-top:6px;padding-bottom:9px}
 
-/* 마크다운 도구막대 */
+/* 마크다운 도구막대 CSS */
 .md-bar{display:flex;flex-wrap:wrap;gap:5px;margin:0 0 7px}
 .md-bar button{font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--muted);
   border:1px solid var(--hair);background:var(--paper);border-radius:2px;padding:3px 9px;line-height:1.6}
@@ -816,7 +819,7 @@ const BASE_PRESET = {
 };
 
 /* 메모란 기본 라벨 — 계정마다 자유롭게 고칠 수 있어요 */
-const MEMO_LABELS = ['장르', '포지션', '관계'];
+const MEMO_LABELS = ['장르', '포지션', '특이사항'];
 
 const state = {
   view: 'gallery',       // gallery | character
@@ -887,8 +890,11 @@ function mdInline(t) {
   return s.replace(/\u0001(\d+)\u0001/g, (_, i) => '<code>' + codes[+i] + '</code>');
 }
 
-function mdHTML(src) {
-  const lines = esc(String(src ?? '')).split(/\r?\n/);
+const mdHTML = src => mdRender(esc(String(src ?? '')));
+
+/* 이미 이스케이프된 문자열(형광펜 <mark> 포함)에 표기만 입혀요 */
+function mdRender(safe) {
+  const lines = String(safe ?? '').split(/\r?\n/);
   let out = '', para = [], quote = [], list = null;
   const flushPara = () => { if (para.length) { out += '<p>' + para.map(mdInline).join('<br>') + '</p>'; para = []; } };
   const flushQuote = () => { if (quote.length) { out += '<blockquote>' + quote.map(mdInline).join('<br>') + '</blockquote>'; quote = []; } };
@@ -921,6 +927,39 @@ function mdHTML(src) {
   flushAll();
   return out;
 }
+
+/* 표기 문자를 뺀 '보이는 글자'와 원문 사이의 자리 지도 */
+function mdMarkerMap(src) {
+  const s = String(src || '');
+  const drop = new Uint8Array(s.length);
+  let pos = 0;
+  for (const line of s.split('\n')) {
+    const m = line.match(/^\s*(#{1,3}\s+|[-*+]\s+|\d+[.)]\s+|>\s?)/);
+    if (m) for (let k = 0; k < m[0].length; k++) drop[pos + k] = 1;
+    pos += line.length + 1;
+  }
+  const pairs = [['***', 3], ['**', 2], ['~~', 2], ['==', 2], ['__', 2], ['*', 1], ['_', 1], ['`', 1]];
+  let i = 0;
+  while (i < s.length) {
+    if (drop[i]) { i++; continue; }
+    const p = pairs.find(([tk]) => s.startsWith(tk, i));
+    if (!p) { i++; continue; }
+    const close = s.indexOf(p[0], i + p[1]);
+    const nl = s.indexOf('\n', i + p[1]);
+    if (close < 0 || (nl >= 0 && close > nl)) { i += p[1]; continue; }
+    for (let k = 0; k < p[1]; k++) { drop[i + k] = 1; drop[close + k] = 1; }
+    i = close + p[1];
+  }
+  const map = [];
+  for (let k = 0; k < s.length; k++) if (!drop[k]) map.push(k);
+  map.push(s.length);
+  return map;
+}
+/* 표기를 걷어낸 순수 글자 — 이미지로 저장할 때 써요 */
+const mdPlain = src => {
+  const s = String(src || '');
+  return mdMarkerMap(s).slice(0, -1).map(i => s[i]).join('');
+};
 
 /* 마크다운 도구막대 */
 const MD_TOOLS = [
@@ -2678,7 +2717,7 @@ function renderCharacter() {
                   <div class="memo-words">${(mo.words || []).map(w =>
                     `<span class="memo-word">${esc(w)}</span>`).join('')}</div>
                 </div>`).join('')}</div>`
-            : `<p class="hint" style="margin:0">장르 · 포지션 · 관계처럼 라벨을 골라 키워드만 짧게 모아두는 칸이에요.
+            : `<p class="hint" style="margin:0">장르 · 포지션 · 특이사항처럼 라벨을 골라 키워드만 짧게 모아두는 칸이에요.
                 라벨은 자유롭게 고치고 추가할 수 있어요.</p>`}
         </section>
 
@@ -2899,7 +2938,7 @@ function openExcerptTrash() {
     w.innerHTML = state.exTrash.map(e => `
       <div class="notice-row">
         <b style="font-family:var(--serif);font-size:15.5px">${esc(e.title || '제목 없음')}</b>
-        <p class="hint" style="margin:6px 0 0">${esc((e.body || '').slice(0, 90))}</p>
+        <p class="hint" style="margin:6px 0 0">${esc(mdPlain(e.body || '').slice(0, 90))}</p>
         <div class="row-meta">
           <span class="mono">${fmtDate(e.deletedAt)}에 지움</span><div class="spacer"></div>
           <button class="btn btn-sm" data-erestore="${e.id}">되돌리기</button>
@@ -3537,7 +3576,7 @@ function excerptListHTML() {
     const tags = (e.tags || []).map(t => `<span class="tag">#${esc(t)}</span>`).join('');
     return `<button class="excerpt-item" data-ex="${e.id}">
       <h3>${esc(e.title || '제목 없음')}</h3>
-      <p>${esc((e.body || '').slice(0, 140))}</p>
+      <p>${esc(mdPlain(e.body || '').slice(0, 140))}</p>
       ${tags ? `<div class="tags" style="margin-top:9px">${tags}</div>` : ''}
       ${meta ? `<div class="meta">${meta}</div>` : ''}
     </button>`;
@@ -3660,14 +3699,25 @@ function openExcerptEditor(ex) {
       </div>
       <p class="hint" style="margin:-8px 0 16px">목록과 읽기 화면에 이 두 가지가 표시돼요. 비워두면 표시되지 않아요.</p>
       <label class="field"><span>본문</span>
+        ${mdBarHTML('e-body')}
         <textarea class="textarea serif" id="e-body" style="min-height:260px;font-size:15.5px;line-height:1.95"
           placeholder="여기에 발췌한 줄글을 붙여넣어요.">${esc(ex?.body || '')}</textarea>
-        <p class="hint">줄바꿈은 그대로 유지돼요. 본문을 고치면 칠해둔 형광펜 위치가 어긋날 수 있어요.</p></label>
+        <p class="hint"><b>**굵게**</b> 같은 마크다운을 쓸 수 있어요. 빈 줄은 문단을 나눕니다.<br>
+          본문을 고치면 칠해둔 형광펜 위치가 어긋날 수 있어요.</p>
+        <details class="setup-more" style="margin:10px 0 0"><summary>마크다운 표기법</summary>
+          <p class="md-help" style="margin:12px 0 0">
+            <code>**굵게**</code> <code>*기울임*</code> <code>__밑줄__</code>
+            <code>~~취소선~~</code> <code>==형광==</code><br>
+            <code># 소제목</code> · <code>- 목록</code> · <code>1. 번호 목록</code> ·
+            <code>&gt; 인용</code> · <code>---</code> 가로줄
+          </p></details></label>
       <label class="field"><span>메모</span>
+        ${mdBarHTML('e-memo')}
         <textarea class="textarea" id="e-memo" style="min-height:90px;font-size:14px"
           placeholder="이 장면에 대한 생각, 고칠 점 같은 걸 적어두세요.">${esc(ex?.memo || '')}</textarea>
         <p class="hint">읽기 화면 아래에만 보이고, 이미지로 저장할 때는 빠져요.</p></label>
       <label class="field" style="margin-bottom:0"><span>추가 메모</span>
+        ${mdBarHTML('e-memo2')}
         <textarea class="textarea" id="e-memo2" style="min-height:90px;font-size:14px"
           placeholder="이미지에 함께 담고 싶은 짧은 말.">${esc(ex?.memo2 || '')}</textarea>
         <p class="hint">읽기 화면에서는 메모 아래에 작게 표시되고,
@@ -3736,7 +3786,7 @@ function bodyHTML(e) {
     out += `<mark style="background:${HL[h.c] || HL.y}">${esc(text.slice(s, en))}</mark>`;
     pos = en;
   }
-  return out + esc(text.slice(pos));
+  return mdRender(out + esc(text.slice(pos)));
 }
 
 function selOffsets(container) {
@@ -3753,8 +3803,14 @@ function selOffsets(container) {
 }
 
 async function applyHighlight(e, color, bodyEl) {
-  const sel = selOffsets(bodyEl);
-  if (!sel) return toast(color ? '칠할 부분을 먼저 드래그해 주세요' : '지울 부분을 먼저 드래그해 주세요');
+  const raw = selOffsets(bodyEl);
+  if (!raw) return toast(color ? '칠할 부분을 먼저 드래그해 주세요' : '지울 부분을 먼저 드래그해 주세요');
+  const map = mdMarkerMap(e.body || '');           // 보이는 자리 → 원문 자리
+  const sel = {
+    s: map[Math.min(raw.s, map.length - 1)],
+    e: map[Math.min(Math.max(raw.e - 1, 0), map.length - 1)] + 1,
+  };
+  if (!(sel.e > sel.s)) return toast('칠할 부분을 다시 골라 주세요', 1);
   const kept = [];
   for (const h of (e.highlights || [])) {
     if (h.e <= sel.s || h.s >= sel.e) { kept.push(h); continue; }
@@ -3852,12 +3908,12 @@ function openSheet(id) {
     <article class="sheet">
       <h1>${esc(e.title || '제목 없음')}</h1>
       <div class="sheet-meta">${meta}${idx >= 0 ? `<span style="float:right">${idx + 1} / ${list.length}</span>` : ''}</div>
-      <div class="sheet-body" id="sheet-body"
+      <div class="sheet-body md" id="sheet-body"
         style="font-size:${readPrefs.size}px;line-height:${readPrefs.lh};font-family:${bodyFont()}">${bodyHTML(e)}</div>
       ${e.memo ? `<div class="sheet-memo"><span class="eyebrow">메모</span>
-        <div class="txt">${esc(e.memo)}</div></div>` : ''}
+        <div class="md">${mdHTML(e.memo)}</div></div>` : ''}
       ${e.memo2 ? `<div class="sheet-memo2"><span class="eyebrow">추가 메모</span>
-        <div class="txt" style="font-size:${(readPrefs.size * 0.82).toFixed(1)}px">${esc(e.memo2)}</div></div>` : ''}
+        <div class="md" style="font-size:${(readPrefs.size * 0.82).toFixed(1)}px">${mdHTML(e.memo2)}</div></div>` : ''}
     </article>`;
 
   wrap.addEventListener('click', ev => { if (ev.target === wrap) closeSheet(); });
@@ -3915,7 +3971,7 @@ function openContinuous(rev = state.exSort === 'recent') {
         return `<section class="cont-sec">
           <h2>${esc(e.title || '제목 없음')}</h2>
           <div class="cont-meta">${meta ? meta + ' · ' : ''}${i + 1} / ${list.length}</div>
-          <div class="sheet-body"
+          <div class="sheet-body md"
             style="font-size:${readPrefs.size}px;line-height:${readPrefs.lh};font-family:${bodyFont()}">${bodyHTML(e)}</div>
         </section>`;
       }).join('')}
@@ -3970,7 +4026,7 @@ async function exportExcerpt(e) {
     ? '"Pretendard Variable", Pretendard, sans-serif' : '"Noto Serif KR", serif';
   const probe = document.createElement('canvas').getContext('2d');
   probe.font = `400 ${FS}px ${FACE}`;
-  let lines = wrapLines(probe, e.body || '', W - PAD * 2);
+  let lines = wrapLines(probe, mdPlain(e.body || ''), W - PAD * 2);
   const maxLines = Math.floor((28000 - PAD - 351) / LH) + 1;
   const cut = lines.length > maxLines;
   if (cut) lines = lines.slice(0, maxLines);
@@ -3980,7 +4036,7 @@ async function exportExcerpt(e) {
   const MFS = Math.round(FS * 0.78), MLH = Math.round(MFS * 1.85);
   if (showMemo) {
     probe.font = `400 ${MFS}px ${FACE}`;
-    memoLines = wrapLines(probe, e.memo2, W - PAD * 2);
+    memoLines = wrapLines(probe, mdPlain(e.memo2), W - PAD * 2);
   }
   const memoH = showMemo ? LH + 90 - MLH + memoLines.length * MLH : 0;   // 본문 마지막 줄 아래 여백까지 포함
   const H = Math.max(520, PAD + 351 + (lines.length - 1) * LH + (cut ? 40 : 0) + memoH);
@@ -4336,8 +4392,8 @@ async function exportCard(c, set) {
       x.fillText(note, ax, capY + 86);
       x.textAlign = 'left';
     };
-    sideMark('AVERAGE', avg, `/ ${max}`, W - PAD, cy - R + 8, 'right');
-    sideMark('TOTAL', sum, `/ ${max * nums.length}`, PAD, cy + R - 94, 'left');
+    sideMark('AVERAGE', avg, `/ ${max}`, PAD, cy - R - 26, 'left');
+    sideMark('TOTAL', sum, `/ ${max * nums.length}`, W - PAD, cy + R - 60, 'right');
 
     x.save(); x.translate(W / 2, cy);
     const path = k => { x.beginPath(); g.forEach((p, i) => {
@@ -4544,7 +4600,7 @@ function renderPlate(x, o) {
   };
 
   /* 부제 줄 — 왼쪽 두꺼운 막대, 오른쪽 끝에 태그 하나 */
-  const tag1 = (c.tags || []).filter(Boolean)[0] || '';
+  const tag1 = solo ? '' : ((c.tags || []).filter(Boolean)[0] || '');
   const subLine = (left, base, width) => {
     let tw = 0;
     if (tag1) { x.font = fMono(400, cfg.subSize - 4); tw = x.measureText('#' + tag1).width + 26; }
@@ -4564,7 +4620,7 @@ function renderPlate(x, o) {
     let base = o.top + Math.round(cfg.nameSize * 0.8);
     lines.forEach((ln, i) => txt(ln, PAD, base + i * cfg.nameLH, nameFont, MC_INK));
     base += (lines.length - 1) * cfg.nameLH;
-    if (c.subtitle || tag1) { base += 40; subLine(PAD, base, CW); }
+    if (c.subtitle || tag1) { base += 46; subLine(PAD, base, CW); }
     twinRule(PAD, base + 40, W - PAD);
     bodyTop = base + 40 + 56;
   }
@@ -4639,13 +4695,6 @@ function renderPlate(x, o) {
   let y = bodyTop + blockH + 26;
   rule(PAD, y + 0.5, W - PAD, MC_HAIR, 1);
 
-  /* ── 비교판의 메모 — 단독과 같은 얼굴로, 자리만 아래에 ── */
-  if (!solo && memos.length) {
-    y += 34;
-    y = colMark('MEMO', PAD, y, CW);
-    y = flowMemos(memos, PAD, y, CW) + 4;
-  }
-
   /* ── 스탯 ── */
   const useSets = showStats ? (sets || []).filter(st => (st.labels || []).filter(Boolean).length) : [];
   if (useSets.length) {
@@ -4715,6 +4764,80 @@ function renderPlate(x, o) {
   return y;
 }
 
+/* 여러 사람의 메모를 한자리에 — 비교판 머리 아래에 놓여요 */
+function renderMemoDigest(x, o) {
+  const { chars, W, PAD, cfg, labels, draw } = o;
+  const CW = W - PAD * 2;
+  const IND = 36;
+
+  const txt = (t, px, py, font, color, align) => {
+    x.font = font;
+    if (draw) {
+      x.fillStyle = color; x.textAlign = align || 'left';
+      x.fillText(t, px, py); x.textAlign = 'left';
+    }
+    return x.measureText(t).width;
+  };
+  const rule = (x1, y1, x2, color, w) => {
+    if (!draw) return;
+    x.strokeStyle = color; x.lineWidth = w || 1;
+    x.beginPath(); x.moveTo(x1, y1); x.lineTo(x2, y1); x.stroke();
+  };
+  const chip = (t, l, top) => {
+    x.font = fSans(400, cfg.chipSize);
+    const w = x.measureText(t).width + 26;
+    if (draw) {
+      roundRect(x, l, top, w, cfg.chipH, 3);
+      x.fillStyle = '#FFFFFF'; x.fill();
+      x.strokeStyle = MC_LINE; x.lineWidth = 1; x.stroke();
+      x.fillStyle = MC_INK2; x.textAlign = 'left';
+      x.fillText(t, l + 13, top + cfg.chipH / 2 + cfg.chipSize * 0.36);
+    }
+    return w;
+  };
+  const flow = (list, left, top, maxW) => {
+    const labFont = fMono(500, cfg.memoLab), chipFont = fSans(400, cfg.chipSize);
+    let cx = left, cy = top, first = true;
+    list.forEach(mo => {
+      if (!first) { cx = left; cy += cfg.chipLH + cfg.entryGap; }
+      const lab = mo.label + '  ─';
+      x.font = labFont;
+      const lw = x.measureText(lab).width;
+      txt(lab, cx, cy + cfg.chipH / 2 + cfg.memoLab * 0.36, labFont, MC_TEAL);
+      cx += lw + 12;
+      mo.words.forEach(wd => {
+        x.font = chipFont;
+        const w = x.measureText(wd).width + 26;
+        if (cx > left && cx + w > left + maxW) { cx = left; cy += cfg.chipLH; }
+        chip(wd, cx, cy);
+        cx += w + cfg.chipGap;
+      });
+      first = false;
+    });
+    return cy + cfg.chipH;
+  };
+
+  const rows = chars
+    .map((c, i) => ({ c, i, memos: mcMemos(c, labels, cfg.memoMax) }))
+    .filter(r => r.memos.length);
+  if (!rows.length) return o.top;
+
+  let y = o.top;
+  txt(spread('MEMO'), PAD, y + 12, fMono(500, cfg.eyeSize), MC_TEAL);
+  rule(PAD, y + 26.5, W - PAD, MC_HAIR, 1);
+  y += 46;
+
+  rows.forEach((r, k) => {
+    txt(String(r.i + 1).padStart(2, '0'), PAD, y + 14, fMono(500, 15), MC_TEAL);
+    txt(fit(x, r.c.name || '이름 없음', CW - IND), PAD + IND, y + 14, fSans(500, 17), MC_INK);
+    y += 26;
+    y = flow(r.memos, PAD + IND, y, CW - IND);
+    y += 22;
+    if (k < rows.length - 1) { rule(PAD + IND, y + 0.5, W - PAD, MC_HAIR, 1); y += 22; }
+  });
+  return y;
+}
+
 /* 머리글 한 줄 */
 function mcHead(x, W, PAD, y, left, right) {
   x.font = fMono(500, 19); x.fillStyle = MC_FAINT; x.textAlign = 'left';
@@ -4759,10 +4882,15 @@ async function exportMemoCompare(chars, tag, opts = {}, onBack) {
     loadPhoto(c.id === state.current?.id ? (state.fullImg || c.thumb) : c.thumb)));
   const sets = (opts.sets || []).map(id => state.statSets.find(s => s.id === id)).filter(Boolean).slice(0, 5);
   const W = 1080, PAD = 84, headY = 100;
-  const titleY = headY + 82, top0 = titleY + 76;
+  const titleY = headY + 62;
   const GAPB = 76;
 
   const probe = document.createElement('canvas').getContext('2d');
+  const digestArgs = { chars, W, PAD, cfg: MC_CMP, labels: opts.labels };
+  const digestTop = titleY + 62;
+  const digestEnd = renderMemoDigest(probe, { ...digestArgs, top: digestTop, draw: false });
+  const hasDigest = digestEnd > digestTop;
+  const top0 = hasDigest ? digestEnd + 58 : digestTop + 4;
   const tops = [];
   let y = top0;
   chars.forEach((c, i) => {
@@ -4792,6 +4920,13 @@ async function exportMemoCompare(chars, tag, opts = {}, onBack) {
   x.beginPath(); x.moveTo(PAD, titleY + 30.5); x.lineTo(W - PAD, titleY + 30.5); x.stroke();
   x.strokeStyle = MC_HAIR; x.lineWidth = 1;
   x.beginPath(); x.moveTo(PAD, titleY + 36.5); x.lineTo(W - PAD, titleY + 36.5); x.stroke();
+
+  if (hasDigest) {
+    renderMemoDigest(x, { ...digestArgs, top: digestTop, draw: true });
+    x.strokeStyle = MC_LINE; x.lineWidth = 1.5;
+    x.beginPath();
+    x.moveTo(PAD, digestEnd + 28.5); x.lineTo(W - PAD, digestEnd + 28.5); x.stroke();
+  }
 
   chars.forEach((c, i) => {
     if (i) {
