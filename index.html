@@ -220,20 +220,19 @@ details.setup-more[open] > summary::before{content:"− "}
 .back-row{display:flex;align-items:center;gap:8px;padding:26px 0 22px}
 .detail{display:grid;gap:38px;grid-template-columns:minmax(0,318px) minmax(0,1fr);align-items:start}
 .portrait{
-  border-radius:var(--r);overflow:hidden;border:1px solid var(--hair);background:var(--paper);
+  border-radius:0;overflow:hidden;background:var(--paper);
+  border:1px solid var(--hair);border-top:2px solid var(--teal);border-bottom:2px solid var(--teal);
   aspect-ratio:3/4;position:relative;box-shadow:var(--lift);
 }
 .portrait img{width:100%;height:100%;object-fit:cover}
-/* 중요도 — 사진 위, 잡지의 표제 줄처럼 */
-.rank-line{display:flex;align-items:center;gap:11px;margin:0 0 13px;padding:0 2px}
-.rank-key{font-family:var(--mono);font-size:9px;letter-spacing:.3em;color:var(--faint);flex:none}
-.rank-rule{flex:1;height:5px;border-bottom:1px solid var(--hair);border-top:1px solid var(--hair)}
-.rank-val{flex:none;display:flex;align-items:center;gap:7px;
-  font-family:var(--serif);font-size:15px;font-weight:500;letter-spacing:.1em;color:var(--teal)}
-.rank-val i{width:6px;height:6px;transform:rotate(45deg);background:var(--teal);display:block}
-.rank-v2 i{background:none;border:1px solid var(--teal)}
-.rank-v1{color:var(--muted)}
-.rank-v1 i{width:5px;height:5px;background:none;border:1px solid var(--line)}
+/* 중요도 — 사진 폭에 맞춘 표제 줄 */
+.port-col{flex:1;min-width:0;display:flex;flex-direction:column}
+.portrait-wrap .port-col{max-width:none}
+.rank-line{display:flex;align-items:baseline;justify-content:space-between;gap:14px;padding:0 1px 9px}
+.rank-key{font-family:var(--mono);font-size:8.5px;letter-spacing:.34em;color:var(--faint)}
+.rank-val{font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.26em;color:var(--teal)}
+.rank-val em{font-style:normal;font-size:9px;letter-spacing:.12em;color:var(--faint);margin-right:9px}
+.rank-v1 .rank-val{color:var(--muted)}
 .rank-seg{display:flex;flex-wrap:wrap;gap:0}
 .rank-seg .seg{flex:1;min-width:0}
 .rank-seg .seg button{flex:1;font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;padding:7px 4px}
@@ -556,6 +555,7 @@ details.setup-more[open] > summary::before{content:"− "}
 /* 초상 · 그래프 좌우 이동 */
 .portrait-wrap{display:flex;align-items:center;gap:9px}
 .portrait-wrap .portrait{flex:1;min-width:0}
+.portrait-wrap .port-col .portrait{flex:none;width:100%;max-width:none}
 .set-nav{
   border:1px solid var(--hair);border-radius:var(--r);background:var(--paper);
   display:grid;place-items:center;color:var(--muted);line-height:1;flex:none;
@@ -683,6 +683,7 @@ details.setup-more[open] > summary::before{content:"− "}
   .portrait{max-width:280px}
   .char-side .portrait-wrap{max-width:330px;margin:0 auto}
   .portrait-wrap .portrait{max-width:none}
+  .portrait-wrap .port-col{max-width:none}
   .stat-wrap,.cmp-wrap{grid-template-columns:1fr;gap:20px}
   .ex-row .ex-search{flex:1 0 100%}
   .sheet{padding:40px 26px 48px}
@@ -2484,7 +2485,7 @@ async function exportCompare(set, labels, max, series, onBack) {
   const probe = document.createElement('canvas').getContext('2d');
   const fieldBlocks = series.map(sr => layoutFields(probe, sr.fields || [], W - PAD * 2, 2))
     .filter(l => l.length);
-  const fieldsH = fieldBlocks.length ? 48 + fieldBlocks.reduce((n, l) => n + l.length * 32 + 14, 0) : 0;
+  const fieldsH = fieldBlocks.length ? 6 + fieldBlocks.reduce((n, l) => n + l.length * 32 + 10, 0) : 0;
   const H = 128 + 78 + (R * 2 + 130) + legendH + tableH + fieldsH + 34;
 
   const cv = document.createElement('canvas');
@@ -2565,20 +2566,20 @@ async function exportCompare(set, labels, max, series, onBack) {
   });
   // 캐릭터별 프로필 항목 — 이름 목록 바로 아래에 한 덩어리로
   if (fieldBlocks.length) {
-    y += 26;
+    y -= 16;
     series.forEach(sr => {
       const lines = layoutFields(probe, sr.fields || [], W - PAD * 2, 2);
       if (!lines.length) return;
       const col = CMP_COLORS[series.indexOf(sr) % CMP_COLORS.length];
-      const bx = PAD - 22, bw = W - (PAD - 22) * 2;
-      const bh = lines.length * 32 + 14, top = y;
+      const bx = PAD - 12, bw = W - (PAD - 12) * 2;
+      const bh = lines.length * 32 + 10, top = y;
       const wash = x.createLinearGradient(bx, 0, bx + bw, 0);   // 오른쪽으로 갈수록 옅어져요
       wash.addColorStop(0, col + '18');
       wash.addColorStop(.55, col + '0C');
       wash.addColorStop(1, col + '05');
       x.fillStyle = wash; x.fillRect(bx, top, bw, bh);
       x.fillStyle = col; x.fillRect(bx, top, 3, bh);          // 왼쪽 색 세로선
-      drawFieldLines(x, lines, PAD, top + 29, 32, col, INK2, col + '3A');
+      drawFieldLines(x, lines, PAD, top + 27, 32, col, INK2, col + '3A');
       y = top + bh;
     });
     y += 26;
@@ -2676,17 +2677,18 @@ function renderCharacter() {
 
     <div class="detail">
       <div class="char-side">
-        ${c.rank ? `<div class="rank-line">
-          <span class="rank-key">IMPORTANCE</span>
-          <span class="rank-rule"></span>
-          <span class="rank-val rank-v${c.rank}"><i></i>${rankName(c.rank)}</span>
-        </div>` : ''}
         <div class="portrait-wrap">
           <button class="port-nav left" id="char-prev" title="${prevChar ? esc(prevChar.name || '') : ''}"
             ${prevChar ? '' : 'disabled'}>‹</button>
+          <div class="port-col${c.rank ? ` rank-v${c.rank}` : ''}">
+          ${c.rank ? `<div class="rank-line">
+            <span class="rank-key">IMPORTANCE</span>
+            <span class="rank-val"><em>${c.rank}/3</em>${rankName(c.rank)}</span>
+          </div>` : ''}
           <div class="portrait">
             ${img ? `<img src="${img}" alt="${esc(c.name)}">`
                   : `<div class="ph"><svg width="52" height="52" viewBox="0 0 32 32"><polygon points="16,4 27,11 23,26 9,26 5,11" fill="none" stroke="#A6ABB2" stroke-width="1"/></svg></div>`}
+          </div>
           </div>
           <button class="port-nav right" id="char-next" title="${nextChar ? esc(nextChar.name || '') : ''}"
             ${nextChar ? '' : 'disabled'}>›</button>
@@ -4367,9 +4369,19 @@ async function exportCard(c, set) {
     shade.addColorStop(1, 'rgba(6,8,10,0)');
     x.fillStyle = shade; x.fillRect(pr - 470, photoTop, 470, photoH);
 
-    // 어둠 위에 얹는 세로선 — 위아래 끝까지 같은 굵기로
+    // 아래에서 올라오는 어둠
+    const pb = photoTop + photoH;
+    const rise = x.createLinearGradient(0, pb, 0, pb - 260);
+    rise.addColorStop(0, 'rgba(6,8,10,.5)');
+    rise.addColorStop(.4, 'rgba(6,8,10,.2)');
+    rise.addColorStop(.75, 'rgba(6,8,10,.05)');
+    rise.addColorStop(1, 'rgba(6,8,10,0)');
+    x.fillStyle = rise; x.fillRect(PAD, pb - 260, pw, 260);
+
+    // 어둠 위에 얹는 선 — 세로 둘, 그와 엇갈리는 가로 하나
     x.fillStyle = 'rgba(24,88,79,.97)';
     x.fillRect(pr - 44, photoTop, 3.5, photoH);
+    x.fillRect(PAD, pb - 44, pw, 3.5);
     x.fillStyle = 'rgba(24,88,79,.62)';
     x.fillRect(pr - 56, photoTop, 3, photoH);
     x.restore();
