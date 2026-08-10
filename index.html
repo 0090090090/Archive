@@ -2551,11 +2551,7 @@ async function exportCompare(set, labels, max, series, onBack) {
       wash.addColorStop(.55, col + '0C');
       wash.addColorStop(1, col + '05');
       x.fillStyle = wash; x.fillRect(bx, top, bw, bh);
-      const edge = x.createLinearGradient(0, top, 0, top + bh);  // 왼쪽 색 세로선
-      edge.addColorStop(0, col + 'BB');
-      edge.addColorStop(.5, col);
-      edge.addColorStop(1, col + 'BB');
-      x.fillStyle = edge; x.fillRect(bx, top, 3, bh);
+      x.fillStyle = col; x.fillRect(bx, top, 3, bh);          // 왼쪽 색 세로선
       drawFieldLines(x, lines, PAD, y, 32, col, INK2, col + '3A');
       y = top + bh + 12;
     });
@@ -4267,13 +4263,9 @@ async function exportCard(c, set) {
     shade.addColorStop(1, 'rgba(8,10,12,0)');
     x.fillStyle = shade; x.fillRect(pr - 320, photoTop, 320, photoH);
 
-    // 어둠 위에 얹는 녹색 세로선 — 위아래로 사라져요
-    const rule = x.createLinearGradient(0, photoTop, 0, photoTop + photoH);
-    rule.addColorStop(0, 'rgba(88,168,157,0)');
-    rule.addColorStop(.16, 'rgba(88,168,157,.9)');
-    rule.addColorStop(.84, 'rgba(88,168,157,.9)');
-    rule.addColorStop(1, 'rgba(88,168,157,0)');
-    x.fillStyle = rule; x.fillRect(pr - 44, photoTop, 2.5, photoH);
+    // 어둠 위에 얹는 세로선 — 위아래 끝까지 같은 굵기로
+    x.fillStyle = 'rgba(158,206,197,.82)';
+    x.fillRect(pr - 44, photoTop, 2, photoH);
     x.restore();
 
     x.strokeStyle = 'rgba(20,22,26,.14)'; x.lineWidth = 1;
@@ -4311,41 +4303,14 @@ async function exportCard(c, set) {
     x.fillStyle = halo;
     x.fillRect(0, ruleY + 1, W, Math.min(cy + R * 2.05, H - 92.5) - ruleY - 1);
 
-    /* 이름표가 어디까지 뻗는지 먼저 재요 — 결이 글씨를 건드리지 않게 */
-    x.font = '400 22px "Pretendard Variable", Pretendard, sans-serif';
-    let lEdge = W / 2 - R - 24, rEdge = W / 2 + R + 24;
-    g.forEach(p => {
-      const lx = Math.cos(p.a) * (R + 44), w = x.measureText(p.label).width;
-      if (lx < -14) lEdge = Math.min(lEdge, W / 2 + lx - w);
-      else if (lx > 14) rEdge = Math.max(rEdge, W / 2 + lx + w);
-    });
-
-    // 양옆 여백 — 바깥에서 그래프 쪽으로 사라지는 결
-    const sideRule = (outerX, innerX) => {
-      const vg = x.createLinearGradient(0, cy - R - 24, 0, cy + R + 24);
-      vg.addColorStop(0, 'rgba(15,76,71,0)');
-      vg.addColorStop(.5, 'rgba(15,76,71,.34)');
-      vg.addColorStop(1, 'rgba(15,76,71,0)');
-      x.strokeStyle = vg; x.lineWidth = 1.4;
+    // 양옆 여백 — 그래프와 같은 키의 세로선 한 쌍
+    const sideRule = outerX => {
+      x.strokeStyle = 'rgba(15,76,71,.24)'; x.lineWidth = 1;
       x.beginPath();
       x.moveTo(outerX + .5, cy - R - 24); x.lineTo(outerX + .5, cy + R + 24); x.stroke();
-      if (Math.abs(innerX - outerX) < 80) return;
-      const N = 6;                       // 가운데가 가장 길고 위아래로 짧아지는 결
-      for (let i = -N; i <= N; i++) {
-        const k = Math.abs(i) / N;
-        const yy = Math.round(cy + (i / N) * R) + .5;
-        const ex = outerX + (innerX - outerX) * (1 - .58 * Math.pow(k, 1.15));
-        const a = .27 * (1 - .62 * k);
-        const hg = x.createLinearGradient(outerX, 0, ex, 0);
-        hg.addColorStop(0, `rgba(15,76,71,${a.toFixed(3)})`);
-        hg.addColorStop(.6, `rgba(15,76,71,${(a * .38).toFixed(3)})`);
-        hg.addColorStop(1, 'rgba(15,76,71,0)');
-        x.strokeStyle = hg; x.lineWidth = 1;
-        x.beginPath(); x.moveTo(outerX, yy); x.lineTo(ex, yy); x.stroke();
-      }
     };
-    sideRule(PAD, lEdge - 26);
-    sideRule(W - PAD, rEdge + 26);
+    sideRule(PAD);
+    sideRule(W - PAD);
 
     x.save(); x.translate(W / 2, cy);
     const path = k => { x.beginPath(); g.forEach((p, i) => {
@@ -4421,24 +4386,24 @@ const fMono = (w, px) => `${w} ${px}px "${MONO}`;
 const fSans = (w, px) => `${w} ${px}px "${SANS}`;
 const spread = t => String(t).split('').join(' ');
 
-/* 단독 — 이름은 머리글로 올리고, 사진과 글이 척추선 하나를 사이에 두고 마주 봐요 */
+/* 단독 — 이름은 머리글, 아래에서 사진과 글이 세로선을 사이에 두고 키를 맞춰요 */
 const MC_SOLO = {
   mode: 'solo',
   nameSize: 62, nameLH: 76, subSize: 21,
-  photoW: 442, photoH: 608, gutter: 48,
-  eyeSize: 13.5, kSize: 15, vSize: 24, vLH: 32, pairPad: 24, fieldMax: 8,
-  memoLab: 15, kwSize: 24, kwLH: 36, kwSep: 30, kwPad: 26, memoMax: 8,
-  statGap: 62, setSize: 28, pillSize: 15, rowH: 46, rowSize: 22, valSize: 24, statCols: 2,
+  photoW: 442, photoMin: 320, photoMax: 1180, gutter: 48,
+  eyeSize: 13, kSize: 14, vSize: 22, vLH: 30, pairPad: 22, fieldMax: 8,
+  memoLab: 13, chipSize: 15, chipH: 29, chipGap: 7, chipLH: 36, memoPad: 20, memoMax: 8,
+  statGap: 44, setSize: 26, pillSize: 15, rowH: 46, rowSize: 22, valSize: 24, statCols: 2,
 };
-/* 비교 — 사진 옆에 자리가 없으니 메모는 아래로, 띠 안에 세 칸으로 앉혀요 */
+/* 비교 — 사진 옆에 자리가 없으니 메모는 아래 띠에 한 줄기로 흘려요 */
 const MC_CMP = {
   mode: 'cmp',
   nameSize: 42, nameLH: 52, subSize: 18,
-  photoW: 304, photoH: 384, gutter: 40,
-  eyeSize: 12.5, kSize: 14, vSize: 20, vLH: 28, pairPad: 20, fieldMax: 5,
-  memoLab: 14, kwSize: 21, kwLH: 30, kwSep: 26, kwPad: 22, memoMax: 9,
-  statGap: 44, setSize: 23, pillSize: 14, rowH: 40, rowSize: 20, valSize: 21, statCols: 2,
-  stripCols: 3, stripPadX: 28, stripPadY: 26, stripGap: 36,
+  photoW: 304, photoMin: 280, photoMax: 620, gutter: 40,
+  eyeSize: 12.5, kSize: 13.5, vSize: 20, vLH: 28, pairPad: 18, fieldMax: 5,
+  memoLab: 13, chipSize: 14.5, chipH: 28, chipGap: 6, chipLH: 34, memoPad: 18, memoMax: 9,
+  statGap: 40, setSize: 23, pillSize: 14, rowH: 40, rowSize: 20, valSize: 21, statCols: 2,
+  stripPadX: 30, stripPadY: 26, groupGap: 34,
 };
 
 const loadPhoto = src => src
@@ -4464,21 +4429,6 @@ function mcWrapLines(x, text, font, maxW, maxLines = 99) {
   return lines.slice(0, maxLines);
 }
 
-/* 키워드를 줄 단위로 흘려요 */
-function wrapItems(x, items, font, sepW, maxW) {
-  x.font = font;
-  const lines = [];
-  let cur = [], w = 0;
-  items.forEach(it => {
-    const iw = x.measureText(it).width;
-    if (cur.length && w + sepW + iw > maxW) { lines.push(cur); cur = []; w = 0; }
-    w += (cur.length ? sepW : 0) + iw;
-    cur.push(it);
-  });
-  if (cur.length) lines.push(cur);
-  return lines;
-}
-
 const mcMemos = (c, labels, max) => (c.memos || [])
   .filter(mo => mo.label && (mo.words || []).length)
   .filter(mo => !labels || !labels.length || labels.includes(mo.label))
@@ -4489,57 +4439,73 @@ function renderPlate(x, o) {
   const { c, photo, W, PAD, cfg, sets, showStats, draw, index } = o;
   const CW = W - PAD * 2;
   const solo = cfg.mode === 'solo';
+  let pen = draw;                       // 두 번 재고 한 번만 그려요
 
   const txt = (t, px, py, font, color, align) => {
     x.font = font;
-    if (draw) {
+    if (pen) {
       x.fillStyle = color; x.textAlign = align || 'left';
       x.fillText(t, px, py); x.textAlign = 'left';
     }
     return x.measureText(t).width;
   };
   const rule = (x1, y1, x2, color, w) => {
-    if (!draw) return;
+    if (!pen) return;
     x.strokeStyle = color; x.lineWidth = w || 1;
     x.beginPath(); x.moveTo(x1, y1); x.lineTo(x2, y1); x.stroke();
   };
-  const box = (l, t, w, h, color) => { if (draw) { x.fillStyle = color; x.fillRect(l, t, w, h); } };
-  /* 작은 마름모 — 키워드 사이를 끊는 표지 */
-  const gem = (cx, cy, r, color) => {
-    if (!draw) return;
-    x.fillStyle = color;
-    x.beginPath(); x.moveTo(cx, cy - r); x.lineTo(cx + r, cy); x.lineTo(cx, cy + r); x.lineTo(cx - r, cy);
-    x.closePath(); x.fill();
-  };
-  /* 테두리만 있는 알약 표지 */
-  const pill = (t, px, cy, font, ink, border, fill, align) => {
-    x.font = font;
-    const w = x.measureText(t).width + 28, h = cfg.pillSize * 2 + 4;
-    const l = align === 'right' ? px - w : px;
-    if (draw) {
-      roundRect(x, l, cy - h / 2, w, h, h / 2);
-      if (fill) { x.fillStyle = fill; x.fill(); }
-      x.strokeStyle = border; x.lineWidth = 1; x.stroke();
-      x.fillStyle = ink; x.textAlign = 'left';
-      x.fillText(t, l + 14, cy + cfg.pillSize * 0.42);
+  const twinRule = (x1, y1, x2) => { rule(x1, y1 + 0.5, x2, MC_LINE, 1.5); rule(x1, y1 + 6.5, x2, MC_HAIR, 1); };
+  const box = (l, t, w, h, color) => { if (pen) { x.fillStyle = color; x.fillRect(l, t, w, h); } };
+
+  /* 키워드 칩 — 흰 바탕에 가느다란 테두리 */
+  const chip = (t, l, top) => {
+    const f = fSans(400, cfg.chipSize);
+    x.font = f;
+    const w = x.measureText(t).width + 26;
+    if (pen) {
+      roundRect(x, l, top, w, cfg.chipH, 3);
+      x.fillStyle = '#FFFFFF'; x.fill();
+      x.strokeStyle = MC_LINE; x.lineWidth = 1; x.stroke();
+      x.fillStyle = MC_INK2; x.textAlign = 'left';
+      x.fillText(t, l + 13, top + cfg.chipH / 2 + cfg.chipSize * 0.36);
     }
     return w;
   };
-  /* 구역 표지 — 짧은 청록 막대 아래 작은 머리글 */
-  const mark = (label, px, py, w) => {
-    box(px, py, w || 26, 2, MC_TEAL);
-    txt(spread(label), px, py + 27, fMono(500, cfg.eyeSize), MC_FAINT);
-    return py + 27 + 26;
+  const chipRun = (words, left, top, maxW) => {      // 칩을 흘려 담고 바닥 높이를 돌려줘요
+    let cx = left, cy = top;
+    x.font = fSans(400, cfg.chipSize);
+    words.forEach(wd => {
+      const w = x.measureText(wd).width + 26;
+      if (cx > left && cx + w > left + maxW) { cx = left; cy += cfg.chipLH; }
+      chip(wd, cx, cy);
+      cx += w + cfg.chipGap;
+    });
+    return cy + cfg.chipH;
+  };
+  /* 구역 머리글 — 작은 글자 아래 칸 너비만큼의 실선 */
+  const colMark = (label, px, py, w) => {
+    txt(spread(label), px, py + 12, fMono(500, cfg.eyeSize), MC_TEAL);
+    rule(px, py + 26.5, px + w, MC_HAIR, 1);
+    return py + 44;
+  };
+  const pill = (t, px, cy, font, ink, border, fill) => {
+    x.font = font;
+    const w = x.measureText(t).width + 28, h = 30;
+    if (pen) {
+      roundRect(x, px, cy - h / 2, w, h, h / 2);
+      if (fill) { x.fillStyle = fill; x.fill(); }
+      x.strokeStyle = border; x.lineWidth = 1; x.stroke();
+      x.fillStyle = ink; x.textAlign = 'left';
+      x.fillText(t, px + 14, cy + cfg.pillSize * 0.4);
+    }
+    return w;
   };
 
-  /* ── 이름 (단독은 머리글로 크게, 비교는 오른쪽 칸에) ── */
-  let y = o.top;
-  const px0 = PAD;
+  /* ── 이름 ── */
   let bodyTop = o.top;
-
   if (solo) {
     const nameFont = fSerif(300, cfg.nameSize);
-    const lines = mcWrapLines(x, c.name || '이름 없음', nameFont, CW - 60, 2);
+    const lines = mcWrapLines(x, c.name || '이름 없음', nameFont, CW - 40, 2);
     let base = o.top + Math.round(cfg.nameSize * 0.8);
     lines.forEach((ln, i) => txt(ln, PAD, base + i * cfg.nameLH, nameFont, MC_INK));
     base += (lines.length - 1) * cfg.nameLH;
@@ -4548,155 +4514,153 @@ function renderPlate(x, o) {
       x.font = fMono(400, cfg.subSize);
       txt(fit(x, c.subtitle, CW), PAD, base, fMono(400, cfg.subSize), MC_TEAL);
     }
-    const ry = base + 42;
-    rule(PAD, ry + 0.5, W - PAD, MC_HAIR, 1);
-    rule(PAD, ry + 0.5, PAD + 104, MC_TEAL, 1.5);
-    bodyTop = ry + 54;
+    twinRule(PAD, base + 40, W - PAD);
+    bodyTop = base + 40 + 56;
   }
 
-  /* ── 사진 칸 ── */
-  const pw = photo ? cfg.photoW : 0, ph = photo ? cfg.photoH : 0;
+  const photoTop = solo ? bodyTop : bodyTop + 34;
   const tags = (c.tags || []).filter(Boolean).slice(0, 6);
-  let photoTop = bodyTop;
-  if (!solo) photoTop = bodyTop + 34;
-  let photoColH = 0;
-  if (photo) {
-    photoColH = (photoTop - bodyTop) + ph + (tags.length ? 44 : 0);
-  } else if (!solo) {
-    photoColH = 0;
-  }
-
+  const pw = photo ? cfg.photoW : 0;
   const rx = PAD + (photo ? pw + cfg.gutter : 0);
   const rw = W - PAD - rx;
-  let ry = bodyTop;
 
-  /* ── 비교판의 번호와 이름 ── */
-  if (!solo) {
-    txt(String((index || 0) + 1).padStart(2, '0'), PAD, bodyTop + 20, fMono(500, 24), MC_TEAL);
-    const nameFont = fSerif(300, cfg.nameSize);
-    const lines = mcWrapLines(x, c.name || '이름 없음', nameFont, rw, 2);
-    let base = bodyTop + Math.round(cfg.nameSize * 0.82);
-    lines.forEach((ln, i) => txt(ln, rx, base + i * cfg.nameLH, nameFont, MC_INK));
-    base += (lines.length - 1) * cfg.nameLH;
-    if (c.subtitle) {
-      base += 32;
-      x.font = fMono(400, cfg.subSize);
-      txt(fit(x, c.subtitle, rw), rx, base, fMono(400, cfg.subSize), MC_TEAL);
-    }
-    ry = base + 34;
-    rule(rx, ry + 0.5, W - PAD, MC_HAIR, 1);
-    rule(rx, ry + 0.5, rx + 64, MC_TEAL, 1.5);
-    ry += 40;
-  }
-
-  /* ── 프로필 — 표가 아니라 이름표 위에 값이 얹힌 짝 ── */
+  /* ── 오른쪽 칸 — 두 번 부르되 처음엔 재기만 해요 ── */
+  const memos = mcMemos(c, o.labels, cfg.memoMax);
   const fields = (c.fields || [])
     .filter(f => !f.hide && ((f.k || '').trim() || (f.v || '').trim()))
     .slice(0, cfg.fieldMax);
-  if (solo && fields.length) ry = mark('PROFILE', rx, ry);
-  fields.forEach(f => {
-    x.font = fMono(400, cfg.kSize);
-    txt(fit(x, f.k || '', rw), rx, ry + cfg.kSize * 0.9, fMono(400, cfg.kSize), MC_FAINT);
-    const vFont = fSans(400, cfg.vSize);
-    const vl = mcWrapLines(x, f.v || '', vFont, rw, 2);
-    const vBase = ry + cfg.kSize * 0.9 + cfg.vSize + 8;
-    vl.forEach((ln, i) => txt(ln, rx, vBase + i * cfg.vLH, vFont, MC_INK2));
-    ry = vBase + Math.max(0, vl.length - 1) * cfg.vLH + cfg.pairPad;
-  });
 
-  /* ── 메모 — 단독은 프로필 아래(사진 옆), 비교는 아래쪽 띠 ── */
-  const memos = mcMemos(c, o.labels, cfg.memoMax);
-  if (solo && memos.length) {
-    ry += 20;
-    ry = mark('MEMO', rx, ry);
-    const kwFont = fSerif(400, cfg.kwSize);
-    memos.forEach(mo => {
-      x.font = fMono(400, cfg.memoLab);
-      txt(fit(x, mo.label, rw), rx, ry + cfg.memoLab * 0.9, fMono(400, cfg.memoLab), MC_TEAL);
-      const lines = wrapItems(x, mo.words, kwFont, cfg.kwSep, rw);
-      const base = ry + cfg.memoLab * 0.9 + cfg.kwSize + 10;
-      lines.forEach((ln, li) => {
-        let cx = rx;
-        const by = base + li * cfg.kwLH;
-        ln.forEach((w2, wi) => {
-          if (wi) { gem(cx + cfg.kwSep / 2, by - cfg.kwSize * 0.3, 3, MC_TEAL); cx += cfg.kwSep; }
-          cx += txt(w2, cx, by, kwFont, MC_INK);
-        });
+  const runRight = () => {
+    let ry = bodyTop;
+    if (!solo) {
+      txt(String((index || 0) + 1).padStart(2, '0'), PAD, bodyTop + 20, fMono(500, 22), MC_TEAL);
+      const nameFont = fSerif(300, cfg.nameSize);
+      const lines = mcWrapLines(x, c.name || '이름 없음', nameFont, rw, 2);
+      let base = bodyTop + Math.round(cfg.nameSize * 0.82);
+      lines.forEach((ln, i) => txt(ln, rx, base + i * cfg.nameLH, nameFont, MC_INK));
+      base += (lines.length - 1) * cfg.nameLH;
+      if (c.subtitle) {
+        base += 32;
+        x.font = fMono(400, cfg.subSize);
+        txt(fit(x, c.subtitle, rw), rx, base, fMono(400, cfg.subSize), MC_TEAL);
+      }
+      ry = base + 26;
+      rule(rx, ry + 0.5, W - PAD, MC_HAIR, 1);
+      ry += 34;
+    }
+    if (fields.length) {
+      if (solo) ry = colMark('PROFILE', rx, ry, rw);
+      fields.forEach(f => {
+        x.font = fMono(400, cfg.kSize);
+        txt(fit(x, f.k || '', rw), rx, ry + cfg.kSize * 0.9, fMono(400, cfg.kSize), MC_FAINT);
+        const vFont = fSans(400, cfg.vSize);
+        const vl = mcWrapLines(x, f.v || '', vFont, rw, 2);
+        const vBase = ry + cfg.kSize * 0.9 + cfg.vSize + 7;
+        vl.forEach((ln, i) => txt(ln, rx, vBase + i * cfg.vLH, vFont, MC_INK2));
+        ry = vBase + Math.max(0, vl.length - 1) * cfg.vLH + cfg.pairPad;
       });
-      ry = base + (lines.length - 1) * cfg.kwLH + cfg.kwPad;
-    });
-    ry -= 4;
-  }
+      ry -= 2;
+    }
+    if (solo && memos.length) {
+      ry += 24;
+      ry = colMark('MEMO', rx, ry, rw);
+      memos.forEach(mo => {
+        x.font = fMono(400, cfg.memoLab);
+        txt(fit(x, mo.label, rw), rx, ry + cfg.memoLab * 0.9, fMono(400, cfg.memoLab), MC_TEAL);
+        ry = chipRun(mo.words, rx, ry + cfg.memoLab * 0.9 + 9, rw) + cfg.memoPad;
+      });
+      ry -= 2;
+    }
+    return ry;
+  };
 
-  const blockH = Math.max(photoColH, ry - bodyTop);
+  pen = false;
+  const rightH = runRight() - bodyTop;
+  pen = draw;
+  runRight();
 
-  /* ── 사진을 그리고, 그 사이에 척추선 한 줄 ── */
-  if (photo && draw) {
+  /* ── 사진은 오른쪽 칸과 키를 맞춰요 ── */
+  const tagH = photo && tags.length ? 42 : 0;
+  const ph = photo
+    ? Math.min(cfg.photoMax, Math.max(cfg.photoMin, Math.round(rightH - (photoTop - bodyTop) - tagH)))
+    : 0;
+  const photoColH = photo ? (photoTop - bodyTop) + ph + tagH : 0;
+  const blockH = Math.max(photoColH, rightH);
+
+  if (photo && pen) {
     x.save();
     x.beginPath(); x.rect(PAD, photoTop, pw, ph); x.clip();
     coverDraw(x, photo, PAD, photoTop, pw, ph);
     x.restore();
     x.strokeStyle = 'rgba(20,22,26,.18)'; x.lineWidth = 1;
     x.strokeRect(PAD + 0.5, photoTop + 0.5, pw - 1, ph - 1);
-    x.strokeStyle = 'rgba(255,255,255,.34)'; x.lineWidth = 1;
+    x.strokeStyle = 'rgba(255,255,255,.32)'; x.lineWidth = 1;
     x.strokeRect(PAD + 11.5, photoTop + 11.5, pw - 23, ph - 23);
     box(Math.round(PAD + pw + cfg.gutter / 2), bodyTop, 1, blockH, MC_TEAL);
   }
   if (photo && tags.length) {
-    x.font = fMono(400, 15);
-    txt(fit(x, tags.map(t => '#' + t).join('  '), pw), PAD, photoTop + ph + 30, fMono(400, 15), MC_FAINT);
+    x.font = fMono(400, 14.5);
+    txt(fit(x, tags.map(t => '#' + t).join('   '), pw), PAD, photoTop + ph + 28, fMono(400, 14.5), MC_FAINT);
   }
 
-  y = bodyTop + blockH;
+  let y = bodyTop + blockH;
 
-  /* ── 비교판의 메모 띠 ── */
+  /* 두 칸을 한 줄로 닫아요 — 길이가 달라도 바닥이 맞아 보이게 */
+  if (solo || !memos.length) {
+    y += 26;
+    rule(PAD, y + 0.5, W - PAD, MC_HAIR, 1);
+  }
+
+  /* ── 비교판의 메모 띠 — 라벨과 칩이 한 줄기로 이어져요 ── */
   if (!solo && memos.length) {
-    y += 34;
-    const cols = cfg.stripCols, gap = cfg.stripGap;
+    y += 28;
     const innerL = PAD + cfg.stripPadX, innerW = CW - cfg.stripPadX * 2;
-    const colW = (innerW - gap * (cols - 1)) / cols;
-    const kwFont = fSerif(400, cfg.kwSize);
-    const cells = memos.map(mo => {
-      const lines = wrapItems(x, mo.words, kwFont, cfg.kwSep, colW);
-      return { mo, lines, h: cfg.memoLab * 0.9 + cfg.kwSize + 10 + (lines.length - 1) * cfg.kwLH + 22 };
-    });
-    const rows = [];
-    for (let i = 0; i < cells.length; i += cols) rows.push(cells.slice(i, i + cols));
-    const stripH = cfg.stripPadY * 2 - 22 + rows.reduce((n, r) => n + Math.max(...r.map(cc => cc.h)), 0);
+    const labFont = fMono(500, cfg.memoLab);
+    const chipFont = fSans(400, cfg.chipSize);
+
+    const flow = (top, drawing) => {                 // 라벨·칩을 한 줄기로 흘려요
+      let cx = innerL, cy = top, first = true;
+      memos.forEach(mo => {
+        x.font = labFont;
+        const lw = x.measureText(mo.label).width;
+        x.font = chipFont;
+        const firstChip = x.measureText(mo.words[0] || '').width + 26;
+        if (!first) cx += cfg.groupGap;
+        if (cx > innerL && cx + lw + 10 + firstChip > innerL + innerW) { cx = innerL; cy += cfg.chipLH; }
+        if (drawing) txt(mo.label, cx, cy + cfg.chipH / 2 + cfg.memoLab * 0.36, labFont, MC_TEAL);
+        cx += lw + 12;
+        mo.words.forEach(wd => {
+          x.font = chipFont;
+          const w = x.measureText(wd).width + 26;
+          if (cx > innerL && cx + w > innerL + innerW) { cx = innerL; cy += cfg.chipLH; }
+          if (drawing) chip(wd, cx, cy);
+          cx += w + cfg.chipGap;
+        });
+        first = false;
+      });
+      return cy + cfg.chipH;
+    };
+
+    const wasPen = pen; pen = false;
+    const bottom = flow(y + cfg.stripPadY, false);
+    pen = wasPen;
+    const stripH = bottom - y + cfg.stripPadY;
+
     box(PAD, y, CW, stripH, MC_WARM);
     rule(PAD, y + 0.5, W - PAD, MC_HAIR, 1);
     rule(PAD, y + stripH - 0.5, W - PAD, MC_HAIR, 1);
-    box(PAD, y, 2, stripH, MC_TEAL);
-    let cy = y + cfg.stripPadY;
-    rows.forEach(r => {
-      r.forEach((cc, ci) => {
-        const cx0 = innerL + ci * (colW + gap);
-        x.font = fMono(400, cfg.memoLab);
-        txt(fit(x, cc.mo.label, colW), cx0, cy + cfg.memoLab * 0.9, fMono(400, cfg.memoLab), MC_TEAL);
-        const base = cy + cfg.memoLab * 0.9 + cfg.kwSize + 10;
-        cc.lines.forEach((ln, li) => {
-          let cx = cx0;
-          const by = base + li * cfg.kwLH;
-          ln.forEach((w2, wi) => {
-            if (wi) { gem(cx + cfg.kwSep / 2, by - cfg.kwSize * 0.3, 2.6, MC_TEAL); cx += cfg.kwSep; }
-            cx += txt(w2, cx, by, kwFont, MC_INK);
-          });
-        });
-      });
-      cy += Math.max(...r.map(cc => cc.h));
-    });
+    flow(y + cfg.stripPadY, true);
     y += stripH;
   }
 
-  /* ── 스탯 — 앞 내용과 확실히 떼어 놓아요 ── */
+  /* ── 스탯 ── */
   const useSets = showStats ? (sets || []).filter(st => (st.labels || []).filter(Boolean).length) : [];
   if (useSets.length) {
     y += cfg.statGap;
-    rule(PAD, y + 0.5, W - PAD, MC_LINE, 1.5);
-    rule(PAD, y + 0.5, PAD + 104, MC_TEAL, 3);
-    y += 44;
-    y = mark('STAT', PAD, y, 26);
-    y += 6;
+    twinRule(PAD, y, W - PAD);
+    y += 40;
+    txt(spread('STAT'), PAD, y, fMono(500, cfg.eyeSize), MC_TEAL);
+    y += 26;
 
     useSets.forEach((st, si) => {
       const labels = (st.labels || []).filter(Boolean);
@@ -4706,20 +4670,19 @@ function renderPlate(x, o) {
 
       x.font = fSerif(500, cfg.setSize);
       txt(fit(x, st.name, CW - 200), PAD, y + cfg.setSize * 0.78, fSerif(500, cfg.setSize), MC_INK);
-      pill(`MAX ${st.max || 10}`, W - PAD, y + cfg.setSize * 0.42, fMono(500, cfg.pillSize),
-           MC_MUTED, MC_LINE, null, 'right');
-      y += cfg.setSize + 26;
+      txt(`MAX ${st.max || 10}`, W - PAD, y + cfg.setSize * 0.72, fMono(400, cfg.pillSize), MC_FAINT, 'right');
+      y += cfg.setSize + 18;
 
       if (!flat) {
         const hi = labels[vals.indexOf(mx)], lo = labels[vals.indexOf(mn)];
-        const cy2 = y;
-        const w1 = pill(`최고  ${hi}  ${mx}`, PAD, cy2, fSans(500, cfg.pillSize + 1),
+        const cy2 = y + 15;
+        const w1 = pill(`최고 — ${hi} ${mx}`, PAD, cy2, fSans(500, cfg.pillSize + 1),
                         MC_TEAL, MC_TEAL, 'rgba(15,76,71,.06)');
-        pill(`최저  ${lo}  ${mn}`, PAD + w1 + 10, cy2, fSans(400, cfg.pillSize + 1),
+        pill(`최저 — ${lo} ${mn}`, PAD + w1 + 10, cy2, fSans(400, cfg.pillSize + 1),
              MC_MUTED, MC_LINE, null);
-        y += cfg.pillSize * 2 + 24;
+        y += 42;
       } else {
-        y += 6;
+        y += 4;
       }
 
       const cols = labels.length > 5 ? cfg.statCols : 1;
@@ -4727,7 +4690,7 @@ function renderPlate(x, o) {
       const cellW = (CW - colGap * (cols - 1)) / cols;
       const rows = Math.ceil(labels.length / cols);
       rule(PAD, y + 0.5, W - PAD, MC_LINE, 1);
-      y += 8;
+      y += 5;
       labels.forEach((l, i) => {
         const ci = Math.floor(i / rows), ri = i % rows;
         const cx0 = PAD + ci * (cellW + colGap);
@@ -4745,9 +4708,9 @@ function renderPlate(x, o) {
       });
       y += rows * cfg.rowH;
       if (si < useSets.length - 1) {
-        y += 34;
+        y += 30;
         rule(PAD, y + 0.5, W - PAD, MC_HAIR, 1);
-        y += 34;
+        y += 30;
       }
     });
   }
@@ -4799,8 +4762,8 @@ async function exportMemoCompare(chars, tag, opts = {}, onBack) {
     loadPhoto(c.id === state.current?.id ? (state.fullImg || c.thumb) : c.thumb)));
   const sets = (opts.sets || []).map(id => state.statSets.find(s => s.id === id)).filter(Boolean).slice(0, 5);
   const W = 1080, PAD = 84, headY = 100;
-  const titleY = headY + 82, top0 = titleY + 74;
-  const GAPB = 74;
+  const titleY = headY + 82, top0 = titleY + 76;
+  const GAPB = 76;
 
   const probe = document.createElement('canvas').getContext('2d');
   const tops = [];
@@ -4826,9 +4789,10 @@ async function exportMemoCompare(chars, tag, opts = {}, onBack) {
   x.textAlign = 'right'; x.font = fMono(400, 19); x.fillStyle = MC_FAINT;
   x.fillText(`${chars.length} 명 대조`, W - PAD, titleY);
   x.textAlign = 'left';
-  x.strokeStyle = MC_HAIR; x.lineWidth = 1;
+  x.strokeStyle = MC_LINE; x.lineWidth = 1.5;
   x.beginPath(); x.moveTo(PAD, titleY + 30.5); x.lineTo(W - PAD, titleY + 30.5); x.stroke();
-  x.fillStyle = MC_TEAL; x.fillRect(PAD, titleY + 29, 104, 3);
+  x.strokeStyle = MC_HAIR; x.lineWidth = 1;
+  x.beginPath(); x.moveTo(PAD, titleY + 36.5); x.lineTo(W - PAD, titleY + 36.5); x.stroke();
 
   chars.forEach((c, i) => {
     if (i) {
