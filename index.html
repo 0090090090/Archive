@@ -266,19 +266,37 @@ details.setup-more[open] > summary::before{content:"− "}
 .name-block .sub{font-family:var(--mono);font-size:11.5px;color:var(--teal);letter-spacing:.1em;margin-top:9px}
 .tags{display:flex;gap:6px;flex-wrap:wrap;margin:14px 0 26px}
 
-/* 음악 — 앨범아트도 바탕도 없이 우리 글줄로만 */
-.music{margin:0 0 26px;text-align:left}
-.mu-play{display:flex;align-items:center;gap:10px;width:100%;padding:7px 1px;
-  font-size:13.5px;color:var(--ink-2);text-align:left;line-height:1.5}
-.mu-play .ico{flex:none;width:13px;font-size:9px;color:var(--teal);line-height:1}
-.mu-play .t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.mu-play:hover .t{color:var(--teal)}
-.mu-play[data-on="1"] .t{color:var(--teal)}
-.mu-more{display:block;padding:5px 1px 0 24px;font-family:var(--mono);font-size:10.5px;
-  letter-spacing:.1em;color:var(--faint)}
+/* 음악 — 앨범아트도 바탕도 없이, 우리 활자로 만든 재생기 */
+.music{margin:4px 0 26px}
+.mu-title{font-family:var(--serif);font-size:15.5px;color:var(--ink);line-height:1.5;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mu-artist{font-family:var(--mono);font-size:9.5px;letter-spacing:.2em;color:var(--faint);
+  margin-top:5px;min-height:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mu-bar{position:relative;height:2px;background:var(--hair);margin:15px 0 7px;cursor:pointer}
+.mu-bar::after{content:'';position:absolute;inset:-8px 0}
+.mu-bar span{position:absolute;left:0;top:0;bottom:0;width:0;background:var(--teal);
+  transition:width .25s linear}
+.mu-time{display:flex;justify-content:space-between;
+  font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;color:var(--faint)}
+.mu-ctrl{display:flex;align-items:center;justify-content:center;gap:22px;margin-top:13px}
+.mu-ctrl button{color:var(--muted);font-size:17px;line-height:1;padding:2px 4px}
+.mu-ctrl button:hover:not([disabled]){color:var(--teal)}
+.mu-ctrl button[disabled]{opacity:.28;cursor:default}
+.mu-ctrl #mu-toggle{width:34px;height:34px;padding:0;border:1px solid var(--hair);border-radius:50%;
+  display:grid;place-items:center;font-size:10px;color:var(--teal);transition:.15s}
+.mu-ctrl #mu-toggle:hover{border-color:var(--teal);background:var(--teal-soft)}
+.mu-more{display:block;width:100%;margin-top:14px;padding:0 1px;
+  font-family:var(--mono);font-size:10px;letter-spacing:.18em;color:var(--faint)}
 .mu-more:hover{color:var(--teal)}
-.mu-host{height:0;overflow:hidden}
-.mu-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,150px) 22px 30px;gap:8px;
+.mu-list{margin-top:10px;border-top:1px solid var(--hair)}
+.mu-list button{display:flex;align-items:baseline;gap:10px;width:100%;padding:9px 2px;
+  font-size:12.5px;color:var(--muted);border-bottom:1px solid var(--hair);text-align:left}
+.mu-list button:last-child{border-bottom:none}
+.mu-list .n{font-family:var(--mono);font-size:9.5px;color:var(--faint);flex:none}
+.mu-list .t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mu-list button:hover .t,.mu-list button[aria-current="true"] .t{color:var(--teal)}
+.mu-host{position:fixed;left:-9999px;bottom:0;width:320px;height:152px;overflow:hidden;opacity:0}
+.mu-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,120px) 22px 30px;gap:8px;
   align-items:center;margin-bottom:9px}
 .tag{padding:3px 9px;border-radius:var(--r);border:1px solid var(--hair);
   font-family:var(--mono);font-size:10.5px;color:var(--muted);letter-spacing:.06em}
@@ -2767,26 +2785,40 @@ async function spotifyTitle(t) {
 }
 
 const musicList = c => (c.music || []).filter(t => t && t.kind && t.sid);
+const muTime = ms => {
+  if (ms == null || ms < 0 || Number.isNaN(ms)) return '—:—';
+  const s = Math.floor(ms / 1000);
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+};
 
-let musicOpen = false;
+let musicOpen = false, musicIdx = 0, musicDur = 0;
 
 function musicHTML(c) {
   const list = musicList(c);
   if (!list.length) return '';
-  const shown = musicOpen ? list : list.slice(0, 1);
+  const i = Math.min(musicIdx, list.length - 1);
+  const t = list[i];
   return `<div class="music">
-    ${shown.map((t, i) => `<button class="mu-play" data-play="${i}">
-      <span class="ico">▶</span>
-      <span class="t">${esc(t.title || '이름 없는 곡')}</span></button>`).join('')}
-    ${list.length > 1
-      ? `<button class="mu-more" id="mu-more">${musicOpen ? '접기' : `＋ ${list.length - 1}곡 더`}</button>`
-      : ''}
-    <div class="mu-host" aria-hidden="true"><div id="mu-slot"></div></div>
+    <div class="mu-title" id="mu-title">${esc(t.title || '이름 없는 곡')}</div>
+    <div class="mu-artist" id="mu-artist">${esc(t.artist || '')}</div>
+    <div class="mu-bar" id="mu-bar" role="slider" aria-label="재생 위치"><span id="mu-fill"></span></div>
+    <div class="mu-time"><span id="mu-cur">0:00</span><span id="mu-dur">—:—</span></div>
+    <div class="mu-ctrl">
+      <button id="mu-prev" title="이전 곡" ${list.length < 2 ? 'disabled' : ''}>‹</button>
+      <button id="mu-toggle" title="재생"><span id="mu-ico">▶</span></button>
+      <button id="mu-next" title="다음 곡" ${list.length < 2 ? 'disabled' : ''}>›</button>
+    </div>
+    ${list.length > 1 ? `<button class="mu-more" id="mu-more">${musicOpen ? '목록 접기' : `목록 ${list.length}곡`}</button>` : ''}
+    ${list.length > 1 && musicOpen ? `<div class="mu-list">${list.map((o, k) => `
+      <button data-pick="${k}" aria-current="${k === i}">
+        <span class="n">${String(k + 1).padStart(2, '0')}</span>
+        <span class="t">${esc(o.title || '이름 없는 곡')}</span></button>`).join('')}</div>` : ''}
   </div>`;
 }
 
-/* 스포티파이 iFrame API — 재생만 빌려 쓰고 화면은 우리 줄로 */
-let spotifyReady = null, spotifyCtrl = null, spotifyCur = '';
+/* 스포티파이 iFrame API — 소리만 빌려 쓰고 화면은 우리 것으로 */
+let spotifyReady = null, spotifyCtrl = null, spotifyCur = '', spotifyOn = false, spotifyTap = null;
+
 function loadSpotifyAPI() {
   if (spotifyReady) return spotifyReady;
   spotifyReady = new Promise(res => {
@@ -2800,6 +2832,87 @@ function loadSpotifyAPI() {
     setTimeout(done, 7000);
   });
   return spotifyReady;
+}
+
+/* 화면이 바뀌어도 소리가 끊기지 않도록 본문 밖에 자리를 하나 둬요 */
+function musicHost() {
+  let h = document.getElementById('mu-host');
+  if (!h) {
+    h = document.createElement('div');
+    h.id = 'mu-host'; h.className = 'mu-host'; h.setAttribute('aria-hidden', 'true');
+    h.innerHTML = '<div id="mu-slot"></div>';
+    document.body.append(h);
+  }
+  return h;
+}
+
+/* 캐릭터 화면의 재생기를 지금 상태에 맞춰 이어붙여요 */
+function mountMusic(c) {
+  const list = musicList(c);
+  if (!list.length) return;
+  const uriOf = t => `spotify:${t.kind}:${t.sid}`;
+  const idx = () => Math.min(musicIdx, list.length - 1);
+
+  const paint = d => {
+    const cur = $('#mu-cur'), dur = $('#mu-dur'), fill = $('#mu-fill'), ico = $('#mu-ico');
+    if (!cur || !fill) return;
+    const p = d?.position || 0, len = d?.duration || 0;
+    if (len) musicDur = len;
+    cur.textContent = muTime(p);
+    dur.textContent = len ? muTime(len) : '—:—';
+    fill.style.width = len ? `${Math.min(100, (p / len) * 100)}%` : '0';
+    if (ico) ico.textContent = spotifyOn ? '❚❚' : '▶';
+  };
+
+  const listen = ctrl => {
+    if (spotifyTap) ctrl.removeListener?.('playback_update', spotifyTap);
+    spotifyTap = e => {
+      spotifyOn = !(e?.data?.isPaused ?? true);
+      paint(e?.data);
+    };
+    ctrl.addListener('playback_update', spotifyTap);
+  };
+
+  const start = async k => {
+    musicIdx = k;
+    const t = list[k];
+    $('#mu-title').textContent = t.title || '이름 없는 곡';
+    $('#mu-artist').textContent = t.artist || '';
+    $$('#view [data-pick]').forEach(b => b.setAttribute('aria-current', +b.dataset.pick === k));
+    const api = await loadSpotifyAPI();
+    if (!api) return window.open(spotifyUrl(t), '_blank', 'noopener');
+    if (!spotifyCtrl) {
+      await new Promise(done => api.createController(musicHost().firstElementChild,
+        { uri: uriOf(t), width: '100%', height: 152 },
+        ctrl => { spotifyCtrl = ctrl; spotifyCur = uriOf(t); listen(ctrl); done(); }));
+      spotifyCtrl.play?.();
+      return;
+    }
+    listen(spotifyCtrl);
+    if (spotifyCur !== uriOf(t)) {
+      spotifyCtrl.loadUri(uriOf(t));
+      spotifyCur = uriOf(t);
+      spotifyCtrl.play?.();
+    } else spotifyCtrl.togglePlay?.();
+  };
+
+  // 이미 이 캐릭터의 곡이 흐르고 있으면 그 자리를 되살려요
+  const playing = list.findIndex(t => uriOf(t) === spotifyCur);
+  if (playing >= 0) { musicIdx = playing; if (spotifyCtrl) listen(spotifyCtrl); }
+  paint(null);
+
+  $('#mu-toggle').onclick = () => start(idx());
+  $('#mu-prev').onclick = () => start((idx() - 1 + list.length) % list.length);
+  $('#mu-next').onclick = () => start((idx() + 1) % list.length);
+  $('#mu-more')?.addEventListener('click', () => { musicOpen = !musicOpen; renderCharacter(); });
+  $$('#view [data-pick]').forEach(b => b.onclick = () => start(+b.dataset.pick));
+  $('#mu-bar').onclick = e => {
+    if (!spotifyCtrl) return;
+    const r = e.currentTarget.getBoundingClientRect();
+    const ratio = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
+    if (!musicDur) return;
+    spotifyCtrl.seek?.((ratio * musicDur) / 1000);
+  };
 }
 
 /* ════════ 관계도 ════════ */
@@ -2990,7 +3103,7 @@ async function openCharacter(id) {
   const c = state.chars.find(x => x.id === id);
   if (!c) return renderGallery();
   state.view = 'character'; state.current = c; state.fullImg = null; state.excerpts = [];
-  musicOpen = false; spotifyCtrl = null; spotifyCur = '';
+  musicOpen = false;
   state.exQ = ''; state.exFolder = null; state.exTags = []; state.exAdv = false; state.exSort = 'recent';
   window.scrollTo(0, 0);
   renderCharacter();
@@ -3195,38 +3308,7 @@ function renderCharacter() {
   $('#export-memo').onclick = () => openMemoCardTool(c);
   $('#manage-sets').onclick = openStatSets;
   $('#edit-rel').onclick = () => openRelations(c);
-  $('#mu-more')?.addEventListener('click', () => { musicOpen = !musicOpen; renderCharacter(); });
-  $$('#view [data-play]').forEach(b => b.onclick = async () => {
-    const t = musicList(c)[+b.dataset.play];
-    if (!t) return;
-    const mark = on => {
-      $$('#view [data-play]').forEach(o => o.querySelector('.ico').textContent = '▶');
-      $$('#view [data-play]').forEach(o => o.removeAttribute('data-on'));
-      if (on) { b.querySelector('.ico').textContent = '❚❚'; b.setAttribute('data-on', '1'); }
-    };
-    const api = await loadSpotifyAPI();
-    const slot = $('#mu-slot');
-    if (!api || !slot) return window.open(spotifyUrl(t), '_blank', 'noopener');
-    const uri = `spotify:${t.kind}:${t.sid}`;
-    if (!spotifyCtrl) {
-      await new Promise(done => api.createController(slot,
-        { uri, width: '100%', height: 152 },
-        ctrl => {
-          spotifyCtrl = ctrl; spotifyCur = uri;
-          ctrl.addListener('playback_update', e => {
-            if (state.view === 'character') mark(!e?.data?.isPaused);
-          });
-          done();
-        }));
-      spotifyCtrl.play?.();
-      return;
-    }
-    if (spotifyCur !== uri) {
-      spotifyCtrl.loadUri(uri);
-      spotifyCur = uri;
-      spotifyCtrl.play?.();
-    } else spotifyCtrl.togglePlay?.();
-  });
+  mountMusic(c);
   $('#toggle-rel')?.addEventListener('click', () => { relMapOpen = !relMapOpen; renderCharacter(); });
   $('#export-rel')?.addEventListener('click', () =>
     exportRelMap(c, () => { closeModal(); renderCharacter(); }));
@@ -3425,7 +3507,7 @@ function openCharEditor(c) {
             placeholder="스포티파이 링크를 붙여넣으세요" >
           <button class="btn btn-sm" type="button" id="mu-add">추가</button>
         </div>
-        <p class="hint">곡 · 앨범 · 플레이리스트 모두 됩니다. 제목은 자동으로 받아오고 직접 고칠 수도 있어요.<br>
+        <p class="hint">곡 · 앨범 · 플레이리스트 모두 됩니다. 제목은 자동으로 받아오고, 아티스트는 직접 적어요.<br>
           로그인하지 않은 사람에게는 30초 미리듣기로 들리고, 자동 재생은 되지 않아요.</p></div>
       <div class="field"><span>중요도</span>
         <div class="rank-seg"><div class="seg" id="f-rank">
@@ -3621,8 +3703,7 @@ function openCharEditor(c) {
     muWrap.innerHTML = draft.music.map((t, i) => `
       <div class="mu-row">
         <input class="input" data-mut="${i}" value="${esc(t.title || '')}" placeholder="곡 제목" maxlength="80">
-        <span class="mono" style="font-size:11px;color:var(--faint);overflow:hidden;
-          text-overflow:ellipsis;white-space:nowrap">${esc(t.kind)} · ${esc(t.sid.slice(0, 10))}…</span>
+        <input class="input" data-mua="${i}" value="${esc(t.artist || '')}" placeholder="아티스트" maxlength="60">
         <span class="ord">
           <button type="button" data-muu="${i}" title="위로" ${i === 0 ? 'disabled' : ''}>▲</button>
           <button type="button" data-mud="${i}" title="아래로" ${i === draft.music.length - 1 ? 'disabled' : ''}>▼</button>
@@ -3630,6 +3711,7 @@ function openCharEditor(c) {
         <button class="icon-btn" type="button" data-murm="${i}" title="지우기">✕</button>
       </div>`).join('');
     muWrap.querySelectorAll('[data-mut]').forEach(el => el.oninput = e => draft.music[+el.dataset.mut].title = e.target.value);
+    muWrap.querySelectorAll('[data-mua]').forEach(el => el.oninput = e => draft.music[+el.dataset.mua].artist = e.target.value);
     muWrap.querySelectorAll('[data-murm]').forEach(el => el.onclick = () => { draft.music.splice(+el.dataset.murm, 1); drawMu(); });
     muWrap.querySelectorAll('[data-muu]').forEach(el => el.onclick = () => { move(draft.music, +el.dataset.muu, -1); drawMu(); });
     muWrap.querySelectorAll('[data-mud]').forEach(el => el.onclick = () => { move(draft.music, +el.dataset.mud, 1); drawMu(); });
@@ -3642,7 +3724,7 @@ function openCharEditor(c) {
     if (draft.music.some(o => o.sid === t.sid)) return toast('이미 담아둔 링크예요');
     if (draft.music.length >= 12) return toast('12개까지 담을 수 있어요', 1);
     inp.value = '';
-    const row = { ...t, title: '' };
+    const row = { ...t, title: '', artist: '' };
     draft.music.push(row); drawMu();
     row.title = (await spotifyTitle(t)) || '이름 없는 곡';
     drawMu();
@@ -3695,7 +3777,8 @@ function openCharEditor(c) {
           })),
         statSetId: m.querySelector('#f-set').value,
         rank: draft.rank,
-        music: draft.music.map(t => ({ kind: t.kind, sid: t.sid, title: (t.title || '').trim() })),
+        music: draft.music.map(t => ({ kind: t.kind, sid: t.sid,
+          title: (t.title || '').trim(), artist: (t.artist || '').trim() })),
         thumb: draft.thumb || null,
         updatedAt: now,
       };
