@@ -703,6 +703,15 @@ details.setup-more[open] > summary::before{content:"− "}
 .seg button{padding:5px 13px;font-size:12.5px;color:var(--muted);background:var(--paper)}
 .seg button + button{border-left:1px solid var(--line)}
 .seg button[aria-pressed="true"]{background:var(--teal);color:#fff}
+.seg button[disabled]{opacity:.32;cursor:default}
+/* 고르는 칸 — 밑줄로만 갈라요 */
+.pick{display:flex;gap:0;border-bottom:1px solid var(--hair)}
+.pick button{flex:1;padding:11px 6px 12px;font-family:var(--mono);font-size:11px;letter-spacing:.14em;
+  color:var(--faint);background:none;border-bottom:2px solid transparent;margin-bottom:-1px;
+  transition:color .15s,border-color .15s}
+.pick button:hover:not([disabled]){color:var(--ink-2)}
+.pick button[aria-pressed="true"]{color:var(--teal);border-bottom-color:var(--teal)}
+.pick button[disabled]{opacity:.3;cursor:default}
 
 /* ─────────────── 이어 읽기 · 서체 ─────────────── */
 .tool.wide{width:auto;padding:0 9px;font-size:11.5px}
@@ -1032,7 +1041,7 @@ function mdRender(safe) {
 }
 
 /* 표기 문자를 뺀 '보이는 글자'와 원문 사이의 자리 지도 */
-function mdMarkerMap(src) {
+function mdMarkerMap(src, dropNewline) {
   const s = String(src || '');
   const drop = new Uint8Array(s.length);
   let pos = 0;
@@ -1054,7 +1063,11 @@ function mdMarkerMap(src) {
     i = close + p[1];
   }
   const map = [];
-  for (let k = 0; k < s.length; k++) if (!drop[k]) map.push(k);
+  for (let k = 0; k < s.length; k++) {
+    if (drop[k]) continue;
+    if (dropNewline && s[k] === '\n') continue;   // 화면에서는 글자 수에 안 잡혀요
+    map.push(k);
+  }
   map.push(s.length);
   return map;
 }
@@ -1076,7 +1089,16 @@ const MD_TOOLS = [
   ['인용', 'line', '> '],
 ];
 const mdBarHTML = target => '<div class="md-bar">' + MD_TOOLS.map((t, i) =>
-  `<button type="button" data-mdt="${i}" data-mdfor="${target}">${t[0]}</button>`).join('') + '</div>';
+  `<button type="button" data-mdt="${i}" data-mdfor="${target}"
+    title="드래그해 고른 글자를 ${t[0]}(으)로">${t[0]}</button>`).join('') + '</div>';
+
+/* 서식 버튼은 창을 가리지 않고 한 곳에서 받아요 */
+document.addEventListener('click', ev => {
+  const b = ev.target.closest?.('[data-mdt]');
+  if (!b) return;
+  const ta = document.getElementById(b.dataset.mdfor);
+  if (ta) applyMdTool(ta, MD_TOOLS[+b.dataset.mdt]);
+});
 
 function applyMdTool(ta, tool) {
   const kind = tool[1], a = tool[2], b = tool[3] || '';
@@ -1628,12 +1650,13 @@ function renderGallery() {
       </div>
       <button class="btn btn-sm" id="adv-toggle" aria-pressed="${state.adv}">
         고급 검색${state.tagFilter.length ? ` · ${state.tagFilter.length}` : ''}</button>
-      ${state.chars.length > 1 ? `<button class="btn btn-sm" id="roster-img">명단 비교</button>` : ''}
     </div>
     ${state.adv ? advPanelHTML(tagCounts(state.chars), state.tagFilter, '캐릭터에 붙인 태그', 'char') : ''}
-    <div class="chipbar">
+    <div class="chipbar" style="align-items:center">
       ${[['recent', '최근 수정순'], ['old', '오래된순'], ['newest', '최신순'], ['rank', '중요도순']].map(([k, l]) =>
         `<button class="chip" data-sort="${k}" aria-pressed="${state.sort === k}">${l}</button>`).join('')}
+      <div class="spacer" style="flex:1"></div>
+      ${state.chars.length > 1 ? `<button class="btn btn-sm" id="roster-img">명단 비교 이미지</button>` : ''}
     </div>
     ${list.length ? `<div class="grid">${list.map(cardHTML).join('')}</div>` : emptyHTML(total)}
     ${all.length > PAGE_SIZE ? pagerHTML(state.page, pages, all.length) : ''}
@@ -3984,10 +4007,6 @@ function openDetailEditor(c) {
         <button class="btn btn-sm btn-ghost" data-addsub="${i}" style="margin-top:2px">＋ 세부 제목</button>
       </div>`).join('');
 
-    wrap.querySelectorAll('[data-mdt]').forEach(el => el.onclick = () => {
-      const ta = wrap.querySelector('#' + el.dataset.mdfor);
-      if (ta) applyMdTool(ta, MD_TOOLS[+el.dataset.mdt]);
-    });
     wrap.querySelectorAll('[data-dt]').forEach(el => el.oninput = ev => draft[+el.dataset.dt].t = ev.target.value);
     wrap.querySelectorAll('[data-dv]').forEach(el => el.oninput = ev => draft[+el.dataset.dv].v = ev.target.value);
     wrap.querySelectorAll('[data-st]').forEach(el => el.oninput = ev => {
@@ -4372,7 +4391,8 @@ function openExcerptEditor(ex) {
         ${mdBarHTML('e-body')}
         <textarea class="textarea serif" id="e-body" style="min-height:260px;font-size:15.5px;line-height:1.95"
           placeholder="여기에 발췌한 줄글을 붙여넣어요.">${esc(ex?.body || '')}</textarea>
-        <p class="hint"><b>**굵게**</b> 같은 마크다운을 쓸 수 있어요. 빈 줄은 문단을 나눕니다.<br>
+        <p class="hint">고칠 글자를 드래그한 뒤 위 버튼을 누르면 표기가 씌워져요. 아무것도 고르지 않고 누르면
+          <b>**내용**</b> 자리가 만들어집니다. 빈 줄은 문단을 나눠요.<br>
           본문을 고치면 칠해둔 형광펜 위치가 어긋날 수 있어요.</p>
         <details class="setup-more" style="margin:10px 0 0"><summary>마크다운 표기법</summary>
           <p class="md-help" style="margin:12px 0 0">
@@ -4475,7 +4495,7 @@ function selOffsets(container) {
 async function applyHighlight(e, color, bodyEl) {
   const raw = selOffsets(bodyEl);
   if (!raw) return toast(color ? '칠할 부분을 먼저 드래그해 주세요' : '지울 부분을 먼저 드래그해 주세요');
-  const map = mdMarkerMap(e.body || '');           // 보이는 자리 → 원문 자리
+  const map = mdMarkerMap(e.body || '', true);     // 화면에 보이는 자리 → 원문 자리
   const sel = {
     s: map[Math.min(raw.s, map.length - 1)],
     e: map[Math.min(Math.max(raw.e - 1, 0), map.length - 1)] + 1,
@@ -4556,6 +4576,7 @@ function openSheet(id) {
   wrap.className = 'sheet-scrim';
   wrap.innerHTML = `
     <div class="sheet-tools">
+      <button class="btn btn-sm" data-close>닫기</button>
       ${viewToolsHTML()}
       <div class="tool-group">
         <span class="tool-label">형광펜</span>
@@ -4572,7 +4593,6 @@ function openSheet(id) {
         <button class="btn btn-sm" data-img>이미지</button>
         <button class="btn btn-sm" data-edit>수정</button>
         <button class="btn btn-sm btn-danger" data-del>삭제</button>
-        <button class="btn btn-sm" data-close>닫기</button>
       </div>
     </div>
     <article class="sheet">
@@ -4663,6 +4683,8 @@ function closeSheet() {
 }
 
 /* ── 발췌를 이미지로 ── */
+/* 줄 앞에 홀로 남으면 어색한 글자들 */
+const TAIL_ONLY = '.,!?;:)]}」』”\'"’·…~%’—–-';
 function wrapLines(x, text, maxW) {
   const out = [];
   let idx = 0;
@@ -4673,9 +4695,16 @@ function wrapLines(x, text, maxW) {
       for (let i = 0; i < para.length; i++) {
         const ch = para[i];
         if (line && x.measureText(line + ch).width > maxW) {
-          out.push({ t: line, o: start });
-          start += line.length;
-          line = ch;
+          // 다음 줄이 문장부호로만 시작하면 앞 글자를 함께 내려요
+          let cut = line, carry = '';
+          if (TAIL_ONLY.includes(ch)) {
+            let k = cut.length - 1;
+            while (k > 0 && TAIL_ONLY.includes(cut[k])) k--;
+            if (k > 0) { carry = cut.slice(k); cut = cut.slice(0, k); }
+          }
+          out.push({ t: cut, o: start });
+          start += cut.length;
+          line = carry + ch;
         } else line += ch;
       }
       out.push({ t: line, o: start });
@@ -4943,7 +4972,6 @@ function sharedLabels(list) {
 async function exportRoster(list, opts, onBack) {
   toast('명단을 그리는 중…');
   try { await document.fonts.ready; } catch {}
-  const pics = await Promise.all(list.map(c => loadPhoto(c.thumb)));
 
   const W = 1080, PAD = 84;
   const set = opts.stats ? state.statSets.find(s => s.id === opts.setId) : null;
@@ -4951,40 +4979,39 @@ async function exportRoster(list, opts, onBack) {
   const max = set?.max || 10;
   const fkeys = opts.fields || [], mkeys = opts.labels || [];
 
-  /* 한 사람 줄 — 얼굴, 이름, 그 옆으로 항목이 흐르게 */
-  const TH = 58, TW = 46, ROWPAD = 15;
-  const nameW = 210, colL = PAD + TW + 16, valL = PAD + TW + 16 + nameW;
+  const probe = document.createElement('canvas').getContext('2d');
+  const NUMW = 42, KEYW = 108;
+  const rowL = PAD + NUMW, valL = rowL + KEYW;
   const valW = W - PAD - valL;
 
-  const probe = document.createElement('canvas').getContext('2d');
+  /* 프로필은 값만, 메모는 키워드를 · 로 이어 붙여요 */
   const linesOf = c => {
     const out = [];
     fkeys.forEach(k => {
       const f = (c.fields || []).find(o => (o.k || '').trim() === k && (o.v || '').trim());
-      if (f) out.push([k, f.v.trim()]);
+      if (f) out.push({ kind: 'f', k, v: f.v.trim() });
     });
     mkeys.forEach(k => {
       const mo = (c.memos || []).find(o => o.label === k && (o.words || []).length);
-      if (mo) out.push([k, mo.words.join(' · ')]);
+      if (mo) out.push({ kind: 'm', k, v: mo.words });
     });
     return out;
   };
-  const rowH = c => Math.max(TH, linesOf(c).length * 30 + 4) + ROWPAD * 2;
+  probe.font = fSans(400, 15);
+  const rowH = c => 44 + Math.max(1, linesOf(c).length) * 27 + 16;
 
-  let y0 = 100;
-  const titleY = y0 + 62;
-  let bodyTop = titleY + 60;
+  const y0 = 100, titleY = y0 + 62;
+  const bodyTop = titleY + 56;
   let h = bodyTop;
   list.forEach(c => { h += rowH(c); });
 
   /* 스탯 표 */
-  let statTop = 0, statH = 0, colW = 0;
   const stats = set ? list.map(c => labels.map(l => Number((c.stats || {})[l] || 0))) : [];
   const sums = stats.map(v => v.reduce((n, k) => n + k, 0));
+  let statTop = 0, statH = 0;
   if (set && labels.length) {
-    colW = Math.min(96, (W - PAD * 2 - 190) / (labels.length + 1));
-    statTop = h + 46;
-    statH = 74 + list.length * 38 + 22 + 128;      // 표 + 분석
+    statTop = h + 44;
+    statH = 56 + 30 + list.length * 34 + 8 + 66 + Math.ceil(4 / 2) * 46;
   }
   const H = Math.round((statH ? statTop + statH : h) + 118);
 
@@ -4998,50 +5025,67 @@ async function exportRoster(list, opts, onBack) {
   x.fillText(`${list.length} 명`, W - PAD, titleY);
   x.textAlign = 'left';
   x.strokeStyle = MC_LINE; x.lineWidth = 1.5;
-  x.beginPath(); x.moveTo(PAD, titleY + 28.5); x.lineTo(W - PAD, titleY + 28.5); x.stroke();
+  x.beginPath(); x.moveTo(PAD, titleY + 26.5); x.lineTo(W - PAD, titleY + 26.5); x.stroke();
+  x.strokeStyle = MC_HAIR; x.lineWidth = 1;
+  x.beginPath(); x.moveTo(PAD, titleY + 32.5); x.lineTo(W - PAD, titleY + 32.5); x.stroke();
 
   /* 명단 */
   let y = bodyTop;
   list.forEach((c, i) => {
     const rh = rowH(c), top = y;
-    if (i % 2 === 0) { x.fillStyle = MC_WARM; x.fillRect(PAD - 14, top, W - (PAD - 14) * 2, rh); }
 
-    x.save();
-    x.beginPath(); x.rect(PAD, top + ROWPAD, TW, TH); x.clip();
-    if (pics[i]) coverDraw(x, pics[i], PAD, top + ROWPAD, TW, TH);
-    else {
-      x.fillStyle = '#F3F2EE'; x.fillRect(PAD, top + ROWPAD, TW, TH);
-      x.fillStyle = '#C3C8CB'; x.textAlign = 'center'; x.font = fSerif(300, 26);
-      x.fillText(String(c.name || '?').slice(0, 1), PAD + TW / 2, top + ROWPAD + TH * .66);
+    x.font = fMono(500, 13); x.fillStyle = MC_FAINT;
+    x.fillText(String(i + 1).padStart(2, '0'), PAD, top + 24);
+    x.font = fSerif(400, 24); x.fillStyle = MC_INK;
+    const nm = fit(x, c.name || '이름 없음', W - PAD * 2 - NUMW - 220);
+    const nw = x.measureText(nm).width;
+    x.fillText(nm, rowL, top + 26);
+    if (c.subtitle) {
+      x.font = fMono(400, 12); x.fillStyle = MC_TEAL;
+      x.fillText(fit(x, c.subtitle, 200), rowL + nw + 16, top + 24);
+    }
+    if (c.rank) {
+      x.textAlign = 'right'; x.font = fMono(500, 11); x.fillStyle = MC_FAINT;
+      x.fillText(rankName(c.rank), W - PAD, top + 24);
       x.textAlign = 'left';
     }
-    x.restore();
-    x.strokeStyle = MC_HAIR; x.lineWidth = 1;
-    x.strokeRect(PAD + .5, top + ROWPAD + .5, TW - 1, TH - 1);
 
-    x.font = fSerif(400, 22); x.fillStyle = MC_INK;
-    x.fillText(fit(x, c.name || '이름 없음', nameW - 18), colL, top + ROWPAD + 22);
-    if (c.subtitle) {
-      x.font = fMono(400, 12); x.fillStyle = MC_FAINT;
-      x.fillText(fit(x, c.subtitle, nameW - 18), colL, top + ROWPAD + 43);
+    let ly = top + 44;
+    const rows = linesOf(c);
+    if (!rows.length) {
+      x.font = fSans(400, 14); x.fillStyle = MC_FAINT;
+      x.fillText('적어둔 내용이 없어요', valL, ly + 17);
     }
-
-    let ly = top + ROWPAD + 18;
-    linesOf(c).forEach(([k, v]) => {
-      x.font = fMono(400, 12); x.fillStyle = MC_TEAL;
-      const kw = x.measureText(k).width;
-      x.fillText(k, valL, ly);
-      x.font = fSans(400, 15); x.fillStyle = MC_INK2;
-      x.fillText(fit(x, v, valW - kw - 16), valL + kw + 16, ly + 1);
-      ly += 30;
+    rows.forEach(r => {
+      x.font = fMono(400, 12);
+      x.fillStyle = r.kind === 'f' ? MC_FAINT : MC_TEAL;
+      x.fillText(fit(x, r.k, KEYW - 14), rowL, ly + 17);
+      if (r.kind === 'f') {
+        x.font = fSans(400, 16); x.fillStyle = MC_INK2;
+        x.fillText(fit(x, r.v, valW), valL, ly + 18);
+      } else {
+        // 메모는 얇은 테두리 칩으로 — 프로필과 결이 갈려요
+        let cx = valL;
+        x.font = fSans(400, 13);
+        r.v.forEach(wd => {
+          const cwd = x.measureText(wd).width + 20;
+          if (cx + cwd > valL + valW) return;
+          roundRect(x, cx, ly + 1, cwd, 22, 2);
+          x.strokeStyle = MC_LINE; x.lineWidth = 1; x.stroke();
+          x.fillStyle = MC_INK2;
+          x.fillText(wd, cx + 10, ly + 17);
+          cx += cwd + 5;
+        });
+      }
+      ly += 27;
     });
 
     y += rh;
     x.strokeStyle = MC_HAIR; x.lineWidth = 1;
-    x.beginPath(); x.moveTo(PAD - 14, y + .5); x.lineTo(W - PAD + 14, y + .5); x.stroke();
+    x.beginPath(); x.moveTo(PAD, y - 7.5); x.lineTo(W - PAD, y - 7.5); x.stroke();
   });
 
-  /* 스탯 표 — 가로로 길게 */
+  /* 스탯 표 */
   if (statH) {
     let sy = statTop;
     x.strokeStyle = MC_LINE; x.lineWidth = 1.5;
@@ -5051,77 +5095,110 @@ async function exportRoster(list, opts, onBack) {
     x.textAlign = 'right'; x.font = fMono(400, 13); x.fillStyle = MC_FAINT;
     x.fillText(`${set.name} · MAX ${max}`, W - PAD, sy + 30);
     x.textAlign = 'left';
-    sy += 52;
+    sy += 56;
 
-    const tableL = PAD + 176;
-    const cw = (W - PAD - tableL) / (labels.length + 1);
+    const nameW = 176, sumW = 76;
+    const tableL = PAD + nameW;
+    const cw = (W - PAD - sumW - tableL) / labels.length;
+    const sumL = W - PAD - sumW;
+
     x.font = fMono(400, 12); x.fillStyle = MC_FAINT;
     x.textAlign = 'center';
-    labels.forEach((l, i) => x.fillText(fit(x, l, cw - 6), tableL + cw * i + cw / 2, sy + 14));
+    labels.forEach((l, i) => x.fillText(fit(x, l, cw - 4), tableL + cw * i + cw / 2, sy + 12));
     x.fillStyle = MC_TEAL;
-    x.fillText('합', tableL + cw * labels.length + cw / 2, sy + 14);
+    x.fillText('합', sumL + sumW / 2, sy + 12);
     x.textAlign = 'left';
     sy += 22;
     x.strokeStyle = MC_LINE; x.lineWidth = 1;
     x.beginPath(); x.moveTo(PAD, sy + .5); x.lineTo(W - PAD, sy + .5); x.stroke();
+    sy += 8;
 
     const colMax = labels.map((l, ci) => Math.max(...stats.map(v => v[ci])));
-    const bestSum = Math.max(...sums);
+    const bestSum = Math.max(...sums), worstSum = Math.min(...sums);
+    const sumSpan = Math.max(1, bestSum);
+
     list.forEach((c, ri) => {
-      const ry = sy + ri * 38;
-      if (ri % 2 === 0) { x.fillStyle = MC_WARM; x.fillRect(PAD, ry, W - PAD * 2, 38); }
+      const ry = sy + ri * 34;
       x.font = fSans(400, 15); x.fillStyle = MC_INK2;
-      x.fillText(fit(x, c.name || '이름 없음', 166), PAD, ry + 25);
+      x.fillText(fit(x, c.name || '이름 없음', nameW - 18), PAD, ry + 22);
       x.textAlign = 'center';
       labels.forEach((l, ci) => {
         const v = stats[ri][ci], top2 = v === colMax[ci] && v > 0;
+        if (top2) {
+          x.fillStyle = 'rgba(15,76,71,.08)';
+          x.fillRect(tableL + cw * ci + 3, ry + 2, cw - 6, 28);
+        }
         x.font = fMono(top2 ? 500 : 400, 15);
         x.fillStyle = top2 ? MC_TEAL : MC_INK2;
-        x.fillText(String(v), tableL + cw * ci + cw / 2, ry + 25);
+        x.fillText(String(v), tableL + cw * ci + cw / 2, ry + 22);
       });
-      const best = sums[ri] === bestSum;
-      x.font = fMono(best ? 500 : 400, 15);
-      x.fillStyle = best ? MC_TEAL : MC_MUTED;
-      x.fillText(String(sums[ri]), tableL + cw * labels.length + cw / 2, ry + 25);
       x.textAlign = 'left';
+      // 합계는 숫자 옆에 아주 얇은 막대를 곁들여요
+      const best = sums[ri] === bestSum;
+      x.font = fMono(best ? 500 : 400, 16);
+      x.fillStyle = best ? MC_TEAL : MC_MUTED;
+      x.textAlign = 'right';
+      x.fillText(String(sums[ri]), W - PAD, ry + 22);
+      x.textAlign = 'left';
+      const bw = (sums[ri] / sumSpan) * (sumW - 34);
+      x.fillStyle = best ? MC_TEAL : MC_LINE;
+      x.fillRect(sumL, ry + 26, Math.max(2, bw), 2);
       x.strokeStyle = MC_HAIR; x.lineWidth = 1;
-      x.beginPath(); x.moveTo(PAD, ry + 37.5); x.lineTo(W - PAD, ry + 37.5); x.stroke();
+      x.beginPath(); x.moveTo(PAD, ry + 33.5); x.lineTo(W - PAD, ry + 33.5); x.stroke();
     });
-    sy += list.length * 38 + 22;
+    sy += list.length * 34 + 8;
 
-    /* 값에 대한 분석 */
-    const avgOf = a => Math.round((a.reduce((n, v) => n + v, 0) / a.length) * 10) / 10;
-    const colAvg = labels.map((l, ci) => avgOf(stats.map(v => v[ci])));
-    const spread2 = labels.map((l, ci) => {
-      const col = stats.map(v => v[ci]);
-      return Math.max(...col) - Math.min(...col);
-    });
+    /* 분석 — 셈으로만 알 수 있는 것들 */
+    const col = ci => stats.map(v => v[ci]);
+    const avgOf = a => a.reduce((n, v) => n + v, 0) / a.length;
+    const sd = a => { const m2 = avgOf(a); return Math.sqrt(avgOf(a.map(v => (v - m2) ** 2))); };
+    const r1 = n => Math.round(n * 10) / 10;
+
+    const colAvg = labels.map((l, i) => avgOf(col(i)));
+    const colSd = labels.map((l, i) => sd(col(i)));
     const hiI = colAvg.indexOf(Math.max(...colAvg));
     const loI = colAvg.indexOf(Math.min(...colAvg));
-    const wideI = spread2.indexOf(Math.max(...spread2));
-    const flatI = spread2.indexOf(Math.min(...spread2));
-    const topC = list[sums.indexOf(bestSum)];
-    const evenC = list[stats.map(v => Math.max(...v) - Math.min(...v))
-      .reduce((bi, v, i, a) => v < a[bi] ? i : bi, 0)];
+    const wideI = colSd.indexOf(Math.max(...colSd));
+    const flatI = colSd.indexOf(Math.min(...colSd));
+    const evenIdx = stats.map(v => sd(v)).reduce((bi, v, i, a) => v < a[bi] ? i : bi, 0);
+    const sharpIdx = stats.map(v => sd(v)).reduce((bi, v, i, a) => v > a[bi] ? i : bi, 0);
+    const fillRate = Math.round((sums.reduce((n, v) => n + v, 0) /
+      (list.length * labels.length * max)) * 100);
 
+    x.strokeStyle = MC_LINE; x.lineWidth = 1;
+    x.beginPath(); x.moveTo(PAD, sy + .5); x.lineTo(W - PAD, sy + .5); x.stroke();
+    sy += 30;
     x.font = fMono(500, 12); x.fillStyle = MC_TEAL;
-    x.fillText(spread('ANALYSIS'), PAD, sy + 14);
-    sy += 32;
+    x.fillText(spread('ANALYSIS'), PAD, sy);
+    x.textAlign = 'right'; x.font = fMono(400, 12); x.fillStyle = MC_FAINT;
+    x.fillText(`전체 채움 ${fillRate}%  ·  평균 총합 ${r1(avgOf(sums))}`, W - PAD, sy);
+    x.textAlign = 'left';
+    sy += 30;
+
     const cells = [
-      ['모두가 높은 항목', `${labels[hiI]} · 평균 ${colAvg[hiI]}`],
-      ['모두가 낮은 항목', `${labels[loI]} · 평균 ${colAvg[loI]}`],
-      ['가장 갈리는 항목', `${labels[wideI]} · 차이 ${spread2[wideI]}`],
-      ['가장 고른 항목', `${labels[flatI]} · 차이 ${spread2[flatI]}`],
-      ['총합이 가장 큰 인물', `${topC?.name || ''} · ${bestSum}`],
-      ['가장 균형 잡힌 인물', `${evenC?.name || ''}`],
+      ['공통으로 높은 항목', `${labels[hiI]}`, `평균 ${r1(colAvg[hiI])} / ${max}`],
+      ['공통으로 낮은 항목', `${labels[loI]}`, `평균 ${r1(colAvg[loI])} / ${max}`],
+      ['가장 갈리는 항목', `${labels[wideI]}`, `편차 ${r1(colSd[wideI])} · 폭 ${Math.max(...col(wideI)) - Math.min(...col(wideI))}`],
+      ['가장 고른 항목', `${labels[flatI]}`, `편차 ${r1(colSd[flatI])}`],
+      ['가장 균형 잡힌 인물', `${list[evenIdx]?.name || ''}`, `편차 ${r1(sd(stats[evenIdx]))}`],
+      ['가장 뾰족한 인물', `${list[sharpIdx]?.name || ''}`, `편차 ${r1(sd(stats[sharpIdx]))}`],
+      ['총합 1위', `${list[sums.indexOf(bestSum)]?.name || ''}`, `${bestSum} / ${labels.length * max}`],
+      ['총합 최하', `${list[sums.indexOf(worstSum)]?.name || ''}`, `${worstSum} / ${labels.length * max}`],
     ];
     const cw2 = (W - PAD * 2) / 2;
-    cells.forEach(([k, v], i) => {
-      const cx0 = PAD + (i % 2) * cw2, cy0 = sy + Math.floor(i / 2) * 40;
-      x.font = fMono(400, 11.5); x.fillStyle = MC_FAINT;
-      x.fillText(k, cx0, cy0 + 13);
-      x.font = fSans(400, 15); x.fillStyle = MC_INK2;
-      x.fillText(fit(x, v, cw2 - 26), cx0, cy0 + 33);
+    cells.forEach(([k, v, note], i) => {
+      const cx0 = PAD + (i % 2) * cw2, cy0 = sy + Math.floor(i / 2) * 46;
+      if (i % 2 === 1) {
+        x.strokeStyle = MC_HAIR; x.lineWidth = 1;
+        x.beginPath(); x.moveTo(cx0 - 22, cy0 - 12); x.lineTo(cx0 - 22, cy0 + 22); x.stroke();
+      }
+      x.font = fMono(400, 11); x.fillStyle = MC_FAINT;
+      x.fillText(k, cx0, cy0);
+      x.font = fSans(500, 16); x.fillStyle = MC_INK;
+      const vw = x.measureText(fit(x, v, cw2 * .5)).width;
+      x.fillText(fit(x, v, cw2 * .5), cx0, cy0 + 22);
+      x.font = fMono(400, 12); x.fillStyle = MC_MUTED;
+      x.fillText(fit(x, note, cw2 - vw - 40), cx0 + vw + 12, cy0 + 21);
     });
   }
 
@@ -5146,11 +5223,7 @@ function openRosterTool() {
   let title = saved.title ?? '';
 
   const cands = () => state.chars.filter(c => tags.every(t => (c.tags || []).includes(t)));
-  const chosen = () => {
-    const inTags = cands();
-    const list = picks.length ? inTags.filter(c => picks.includes(c.id)) : inTags;
-    return list.slice(0, ROSTER_MAX);
-  };
+  const chosen = () => cands().filter(c => picks.includes(c.id)).slice(0, ROSTER_MAX);
 
   const m = openModal({
     title: '명단 비교 이미지',
@@ -5188,9 +5261,10 @@ function openRosterTool() {
           <span class="mono" style="font-size:11.5px;color:var(--faint)">${list.length}명</span></div>
         <div class="chipbar" style="margin:0">${cands().length
           ? cands().map(c => `<button class="chip" data-rp="${c.id}"
-              aria-pressed="${!picks.length || picks.includes(c.id)}">${esc(c.name || '이름 없음')}</button>`).join('')
+              aria-pressed="${picks.includes(c.id)}">${esc(c.name || '이름 없음')}</button>`).join('')
           : `<span class="hint" style="margin:0">이 태그를 가진 캐릭터가 없어요.</span>`}</div>
-        <p class="hint">아무도 고르지 않으면 위 태그에 걸린 사람이 모두 들어가요.</p>
+        ${cands().length ? `<button class="linkish" id="rt-pall" style="margin-top:10px">
+          ${picks.length >= Math.min(cands().length, ROSTER_MAX) ? '모두 지우기' : '모두 고르기'}</button>` : ''}
       </div>
       <div class="adv" style="margin:0 0 14px">
         <div class="adv-head"><span class="eyebrow">넣을 프로필 항목</span><div class="spacer"></div>
@@ -5227,7 +5301,8 @@ function openRosterTool() {
     m.querySelectorAll('[data-rt]').forEach(b => b.onclick = () => {
       const t = b.dataset.rt;
       tags = tags.includes(t) ? tags.filter(v => v !== t) : [...tags, t];
-      picks = []; fields = null; labels = null; draw();
+      picks = picks.filter(id => cands().some(c => c.id === id));
+      fields = null; labels = null; draw();
     });
     m.querySelector('#rt-tclear')?.addEventListener('click', () => { tags = []; picks = []; draw(); });
     m.querySelectorAll('[data-rtlv]').forEach(b => b.onclick = () => {
@@ -5236,10 +5311,14 @@ function openRosterTool() {
     });
     m.querySelectorAll('[data-rp]').forEach(b => b.onclick = () => {
       const id = b.dataset.rp;
-      const base = picks.length ? picks : cands().map(c => c.id);
-      const next = base.includes(id) ? base.filter(v => v !== id) : [...base, id];
-      if (!next.length) return toast('한 명은 남겨두세요');
-      picks = next.length === cands().length ? [] : next;
+      if (picks.includes(id)) picks = picks.filter(v => v !== id);
+      else if (picks.length >= ROSTER_MAX) return toast(`${ROSTER_MAX}명까지 담을 수 있어요`, 1);
+      else picks = [...picks, id];
+      draw();
+    });
+    m.querySelector('#rt-pall')?.addEventListener('click', () => {
+      const all = cands().slice(0, ROSTER_MAX).map(c => c.id);
+      picks = picks.length >= all.length ? [] : all;
       draw();
     });
     m.querySelectorAll('[data-rf]').forEach(b => b.onclick = () => {
@@ -5300,10 +5379,8 @@ async function exportCard(c, set, opts = {}, onBack) {
 
   /* 관계란 — 청록 무리를 앞세우고 나머지는 고르게 */
   const rels = opts.rel
-    ? relSorted(c).map(r => ({ r, t: state.chars.find(v => v.id === r.id) })).filter(n => n.t).slice(0, 9)
+    ? relSorted(c).map(r => ({ r, t: state.chars.find(v => v.id === r.id) })).filter(n => n.t).slice(0, 12)
     : [];
-  const relPics = await Promise.all(rels.map(n => loadPhoto(n.t.thumb)));
-  rels.forEach((n, i) => { n.pic = relPics[i]; });
   const prim = rels.filter(n => Number(n.r.c || 0) === 0);
   const rest = rels.filter(n => Number(n.r.c || 0) !== 0);
 
@@ -5322,8 +5399,10 @@ async function exportCard(c, set, opts = {}, onBack) {
   const barH = 300;
   if (hasRadar) { ruleY = fy + 12; cy = ruleY + 116 + R; bottom = cy + R + 80; }
   else if (hasBar) { ruleY = fy + 12; barTop = ruleY + 132; bottom = barTop + barH + 82; }
-  const relTop = rels.length ? bottom + 36 : 0;
-  const relH = rels.length ? 46 + prim.length * 96 + Math.ceil(rest.length / 3) * 86 : 0;
+  const relTop = rels.length ? bottom + 40 : 0;
+  const relH = rels.length
+    ? 40 + prim.length * 52 + (rest.length ? 14 + Math.ceil(rest.length / 2) * 34 : 0)
+    : 0;
   if (rels.length) bottom = relTop + relH;
   const H = Math.round(bottom + 128);
 
@@ -5496,16 +5575,16 @@ async function exportCard(c, set, opts = {}, onBack) {
     const sum = nums.reduce((n, v) => n + v, 0);
     const avg = Math.round((sum / nums.length) * 10) / 10;
     const head = (capTxt, val, note, ax, align) => {
+      x.textAlign = align;
+      x.font = '500 14px "IBM Plex Mono", monospace';
+      x.fillStyle = FAINT;
+      x.fillText(capTxt.split('').join(' '), ax, ruleY + 42);
       x.textAlign = 'left';
       x.font = '400 14px "IBM Plex Mono", monospace';
       const nw = x.measureText(note).width;
       x.font = '300 40px "Noto Serif KR", serif';
       const vw = x.measureText(String(val)).width;
       const left = align === 'left' ? ax : ax - vw - 10 - nw;
-      x.font = '500 14px "IBM Plex Mono", monospace';
-      x.fillStyle = FAINT;
-      x.fillText(capTxt.split('').join(' '), left, ruleY + 42);
-      x.font = '300 40px "Noto Serif KR", serif';
       x.fillStyle = TEAL;
       x.fillText(String(val), left, ruleY + 88);
       x.font = '400 14px "IBM Plex Mono", monospace';
@@ -5546,58 +5625,63 @@ async function exportCard(c, set, opts = {}, onBack) {
     });
   }
 
-  // 관계란
+  // 관계란 — 이름과 관계가 점선을 사이에 두고 마주 보는 목록
   if (rels.length) {
     let ry = relTop;
     x.strokeStyle = LINE; x.lineWidth = 1.5;
     x.beginPath(); x.moveTo(PAD, ry + .5); x.lineTo(W - PAD, ry + .5); x.stroke();
     x.font = '500 13px "IBM Plex Mono", monospace';
     x.fillStyle = TEAL;
-    x.fillText('R E L A T I O N S', PAD, ry + 32);
-    ry += 46;
+    x.fillText('R E L A T I O N S', PAD, ry + 28);
+    x.textAlign = 'right'; x.font = '400 13px "IBM Plex Mono", monospace';
+    x.fillStyle = FAINT;
+    x.fillText(String(rels.length), W - PAD, ry + 28);
+    x.textAlign = 'left';
+    ry += 40;
 
-    const face = (n, px, py, tw, th) => {
-      x.save();
-      x.beginPath(); x.rect(px, py, tw, th); x.clip();
-      if (n.pic) coverDraw(x, n.pic, px, py, tw, th);
-      else {
-        x.fillStyle = '#F3F2EE'; x.fillRect(px, py, tw, th);
-        x.fillStyle = '#C3C8CB'; x.textAlign = 'center';
-        x.font = `300 ${Math.round(th * .5)}px "Noto Serif KR", serif`;
-        x.fillText(String(n.t.name || '?').slice(0, 1), px + tw / 2, py + th * .66);
-        x.textAlign = 'left';
+    /* 이름 … 관계 — 사이를 점선이 메워요 */
+    const entry = (n, px, py, wid, nf, lf, ink, lab) => {
+      x.font = nf;
+      const nm = fit(x, n.t.name || '이름 없음', wid * .56);
+      const nw = x.measureText(nm).width;
+      x.fillStyle = ink;
+      x.fillText(nm, px, py);
+      x.font = lf;
+      const lb = fit(x, n.r.label || '관계 미정', wid * .4);
+      const lw = x.measureText(lb).width;
+      x.fillStyle = lab;
+      x.textAlign = 'right';
+      x.fillText(lb, px + wid, py);
+      x.textAlign = 'left';
+      const gapL = px + nw + 12, gapR = px + wid - lw - 12;
+      if (gapR > gapL) {
+        x.save();
+        x.setLineDash([1, 5]); x.strokeStyle = HAIR; x.lineWidth = 1;
+        x.beginPath(); x.moveTo(gapL, py - 5.5); x.lineTo(gapR, py - 5.5); x.stroke();
+        x.restore();
       }
-      x.restore();
-      x.strokeStyle = HAIR; x.lineWidth = 1;
-      x.strokeRect(px + .5, py + .5, tw - 1, th - 1);
     };
 
-    prim.forEach(n => {
-      const tw = 62, th = 76;
-      face(n, PAD, ry, tw, th);
-      const tx = PAD + tw + 22, avail = W - PAD * 2 - tw - 22;
-      x.font = '400 26px "Noto Serif KR", serif';
-      x.fillStyle = INK;
-      x.fillText(fit(x, n.t.name || '이름 없음', avail), tx, ry + 34);
-      x.font = '400 16px "IBM Plex Mono", monospace';
-      x.fillStyle = TEAL;
-      x.fillText(fit(x, n.r.label || '관계 미정', avail), tx, ry + 62);
-      ry += 96;
+    prim.forEach((n, i) => {
+      const py = ry + i * 52;
+      x.fillStyle = TEAL; x.fillRect(PAD, py + 12, 3, 22);
+      entry(n, PAD + 18, py + 30, W - PAD * 2 - 18,
+        '400 25px "Noto Serif KR", serif', '400 16px "IBM Plex Mono", monospace', INK, TEAL);
+      x.strokeStyle = HAIR; x.lineWidth = 1;
+      x.beginPath(); x.moveTo(PAD, py + 51.5); x.lineTo(W - PAD, py + 51.5); x.stroke();
     });
+    ry += prim.length * 52;
 
-    const cw = (W - PAD * 2) / 3;
-    rest.forEach((n, i) => {
-      const cx0 = PAD + (i % 3) * cw, cy0 = ry + Math.floor(i / 3) * 86;
-      const tw = 46, th = 56;
-      face(n, cx0, cy0, tw, th);
-      const tx = cx0 + tw + 14, avail = cw - tw - 26;
-      x.font = '400 18px "Pretendard Variable", Pretendard, sans-serif';
-      x.fillStyle = INK2;
-      x.fillText(fit(x, n.t.name || '이름 없음', avail), tx, cy0 + 26);
-      x.font = '400 13px "IBM Plex Mono", monospace';
-      x.fillStyle = '#7B8189';
-      x.fillText(fit(x, n.r.label || '관계 미정', avail), tx, cy0 + 48);
-    });
+    if (rest.length) {
+      ry += 14;
+      const cw = (W - PAD * 2 - 44) / 2;
+      rest.forEach((n, i) => {
+        const cx0 = PAD + (i % 2) * (cw + 44), cy0 = ry + Math.floor(i / 2) * 34;
+        entry(n, cx0, cy0 + 20, cw,
+          '400 18px "Pretendard Variable", Pretendard, sans-serif',
+          '400 13px "IBM Plex Mono", monospace', INK2, '#7B8189');
+      });
+    }
   }
 
   // 꼬리말
@@ -6181,10 +6265,10 @@ function openCardTool(c) {
     m.querySelector('#cd-body').innerHTML = `
       <div class="adv" style="margin:0 0 14px">
         <div class="adv-head"><span class="eyebrow">그래프</span></div>
-        <div class="seg" id="cd-graph">
-          <button data-g="radar" aria-pressed="${graph === 'radar'}" ${(st?.labels.length || 0) >= 3 ? '' : 'disabled'}>방사형</button>
-          <button data-g="bar" aria-pressed="${graph === 'bar'}" ${(st?.labels.length || 0) >= 1 ? '' : 'disabled'}>막대형</button>
-          <button data-g="none" aria-pressed="${graph === 'none'}">넣지 않기</button>
+        <div class="pick" id="cd-graph">
+          <button data-g="radar" aria-pressed="${graph === 'radar'}" ${(st?.labels.length || 0) >= 3 ? '' : 'disabled'}>RADAR</button>
+          <button data-g="bar" aria-pressed="${graph === 'bar'}" ${(st?.labels.length || 0) >= 1 ? '' : 'disabled'}>BAR</button>
+          <button data-g="none" aria-pressed="${graph === 'none'}">NONE</button>
         </div>
         ${graph !== 'none' && mySets.length > 1 ? `<div class="set-bar" style="margin-top:12px">
           <select class="select" id="cd-set">${mySets.map(x =>
