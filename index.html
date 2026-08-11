@@ -267,7 +267,7 @@ details.setup-more[open] > summary::before{content:"− "}
 .tags{display:flex;gap:6px;flex-wrap:wrap;margin:14px 0 26px}
 
 /* 음악 — 앨범아트도 바탕도 없이, 우리 활자로 만든 재생기 */
-.music{margin:18px 0 32px}
+.music{margin:18px 0 54px}
 .mu-name{display:flex;align-items:center;gap:15px}
 .mu-name i{flex:1;height:0;border-top:1px solid var(--hair);transition:border-color .25s}
 .mu-name span{flex:none;max-width:calc(100% - 72px);font-family:var(--serif);font-size:17.5px;
@@ -281,7 +281,7 @@ details.setup-more[open] > summary::before{content:"− "}
   transition:width .25s linear}
 .mu-time{display:flex;justify-content:space-between;
   font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;color:var(--faint)}
-.mu-ctrl{display:flex;align-items:center;justify-content:center;gap:22px;margin-top:13px}
+.mu-ctrl{display:flex;align-items:center;justify-content:center;gap:22px;margin-top:7px}
 .mu-ctrl button{color:var(--muted);font-size:17px;line-height:1;padding:2px 4px}
 .mu-ctrl button:hover:not([disabled]){color:var(--teal)}
 .mu-ctrl button[disabled]{opacity:.28;cursor:default}
@@ -679,6 +679,9 @@ details.setup-more[open] > summary::before{content:"− "}
 
 /* 태그 중요도 */
 .adv-group{display:flex;align-items:flex-start;gap:11px;padding:7px 0}
+.tag-fold{margin-top:13px}
+.tag-fold > .linkish{display:block}
+.tag-fold > .chipbar{margin:9px 0 0}
 .adv-group + .adv-group{border-top:1px solid var(--hair);margin-top:4px;padding-top:11px}
 /* 메모 카드 만들기 창 */
 .mc-sum{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
@@ -899,6 +902,13 @@ function bindTagSuggest(input, wrap, all) {
 /* 태그 중요도 */
 const LEVELS = [['high', '상'], ['mid', '중'], ['low', '하']];
 const tagLevel = (scope, t) => (profile.tagLevels?.[scope] || {})[t] || 'mid';
+
+/* 스탯 세트는 모두에게 열려 있고, 빼둔 것만 제외돼요 */
+const setsFor = c => {
+  const off = c?.statsOff || [];
+  const list = state.statSets.filter(s => !off.includes(s.id));
+  return list.length ? list : state.statSets;
+};
 
 /* 프로필·세부 묘사 기본 서식 — 제목만 채워요 */
 const BASE_PRESET = {
@@ -2127,7 +2137,7 @@ function openRelations(c) {
 
 /* 스탯 분석 — 비교 · 세트 모음 · 순위 */
 function statPool(setId) {
-  const pool = state.chars.filter(x => (x.statSetId || state.statSets[0]?.id) === setId);
+  const pool = state.chars.filter(x => setsFor(x).some(s => s.id === setId));
   if (state.current && !pool.some(x => x.id === state.current.id)) pool.push(state.current);
   return pool;
 }
@@ -2153,7 +2163,7 @@ function rankInfo(setId) {
     set, labels, max, pool, rows, myTotal,
     totalRank: [...totals].sort((x, y) => y - x).indexOf(myTotal) + 1,
     avgTotal: totals.length ? totals.reduce((x, y) => x + y, 0) / totals.length : 0,
-    outside: (state.current.statSetId || state.statSets[0]?.id) !== setId,
+    outside: !setsFor(state.current).some(s => s.id === setId),
   };
 }
 
@@ -2161,7 +2171,7 @@ let statToolsMemo = null;   // 이미지 창에서 돌아올 때 고른 상태�
 
 function openStatTools(tab) {
   const c = state.current;
-  const curSet = state.statSets.find(x => x.id === c.statSetId) || state.statSets[0];
+  const curSet = setsFor(c).find(x => x.id === c.statSetId) || setsFor(c)[0];
   const memo = statToolsMemo && statToolsMemo.charId === c.id ? statToolsMemo : {};
   tab = tab || memo.tab || 'compare';
   let picked = (memo.picked || []).filter(id => state.chars.some(x => x.id === id));
@@ -2253,12 +2263,12 @@ function openStatTools(tab) {
         <div class="adv-head"><span class="eyebrow">태그로 후보 좁히기</span><div class="spacer"></div>
           ${cmpTags.length ? `<button class="linkish" id="cmp-tclear">해제</button>` : ''}</div>
         ${hiTags.length ? `<div class="chipbar" style="margin:0">${tagChips(hiTags)}</div>` : ''}
-        ${midTags.length ? `<div class="adv-group" style="margin-top:${hiTags.length ? 12 : 0}px">
+        ${midTags.length ? `<div class="tag-fold">
           <button class="linkish" data-tlv="mid">중요도 중 ${midTags.length}개 ${cmpMid ? '접기' : '펼치기'}</button>
-          ${cmpMid ? `<div class="chipbar" style="margin:8px 0 0">${tagChips(midTags)}</div>` : ''}</div>` : ''}
-        ${lowTags.length ? `<div class="adv-group" style="margin-top:12px">
+          ${cmpMid ? `<div class="chipbar">${tagChips(midTags)}</div>` : ''}</div>` : ''}
+        ${lowTags.length ? `<div class="tag-fold">
           <button class="linkish" data-tlv="low">중요도 하 ${lowTags.length}개 ${cmpLow ? '접기' : '펼치기'}</button>
-          ${cmpLow ? `<div class="chipbar" style="margin:8px 0 0">${tagChips(lowTags)}</div>` : ''}</div>` : ''}
+          ${cmpLow ? `<div class="chipbar">${tagChips(lowTags)}</div>` : ''}</div>` : ''}
         ${cmpTags.length ? `<p class="hint">고른 태그를 <b>모두</b> 가진 캐릭터만 아래에 남아요. 이미 고른 인물은 그대로 보여요.</p>` : ''}
       </div>` : ''}
       <div class="chipbar" id="cmp-chips">${cands.length
@@ -2983,7 +2993,9 @@ const REL_COLORS = ['#0F4C47', '#9C5B3E', '#3F5A7A'];
 const relColor = r => REL_COLORS[Number(r?.c || 0)] || REL_COLORS[0];
 let relMapOpen = false;
 
-const relMapNodes = c => (c.relations || [])
+const relSorted = c => [...(c.relations || [])]
+  .sort((a, b) => Number(a.c || 0) - Number(b.c || 0));      // 같은 색이면 담은 차례 그대로
+const relMapNodes = c => relSorted(c)
   .map(r => ({ r, t: state.chars.find(x => x.id === r.id) }))
   .filter(n => n.t)
   .slice(0, 10);
@@ -3177,7 +3189,8 @@ async function openCharacter(id) {
 
 function renderCharacter() {
   const c = state.current;
-  const set = state.statSets.find(s => s.id === c.statSetId) || state.statSets[0];
+  const mySets = setsFor(c);
+  const set = mySets.find(s => s.id === c.statSetId) || mySets[0];
   const labels = set?.labels || [], max = set?.max || 10, vals = c.stats || {};
   const img = state.fullImg || c.thumb;
   const details = c.details || [];
@@ -3192,9 +3205,9 @@ function renderCharacter() {
   const nextChar = ci >= 0 && ci < order.length - 1 ? order[ci + 1] : null;
 
   // 앞뒤 스탯 세트
-  const si = state.statSets.findIndex(x => x.id === set?.id);
-  const prevSet = state.statSets.length > 1 ? state.statSets[(si - 1 + state.statSets.length) % state.statSets.length] : null;
-  const nextSet = state.statSets.length > 1 ? state.statSets[(si + 1) % state.statSets.length] : null;
+  const si = mySets.findIndex(x => x.id === set?.id);
+  const prevSet = mySets.length > 1 ? mySets[(si - 1 + mySets.length) % mySets.length] : null;
+  const nextSet = mySets.length > 1 ? mySets[(si + 1) % mySets.length] : null;
 
   $('#view').innerHTML = `
     <div class="back-row">
@@ -3245,7 +3258,7 @@ function renderCharacter() {
             ${relNodes.length ? `<button class="btn btn-sm" id="toggle-rel" aria-pressed="${relMapOpen}">관계도</button>` : ''}
             <button class="btn btn-sm btn-ghost" id="edit-rel">편집</button></div>
           ${(c.relations || []).length
-            ? `<div class="rel-list">${c.relations.map(r => {
+            ? `<div class="rel-list">${relSorted(c).map(r => {
                 const t = state.chars.find(x => x.id === r.id);
                 const trashed = !t && state.trash.find(x => x.id === r.id);
                 const who = t || trashed;
@@ -3317,7 +3330,7 @@ function renderCharacter() {
             <button class="btn btn-sm btn-ghost" id="manage-sets">세트 관리</button></div>
           <div class="set-bar">
             <select class="select" id="set-select">
-              ${state.statSets.map(s => `<option value="${s.id}" ${s.id === set?.id ? 'selected' : ''}>${esc(s.name)} · ${s.labels.length}항목 · 최대 ${s.max}</option>`).join('')}
+              ${mySets.map(s => `<option value="${s.id}" ${s.id === set?.id ? 'selected' : ''}>${esc(s.name)} · ${s.labels.length}항목 · 최대 ${s.max}</option>`).join('')}
             </select>
           </div>
           <div class="stat-wrap${state.statEdit ? '' : ' solo'}">
@@ -3370,7 +3383,7 @@ function renderCharacter() {
   $('#back').onclick = renderGallery;
   $('#edit-char').onclick = () => openCharEditor(c);
   $('#del-char').onclick = () => removeCharacter(c);
-  $('#export-card').onclick = () => exportCard(c, set);
+  $('#export-card').onclick = () => openCardTool(c);
   $('#export-memo').onclick = () => openMemoCardTool(c);
   $('#manage-sets').onclick = openStatSets;
   $('#edit-rel').onclick = () => openRelations(c);
@@ -3543,6 +3556,7 @@ function openCharEditor(c) {
     fields: (c?.fields || []).map(f => ({ ...f })),
     details: (c?.details || []).map(d => ({ ...d, subs: (d.subs || []).map(sb => ({ ...sb })) })),
     statSetId: c?.statSetId || state.statSets[0]?.id || '',
+    statsOff: [...(c?.statsOff || [])],
     rank: Number(c?.rank || 0),
     music: (c?.music || []).map(t => ({ ...t })),
     thumb: c?.thumb || null, imageId: c?.imageId || null,
@@ -3584,12 +3598,12 @@ function openCharEditor(c) {
         <input class="input" id="f-tags" value="${esc(draft.tags)}" placeholder="띄어쓰기로 구분 (예: 주인공 검사 북부)">
         <div class="tag-sug" id="f-tags-sug"></div>
         <p class="hint">띄어쓰기로 나눈 단어가 각각 태그가 돼요. 고급 검색에 쓰입니다.</p></label>
-      <label class="field"><span>스탯 세트</span>
-        <select class="select" id="f-set">
-          ${state.statSets.map(s => `<option value="${s.id}" ${s.id === draft.statSetId ? 'selected' : ''}>${esc(s.name)}</option>`).join('')}
-        </select>
-        <p class="hint">이 캐릭터의 스탯을 어떤 항목 묶음으로 기록할지 고르는 칸이에요.
-          값은 저장 후 스탯 패널에서 넣고, 세트는 거기서도 바꿀 수 있어요.</p></label>
+      ${state.statSets.length > 1 ? `<div class="field"><span>쓰지 않을 스탯 세트</span>
+        <div class="chipbar" id="f-setsoff" style="margin:0">${state.statSets.map(st =>
+          `<button type="button" class="chip" data-soff="${st.id}"
+            aria-pressed="${draft.statsOff.includes(st.id)}">${esc(st.name)} · ${st.labels.length}</button>`).join('')}</div>
+        <p class="hint">세트는 기본적으로 <b>모두</b> 쓰입니다. 이 캐릭터에게 필요 없는 세트만 골라 빼두면
+          스탯 패널과 분석에서 보이지 않아요.</p></div>` : ''}
       <div class="field"><span>서식</span>
         <div class="preset-bar">
           <button class="btn btn-sm" id="ps-base">기본 서식 불러오기</button>
@@ -3798,6 +3812,16 @@ function openCharEditor(c) {
   m.querySelector('#mu-url').onkeydown = e => {
     if (e.key === 'Enter') { e.preventDefault(); m.querySelector('#mu-add').click(); }
   };
+  m.querySelectorAll('[data-soff]').forEach(b => b.onclick = () => {
+    const id = b.dataset.soff;
+    draft.statsOff = draft.statsOff.includes(id)
+      ? draft.statsOff.filter(x => x !== id) : [...draft.statsOff, id];
+    if (draft.statsOff.length >= state.statSets.length) {
+      draft.statsOff = draft.statsOff.filter(x => x !== id);
+      return toast('세트를 하나는 남겨두세요', 1);
+    }
+    b.setAttribute('aria-pressed', draft.statsOff.includes(id));
+  });
   m.querySelectorAll('[data-rank]').forEach(b => b.onclick = () => {
     draft.rank = Number(b.dataset.rank);
     m.querySelectorAll('[data-rank]').forEach(b2 => b2.setAttribute('aria-pressed', Number(b2.dataset.rank) === draft.rank));
@@ -3841,7 +3865,8 @@ function openCharEditor(c) {
             subs: (d.subs || []).filter(sb => sb.t.trim() || sb.v.trim())
               .map(sb => ({ t: sb.t.trim(), v: sb.v.replace(/\s+$/, '') })),
           })),
-        statSetId: m.querySelector('#f-set').value,
+        statSetId: draft.statSetId,
+        statsOff: [...draft.statsOff],
         rank: draft.rank,
         music: draft.music.map(t => ({ kind: t.kind, sid: t.sid, title: (t.title || '').trim() })),
         thumb: draft.thumb || null,
@@ -5633,6 +5658,67 @@ async function exportMemoCompare(chars, tag, opts = {}, onBack) {
     if (!b) return toast('이미지를 만들지 못했어요', 1);
     showImageModal(b, `${String(tag).replace(/[\\/:*?"<>|\s]/g, '')}_비교.png`, '#' + tag, onBack);
   }, 'image/png');
+}
+
+/* 카드 이미지 만들기 창 */
+let cardToolMemo = null;
+function openCardTool(c) {
+  const saved = cardToolMemo && cardToolMemo.charId === c.id ? cardToolMemo : {};
+  const mySets = setsFor(c);
+  let setId = mySets.some(s => s.id === saved.setId) ? saved.setId
+    : (mySets.find(s => s.id === c.statSetId) || mySets[0])?.id;
+  let graph = saved.graph || 'radar';
+  let rel = !!saved.rel;
+  const relCount = relSorted(c).filter(r => state.chars.some(x => x.id === r.id)).length;
+
+  const m = openModal({
+    title: '카드 이미지',
+    wide: true,
+    body: `<div id="cd-body"></div>`,
+    foot: `<button class="btn btn-ghost" id="cd-close">닫기</button>
+           <button class="btn btn-key" id="cd-make">이미지 만들기</button>`,
+  });
+
+  function draw() {
+    const st = mySets.find(s => s.id === setId);
+    m.querySelector('#cd-body').innerHTML = `
+      <div class="adv" style="margin:0 0 14px">
+        <div class="adv-head"><span class="eyebrow">그래프</span></div>
+        <div class="seg" id="cd-graph">
+          <button data-g="radar" aria-pressed="${graph === 'radar'}" ${(st?.labels.length || 0) >= 3 ? '' : 'disabled'}>방사형</button>
+          <button data-g="bar" aria-pressed="${graph === 'bar'}" ${(st?.labels.length || 0) >= 1 ? '' : 'disabled'}>막대형</button>
+          <button data-g="none" aria-pressed="${graph === 'none'}">넣지 않기</button>
+        </div>
+        ${graph !== 'none' && mySets.length > 1 ? `<div class="set-bar" style="margin-top:12px">
+          <select class="select" id="cd-set">${mySets.map(x =>
+            `<option value="${x.id}" ${x.id === setId ? 'selected' : ''}>${esc(x.name)} · ${x.labels.length}항목 · 최대 ${x.max}</option>`).join('')}</select>
+        </div>` : ''}
+        <p class="hint">방사형은 균형을, 막대형은 높낮이를 보여줘요. 항목이 3개 미만이면 막대형만 됩니다.</p>
+      </div>
+      <div class="adv" style="margin:0">
+        <div class="adv-head"><span class="eyebrow">관계</span><div class="spacer"></div>
+          <label class="mc-switch"><input type="checkbox" id="cd-rel" ${rel ? 'checked' : ''}
+            ${relCount ? '' : 'disabled'}> 넣기</label></div>
+        <p class="hint" style="margin:0">${relCount
+          ? `그래프 아래에 관계 목록이 얼굴과 함께 들어가요. 최대 9명까지.`
+          : '아직 이어둔 캐릭터가 없어요.'}</p>
+      </div>`;
+    bind();
+  }
+  function bind() {
+    m.querySelectorAll('[data-g]').forEach(b => b.onclick = () => { graph = b.dataset.g; draw(); });
+    const sel = m.querySelector('#cd-set');
+    if (sel) sel.onchange = () => { setId = sel.value; draw(); };
+    const rc = m.querySelector('#cd-rel');
+    if (rc) rc.onchange = () => { rel = rc.checked; draw(); };
+  }
+  draw();
+
+  m.querySelector('#cd-close').onclick = closeModal;
+  m.querySelector('#cd-make').onclick = () => {
+    cardToolMemo = { charId: c.id, setId, graph, rel };
+    exportCard(c, mySets.find(s => s.id === setId), { graph, rel }, () => openCardTool(c));
+  };
 }
 
 /* 메모 카드 만들기 창 */
