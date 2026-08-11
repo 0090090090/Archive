@@ -267,7 +267,7 @@ details.setup-more[open] > summary::before{content:"− "}
 .tags{display:flex;gap:6px;flex-wrap:wrap;margin:14px 0 26px}
 
 /* 음악 — 앨범아트도 바탕도 없이, 우리 활자로 만든 재생기 */
-.music{margin:18px 0 26px}
+.music{margin:18px 0 32px}
 .mu-name{display:flex;align-items:center;gap:15px}
 .mu-name i{flex:1;height:0;border-top:1px solid var(--hair);transition:border-color .25s}
 .mu-name span{flex:none;max-width:calc(100% - 72px);font-family:var(--serif);font-size:17.5px;
@@ -1678,7 +1678,9 @@ function renderGallery() {
 }
 
 function advPanelHTML(tags, picked, label, scope) {
-  const groups = LEVELS.map(([lv, name]) => [lv, name, tags.filter(([t]) => tagLevel(scope, t) === lv)]);
+  const byName = (a, b) => String(a[0]).localeCompare(String(b[0]), 'ko');
+  const groups = LEVELS.map(([lv, name]) =>
+    [lv, name, tags.filter(([t]) => tagLevel(scope, t) === lv).sort(byName)]);
   return `<div class="adv" id="adv-panel">
     <div class="adv-head"><span class="eyebrow">${esc(label)}</span><div class="spacer"></div>
       ${picked.length ? `<button class="linkish" id="adv-clear">선택 해제</button>` : ''}
@@ -1707,9 +1709,14 @@ function openTagLevels(scope, tags, after) {
     foot: `<button class="btn btn-ghost" id="lv-cancel">취소</button>
            <button class="btn btn-key" id="lv-save">저장</button>`,
   });
+  const order = LEVELS.map(([lv]) => lv);
+  const sorted = () => [...tags].sort((a, b) =>
+    (order.indexOf(draft[a[0]] || 'mid') - order.indexOf(draft[b[0]] || 'mid'))
+    || String(a[0]).localeCompare(String(b[0]), 'ko'));
+
   function draw() {
     m.querySelector('#lv-list').innerHTML = tags.length
-      ? tags.map(([t, n]) => `
+      ? sorted().map(([t, n]) => `
         <div class="lv-row">
           <span class="lv-name">#${esc(t)}<span class="mono"> ${n}</span></span>
           <div class="seg">${LEVELS.map(([lv, name]) =>
@@ -2167,11 +2174,11 @@ function openStatTools(tab) {
   let showPeers = memo.showPeers !== false;
   let cmpPick = memo.cmpPick || [];         // 비교 이미지 아래에 넣을 프로필 항목(이름 기준)
   let cmpTags = memo.cmpTags || [];         // 비교 후보를 좁히는 태그(이 창 안에서만 써요)
-  let cmpTagsMore = !!memo.cmpTagsMore;     // 중요도 중·하 태그를 펼쳤는지
+  let cmpMid = !!memo.cmpMid, cmpLow = !!memo.cmpLow;   // 중요도 중·하 태그를 각각 펼쳤는지
   const remember = () => {
     statToolsMemo = { charId: c.id, tab, picked: [...picked], setsPicked: [...setsPicked],
                       rankSet, cmpSet, fieldPick: [...fieldPick], showPeers,
-                      cmpPick: [...cmpPick], cmpTags: [...cmpTags], cmpTagsMore };
+                      cmpPick: [...cmpPick], cmpTags: [...cmpTags], cmpMid, cmpLow };
   };
   const back = () => openStatTools();
 
@@ -2227,9 +2234,10 @@ function openStatTools(tab) {
     const keys = cmpKeys();
     cmpPick = cmpPick.filter(k => keys.includes(k));
     const allTags = tagCounts(state.chars);
-    const hiTags = allTags.filter(([t]) => tagLevel('char', t) === 'high');
-    const restTags = allTags.filter(([t]) => tagLevel('char', t) !== 'high');
-    const shownTags = cmpTagsMore ? allTags : hiTags;
+    const byLv = lv => allTags.filter(([t]) => tagLevel('char', t) === lv);
+    const hiTags = byLv('high'), midTags = byLv('mid'), lowTags = byLv('low');
+    const tagChips = arr => arr.map(([t, n]) =>
+      `<button class="chip" data-ct="${esc(t)}" aria-pressed="${cmpTags.includes(t)}">${esc(t)} ${n}</button>`).join('');
     cmpTags = cmpTags.filter(t => allTags.some(([n]) => n === t));
     const cands = state.chars.filter(x =>
       picked.includes(x.id) || cmpTags.every(t => (x.tags || []).includes(t)));
@@ -2244,10 +2252,13 @@ function openStatTools(tab) {
       ${allTags.length ? `<div class="adv" style="margin:0 0 12px">
         <div class="adv-head"><span class="eyebrow">태그로 후보 좁히기</span><div class="spacer"></div>
           ${cmpTags.length ? `<button class="linkish" id="cmp-tclear">해제</button>` : ''}</div>
-        <div class="chipbar" style="margin:0">${(shownTags.length ? shownTags : allTags).map(([t, n]) =>
-          `<button class="chip" data-ct="${esc(t)}" aria-pressed="${cmpTags.includes(t)}">${esc(t)} ${n}</button>`).join('')}</div>
-        ${restTags.length && hiTags.length ? `<button class="linkish" id="cmp-tmore" style="margin-top:9px">
-          ${cmpTagsMore ? '중요도 중 · 하 접기' : `중요도 중 · 하 ${restTags.length}개 더 보기`}</button>` : ''}
+        ${hiTags.length ? `<div class="chipbar" style="margin:0">${tagChips(hiTags)}</div>` : ''}
+        ${midTags.length ? `<div class="adv-group" style="margin-top:${hiTags.length ? 12 : 0}px">
+          <button class="linkish" data-tlv="mid">중요도 중 ${midTags.length}개 ${cmpMid ? '접기' : '펼치기'}</button>
+          ${cmpMid ? `<div class="chipbar" style="margin:8px 0 0">${tagChips(midTags)}</div>` : ''}</div>` : ''}
+        ${lowTags.length ? `<div class="adv-group" style="margin-top:12px">
+          <button class="linkish" data-tlv="low">중요도 하 ${lowTags.length}개 ${cmpLow ? '접기' : '펼치기'}</button>
+          ${cmpLow ? `<div class="chipbar" style="margin:8px 0 0">${tagChips(lowTags)}</div>` : ''}</div>` : ''}
         ${cmpTags.length ? `<p class="hint">고른 태그를 <b>모두</b> 가진 캐릭터만 아래에 남아요. 이미 고른 인물은 그대로 보여요.</p>` : ''}
       </div>` : ''}
       <div class="chipbar" id="cmp-chips">${cands.length
@@ -2280,8 +2291,10 @@ function openStatTools(tab) {
     });
     const tcl = $('#cmp-tclear');
     if (tcl) tcl.onclick = () => { cmpTags = []; drawCompare(); };
-    const tmo = $('#cmp-tmore');
-    if (tmo) tmo.onclick = () => { cmpTagsMore = !cmpTagsMore; drawCompare(); };
+    $$('#st-body [data-tlv]').forEach(b2 => b2.onclick = () => {
+      if (b2.dataset.tlv === 'mid') cmpMid = !cmpMid; else cmpLow = !cmpLow;
+      drawCompare();
+    });
     $$('#st-body [data-cf]').forEach(b2 => b2.onclick = () => {
       const k = b2.dataset.cf;
       cmpPick = cmpPick.includes(k) ? cmpPick.filter(x => x !== k) : [...cmpPick, k];
@@ -5335,7 +5348,7 @@ function renderPlate(x, o) {
     }
     if (solo && memos.length) {
       ry += 24;
-      ry = colMark('MEMO', rx, ry, rw);
+      ry = colMark(o.head || 'MEMO', rx, ry, rw);
       ry = flowMemos(memos, rx, ry, rw) + 4;
     }
     return ry;
@@ -5466,13 +5479,15 @@ function renderMemoDigest(x, o) {
     const labFont = fMono(500, cfg.memoLab), chipFont = fSans(400, cfg.chipSize);
     let cx = left, cy = top, first = true;
     list.forEach(mo => {
-      if (!first) { cx = left; cy += cfg.chipLH + cfg.entryGap; }
+      if (!first) cx += cfg.groupGap;
+      x.font = chipFont;
+      const fw = x.measureText(mo.words[0] || '').width + 26;
+      let lw = 0;
+      if (mo.label) { x.font = labFont; lw = x.measureText(mo.label + '  ─').width + 12; }
+      if (cx > left && cx + lw + fw > left + maxW) { cx = left; cy += cfg.chipLH; }
       if (mo.label) {
-        const lab = mo.label + '  ─';
-        x.font = labFont;
-        const lw = x.measureText(lab).width;
-        txt(lab, cx, cy + cfg.chipH / 2 + cfg.memoLab * 0.36, labFont, MC_TEAL);
-        cx += lw + 12;
+        txt(mo.label + '  ─', cx, cy + cfg.chipH / 2 + cfg.memoLab * 0.36, labFont, MC_TEAL);
+        cx += lw;
       }
       mo.words.forEach(wd => {
         x.font = chipFont;
@@ -5492,7 +5507,7 @@ function renderMemoDigest(x, o) {
   if (!rows.length) return o.top;
 
   let y = o.top;
-  txt(spread('MEMO'), PAD, y + 12, fMono(500, cfg.eyeSize), MC_TEAL);
+  txt(spread(o.head || 'MEMO'), PAD, y + 12, fMono(500, cfg.eyeSize), MC_TEAL);
   rule(PAD, y + 26.5, W - PAD, MC_HAIR, 1);
   y += 46;
 
@@ -5527,7 +5542,8 @@ async function exportMemoCard(c, opts = {}, onBack) {
 
   const probe = document.createElement('canvas').getContext('2d');
   const rows = mcRows(c, { memo: opts.memo !== false, music: !!opts.music, labels: opts.labels, max: MC_SOLO.memoMax });
-  const args = { c, photo, W, PAD, cfg: MC_SOLO, sets, showStats: !!opts.stats, rows };
+  const args = { c, photo, W, PAD, cfg: MC_SOLO, sets, showStats: !!opts.stats, rows,
+    head: opts.memo === false && opts.music ? 'MUSIC' : 'MEMO' };
   const H = Math.round(renderPlate(probe, { ...args, top, draw: false }) + 134);
 
   const { cv, x } = makePlate(W, H);
@@ -5556,6 +5572,7 @@ async function exportMemoCompare(chars, tag, opts = {}, onBack) {
 
   const probe = document.createElement('canvas').getContext('2d');
   const digestArgs = { chars, W, PAD, cfg: MC_CMP, labels: opts.labels,
+    head: opts.memo === false && opts.music ? 'MUSIC' : 'MEMO',
     rowsOf: p => mcRows(p, { memo: opts.memo !== false, music: !!opts.music, labels: opts.labels, max: MC_CMP.memoMax }) };
   const digestTop = titleY + 62;
   const digestEnd = renderMemoDigest(probe, { ...digestArgs, top: digestTop, draw: false });
@@ -5640,7 +5657,7 @@ function openMemoCardTool(c) {
   };
   const labelPool = () => {
     const seen = [];
-    state.chars.filter(x => picks.includes(x.id)).forEach(p =>
+    (mode === 'solo' ? [c] : state.chars.filter(x => picks.includes(x.id))).forEach(p =>
       (p.memos || []).forEach(mo => { if (mo.label && (mo.words || []).length && !seen.includes(mo.label)) seen.push(mo.label); }));
     const order = profile.memoLabels || [];
     return seen.sort((a, b) => {
@@ -5672,9 +5689,10 @@ function openMemoCardTool(c) {
     .some(p => musicList(p).length);
 
   function partsBlock() {
+    const pool = labelPool();
     return `<div class="adv" style="margin:16px 0 0">
       <div class="adv-head"><span class="eyebrow">함께 넣을 것</span></div>
-      <div style="display:flex;flex-wrap:wrap;gap:16px">
+      <div style="display:flex;flex-wrap:wrap;gap:18px">
         <label class="mc-switch"><input type="checkbox" id="mc-memo" ${memoOn ? 'checked' : ''}> 메모</label>
         <label class="mc-switch"><input type="checkbox" id="mc-music" ${musicOn ? 'checked' : ''}
           ${anyMusic() ? '' : 'disabled'}> 음악 목록</label>
@@ -5682,6 +5700,13 @@ function openMemoCardTool(c) {
       <p class="hint">${anyMusic()
         ? '음악은 메모 아래에 곡 제목만 한 줄기로 들어가요. 한 사람당 6곡까지.'
         : '저장해둔 음악이 없어요. 프로필 수정에서 스포티파이 링크를 담을 수 있어요.'}</p>
+      ${pool.length ? `<div class="adv-head" style="margin-top:15px;padding-top:13px;
+          border-top:1px solid var(--hair)">
+          <span class="eyebrow">넣을 메모 라벨</span><div class="spacer"></div>
+          ${mLabels ? `<button class="linkish" id="mc-lall">모두 넣기</button>` : ''}</div>
+        <div class="chipbar" id="mc-labels" style="margin:0;${memoOn ? '' : 'opacity:.4;pointer-events:none'}">
+          ${pool.map(l => `<button class="chip" data-ml2="${esc(l)}"
+            aria-pressed="${!mLabels || mLabels.includes(l)}">${esc(l)}</button>`).join('')}</div>` : ''}
     </div>`;
   }
 
@@ -5713,7 +5738,6 @@ function openMemoCardTool(c) {
         ${statsBlock()}`;
     } else {
       const cands = inTag();
-      const pool = labelPool();
       body.innerHTML = `<p class="hint" style="margin:0 0 10px">같은 태그를 가진 사람들을 한 장에 이어 붙여요.
           메모는 사진 옆이 아니라 아래쪽 띠에 세 칸으로 앉습니다.</p>
         <div class="chipbar" id="mc-tags">${myTags.map(t =>
@@ -5724,14 +5748,6 @@ function openMemoCardTool(c) {
           <div class="chipbar" id="mc-picks" style="margin:0">${cands.length
             ? cands.map(p => `<button class="chip" data-mp="${p.id}" aria-pressed="${picks.includes(p.id)}">${esc(p.name || '이름 없음')}</button>`).join('')
             : `<span class="hint" style="margin:0">이 태그를 가진 캐릭터가 없어요.</span>`}</div>
-        </div>
-        <div class="adv" style="margin:0">
-          <div class="adv-head"><span class="eyebrow">넣을 메모 라벨</span><div class="spacer"></div>
-            ${pool.length && mLabels ? `<button class="linkish" id="mc-lall">모두 넣기</button>` : ''}</div>
-          <div class="chipbar" id="mc-labels" style="margin:0">${pool.length
-            ? pool.map(l => `<button class="chip" data-ml2="${esc(l)}" aria-pressed="${!mLabels || mLabels.includes(l)}">${esc(l)}</button>`).join('')
-            : `<span class="hint" style="margin:0">고른 사람들에게 적어둔 메모가 없어요.</span>`}</div>
-          ${pool.length ? `<p class="hint">고른 라벨만 들어가요. 한 사람당 ${MC_CMP.memoMax}개까지.</p>` : ''}
         </div>
         ${partsBlock()}
         ${statsBlock()}`;
