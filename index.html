@@ -266,22 +266,18 @@ details.setup-more[open] > summary::before{content:"− "}
 .name-block .sub{font-family:var(--mono);font-size:11.5px;color:var(--teal);letter-spacing:.1em;margin-top:9px}
 .tags{display:flex;gap:6px;flex-wrap:wrap;margin:14px 0 26px}
 
-/* 음악 — 바탕 없이 실선과 글자만 */
+/* 음악 — 앨범아트도 바탕도 없이 우리 글줄로만 */
 .music{margin:0 0 26px;text-align:left}
-.music-head{display:flex;align-items:baseline;gap:9px;padding-bottom:7px;
-  border-bottom:1px solid var(--hair)}
-.music-head .eyebrow{flex:1}
-.music-head .n{font-family:var(--mono);font-size:10px;color:var(--faint);letter-spacing:.1em}
-.music > details > summary{display:flex;align-items:center;gap:9px;padding:11px 1px;cursor:pointer;
-  list-style:none;font-size:13.5px;color:var(--ink-2)}
-.music > details > summary::-webkit-details-marker{display:none}
-.music > details > summary .t{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.music > details > summary .arrow{color:var(--faint);font-size:9px;transition:transform .18s}
-.music > details[open] > summary .arrow{transform:rotate(180deg)}
-.music > details > summary::before{content:'▶';font-size:8px;color:var(--teal);flex:none}
-.music-list{display:grid;gap:10px;padding:2px 0 6px}
-.music-list iframe{display:block;width:100%;border:0;border-radius:var(--r)}
-.music-one{padding-top:12px}
+.mu-play{display:flex;align-items:center;gap:10px;width:100%;padding:7px 1px;
+  font-size:13.5px;color:var(--ink-2);text-align:left;line-height:1.5}
+.mu-play .ico{flex:none;width:13px;font-size:9px;color:var(--teal);line-height:1}
+.mu-play .t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mu-play:hover .t{color:var(--teal)}
+.mu-play[data-on="1"] .t{color:var(--teal)}
+.mu-more{display:block;padding:5px 1px 0 24px;font-family:var(--mono);font-size:10.5px;
+  letter-spacing:.1em;color:var(--faint)}
+.mu-more:hover{color:var(--teal)}
+.mu-host{height:0;overflow:hidden}
 .mu-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,150px) 22px 30px;gap:8px;
   align-items:center;margin-bottom:9px}
 .tag{padding:3px 9px;border-radius:var(--r);border:1px solid var(--hair);
@@ -1572,7 +1568,7 @@ function renderGallery() {
       <h1>${esc(profile.nickname)}</h1>
       <div class="stat-line">
         <span><b>${total}</b>CHARACTERS</span>
-        <span><b>${state.excerpts.length}</b>EXCERPTS</span>
+        <span><b>${state.chars.reduce((n, c) => n + (c.excerptCount || 0), 0)}</b>EXCERPTS</span>
         <span><b>${tagCounts(state.chars).length}</b>TAGS</span>
       </div>
     </div>
@@ -2758,8 +2754,6 @@ function parseSpotify(u) {
   if (!m) m = t.match(new RegExp(`^spotify:(${kinds}):([A-Za-z0-9]+)$`));
   return m ? { kind: m[1], sid: m[2] } : null;
 }
-const spotifyEmbed = t =>
-  `https://open.spotify.com/embed/${t.kind}/${t.sid}?utm_source=generator`;
 const spotifyUrl = t => `https://open.spotify.com/${t.kind}/${t.sid}`;
 
 /* 제목은 스포티파이 공개 oEmbed 에서 받아와요 (실패하면 직접 적으면 돼요) */
@@ -2774,24 +2768,38 @@ async function spotifyTitle(t) {
 
 const musicList = c => (c.music || []).filter(t => t && t.kind && t.sid);
 
+let musicOpen = false;
+
 function musicHTML(c) {
   const list = musicList(c);
   if (!list.length) return '';
-  const frame = t => `<iframe src="${spotifyEmbed(t)}" height="152" loading="lazy"
-    frameborder="0" allowfullscreen
-    allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-    title="${esc(t.title || '스포티파이 재생기')}"></iframe>`;
+  const shown = musicOpen ? list : list.slice(0, 1);
   return `<div class="music">
-    <div class="music-head"><span class="eyebrow">MUSIC</span>
-      ${list.length > 1 ? `<span class="n">${list.length}곡</span>` : ''}</div>
-    ${list.length === 1
-      ? `<div class="music-list music-one">${frame(list[0])}</div>`
-      : `<details id="music-fold">
-          <summary><span class="t">${esc(list[0].title || '이름 없는 곡')}</span>
-            <span class="arrow">▾</span></summary>
-          <div class="music-list" id="music-slot"></div>
-        </details>`}
+    ${shown.map((t, i) => `<button class="mu-play" data-play="${i}">
+      <span class="ico">▶</span>
+      <span class="t">${esc(t.title || '이름 없는 곡')}</span></button>`).join('')}
+    ${list.length > 1
+      ? `<button class="mu-more" id="mu-more">${musicOpen ? '접기' : `＋ ${list.length - 1}곡 더`}</button>`
+      : ''}
+    <div class="mu-host" aria-hidden="true"><div id="mu-slot"></div></div>
   </div>`;
+}
+
+/* 스포티파이 iFrame API — 재생만 빌려 쓰고 화면은 우리 줄로 */
+let spotifyReady = null, spotifyCtrl = null, spotifyCur = '';
+function loadSpotifyAPI() {
+  if (spotifyReady) return spotifyReady;
+  spotifyReady = new Promise(res => {
+    const done = () => res(window.__spotifyApi || null);
+    window.onSpotifyIframeApiReady = api => { window.__spotifyApi = api; res(api); };
+    const sc = document.createElement('script');
+    sc.src = 'https://open.spotify.com/embed/iframe-api/v1';
+    sc.async = true;
+    sc.onerror = done;
+    document.head.append(sc);
+    setTimeout(done, 7000);
+  });
+  return spotifyReady;
 }
 
 /* ════════ 관계도 ════════ */
@@ -2982,6 +2990,7 @@ async function openCharacter(id) {
   const c = state.chars.find(x => x.id === id);
   if (!c) return renderGallery();
   state.view = 'character'; state.current = c; state.fullImg = null; state.excerpts = [];
+  musicOpen = false; spotifyCtrl = null; spotifyCur = '';
   state.exQ = ''; state.exFolder = null; state.exTags = []; state.exAdv = false; state.exSort = 'recent';
   window.scrollTo(0, 0);
   renderCharacter();
@@ -3186,15 +3195,37 @@ function renderCharacter() {
   $('#export-memo').onclick = () => openMemoCardTool(c);
   $('#manage-sets').onclick = openStatSets;
   $('#edit-rel').onclick = () => openRelations(c);
-  const fold = $('#music-fold');
-  if (fold) fold.addEventListener('toggle', () => {         // 펼칠 때 재생기를 붙여요
-    const slot = $('#music-slot');
-    if (!fold.open || !slot || slot.dataset.on) return;
-    slot.dataset.on = '1';
-    slot.innerHTML = musicList(c).map(t => `<iframe src="${spotifyEmbed(t)}" height="152"
-      frameborder="0" allowfullscreen
-      allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-      title="${esc(t.title || '스포티파이 재생기')}"></iframe>`).join('');
+  $('#mu-more')?.addEventListener('click', () => { musicOpen = !musicOpen; renderCharacter(); });
+  $$('#view [data-play]').forEach(b => b.onclick = async () => {
+    const t = musicList(c)[+b.dataset.play];
+    if (!t) return;
+    const mark = on => {
+      $$('#view [data-play]').forEach(o => o.querySelector('.ico').textContent = '▶');
+      $$('#view [data-play]').forEach(o => o.removeAttribute('data-on'));
+      if (on) { b.querySelector('.ico').textContent = '❚❚'; b.setAttribute('data-on', '1'); }
+    };
+    const api = await loadSpotifyAPI();
+    const slot = $('#mu-slot');
+    if (!api || !slot) return window.open(spotifyUrl(t), '_blank', 'noopener');
+    const uri = `spotify:${t.kind}:${t.sid}`;
+    if (!spotifyCtrl) {
+      await new Promise(done => api.createController(slot,
+        { uri, width: '100%', height: 152 },
+        ctrl => {
+          spotifyCtrl = ctrl; spotifyCur = uri;
+          ctrl.addListener('playback_update', e => {
+            if (state.view === 'character') mark(!e?.data?.isPaused);
+          });
+          done();
+        }));
+      spotifyCtrl.play?.();
+      return;
+    }
+    if (spotifyCur !== uri) {
+      spotifyCtrl.loadUri(uri);
+      spotifyCur = uri;
+      spotifyCtrl.play?.();
+    } else spotifyCtrl.togglePlay?.();
   });
   $('#toggle-rel')?.addEventListener('click', () => { relMapOpen = !relMapOpen; renderCharacter(); });
   $('#export-rel')?.addEventListener('click', () =>
