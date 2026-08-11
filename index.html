@@ -267,14 +267,15 @@ details.setup-more[open] > summary::before{content:"− "}
 .tags{display:flex;gap:6px;flex-wrap:wrap;margin:14px 0 26px}
 
 /* 음악 — 앨범아트도 바탕도 없이, 우리 활자로 만든 재생기 */
-.music{margin:4px 0 26px}
-.mu-artist{font-family:var(--mono);font-size:9px;letter-spacing:.26em;color:var(--faint);
-  min-height:11px;margin-bottom:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.mu-title{font-family:var(--serif);font-size:17px;font-weight:400;color:var(--ink);
-  letter-spacing:-.01em;line-height:1.4;transition:color .2s;
+.music{margin:18px 0 26px}
+.mu-name{display:flex;align-items:center;gap:15px}
+.mu-name i{flex:1;height:0;border-top:1px solid var(--hair);transition:border-color .25s}
+.mu-name span{flex:none;max-width:calc(100% - 72px);font-family:var(--serif);font-size:17.5px;
+  font-weight:400;color:var(--ink);letter-spacing:-.012em;line-height:1.4;transition:color .25s;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.mu-title.on{color:var(--teal)}
-.mu-bar{position:relative;height:2px;background:var(--hair);margin:7px 0 7px;cursor:pointer}
+.mu-name.on span{color:var(--teal)}
+.mu-name.on i{border-color:rgba(15,76,71,.38)}
+.mu-bar{position:relative;height:2px;background:var(--hair);margin:17px 0 7px;cursor:pointer}
 .mu-bar::after{content:'';position:absolute;inset:-8px 0}
 .mu-bar span{position:absolute;left:0;top:0;bottom:0;width:0;background:var(--teal);
   transition:width .25s linear}
@@ -302,7 +303,7 @@ details.setup-more[open] > summary::before{content:"− "}
 .mu-fall{display:block;width:100%;margin-top:10px;font-family:var(--mono);font-size:10px;
   letter-spacing:.14em;color:var(--faint);text-decoration:underline;text-underline-offset:3px}
 .mu-fall:hover{color:var(--teal)}
-.mu-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,120px) 22px 30px;gap:8px;
+.mu-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,58px) 22px 30px;gap:8px;
   align-items:center;margin-bottom:9px}
 .tag{padding:3px 9px;border-radius:var(--r);border:1px solid var(--hair);
   font-family:var(--mono);font-size:10.5px;color:var(--muted);letter-spacing:.06em}
@@ -2805,8 +2806,8 @@ function musicHTML(c) {
   const i = Math.min(musicIdx, list.length - 1);
   const t = list[i];
   return `<div class="music">
-    <div class="mu-artist" id="mu-artist">${esc(t.artist || '')}</div>
-    <div class="mu-title" id="mu-title">${esc(t.title || '이름 없는 곡')}</div>
+    <div class="mu-name" id="mu-name"><i></i>
+      <span id="mu-title">${esc(t.title || '이름 없는 곡')}</span><i></i></div>
     <div class="mu-bar" id="mu-bar" role="slider" aria-label="재생 위치"><span id="mu-fill"></span></div>
     <div class="mu-time"><span id="mu-cur">0:00</span><span id="mu-dur">—:—</span></div>
     <div class="mu-ctrl">
@@ -2869,7 +2870,7 @@ function mountMusic(c) {
     dur.textContent = len ? muTime(len) : '—:—';
     fill.style.width = len ? `${Math.min(100, (p / len) * 100)}%` : '0';
     if (ico) ico.textContent = spotifyOn ? '❚❚' : '▶';
-    $('#mu-title')?.classList.toggle('on', spotifyOn);
+    $('#mu-name')?.classList.toggle('on', spotifyOn);
   };
 
   const listen = ctrl => {
@@ -2884,7 +2885,6 @@ function mountMusic(c) {
   const setNow = k => {
     const t = list[k];
     $('#mu-title').textContent = t.title || '이름 없는 곡';
-    $('#mu-artist').textContent = t.artist || '';
     const fall = $('#mu-fall');
     if (fall) { fall.href = spotifyUrl(t); fall.classList.add('hidden'); }
     $$('#view [data-pick]').forEach(b => b.setAttribute('aria-current', +b.dataset.pick === k));
@@ -3535,7 +3535,7 @@ function openCharEditor(c) {
             placeholder="스포티파이 링크를 붙여넣으세요" >
           <button class="btn btn-sm" type="button" id="mu-add">추가</button>
         </div>
-        <p class="hint">곡 · 앨범 · 플레이리스트 모두 됩니다. 제목은 자동으로 받아오고, 아티스트는 직접 적어요.<br>
+        <p class="hint">곡 · 앨범 · 플레이리스트 모두 됩니다. 제목은 자동으로 받아오고 직접 고칠 수도 있어요.<br>
           로그인하지 않은 사람에게는 30초 미리듣기로 들리고, 자동 재생은 되지 않아요.</p></div>
       <div class="field"><span>중요도</span>
         <div class="rank-seg"><div class="seg" id="f-rank">
@@ -3731,7 +3731,8 @@ function openCharEditor(c) {
     muWrap.innerHTML = draft.music.map((t, i) => `
       <div class="mu-row">
         <input class="input" data-mut="${i}" value="${esc(t.title || '')}" placeholder="곡 제목" maxlength="80">
-        <input class="input" data-mua="${i}" value="${esc(t.artist || '')}" placeholder="아티스트" maxlength="60">
+        <span class="mono" style="font-size:10.5px;color:var(--faint);letter-spacing:.06em;
+          overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(t.kind)}</span>
         <span class="ord">
           <button type="button" data-muu="${i}" title="위로" ${i === 0 ? 'disabled' : ''}>▲</button>
           <button type="button" data-mud="${i}" title="아래로" ${i === draft.music.length - 1 ? 'disabled' : ''}>▼</button>
@@ -3739,7 +3740,6 @@ function openCharEditor(c) {
         <button class="icon-btn" type="button" data-murm="${i}" title="지우기">✕</button>
       </div>`).join('');
     muWrap.querySelectorAll('[data-mut]').forEach(el => el.oninput = e => draft.music[+el.dataset.mut].title = e.target.value);
-    muWrap.querySelectorAll('[data-mua]').forEach(el => el.oninput = e => draft.music[+el.dataset.mua].artist = e.target.value);
     muWrap.querySelectorAll('[data-murm]').forEach(el => el.onclick = () => { draft.music.splice(+el.dataset.murm, 1); drawMu(); });
     muWrap.querySelectorAll('[data-muu]').forEach(el => el.onclick = () => { move(draft.music, +el.dataset.muu, -1); drawMu(); });
     muWrap.querySelectorAll('[data-mud]').forEach(el => el.onclick = () => { move(draft.music, +el.dataset.mud, 1); drawMu(); });
@@ -3752,7 +3752,7 @@ function openCharEditor(c) {
     if (draft.music.some(o => o.sid === t.sid)) return toast('이미 담아둔 링크예요');
     if (draft.music.length >= 12) return toast('12개까지 담을 수 있어요', 1);
     inp.value = '';
-    const row = { ...t, title: '', artist: '' };
+    const row = { ...t, title: '' };
     draft.music.push(row); drawMu();
     row.title = (await spotifyTitle(t)) || '이름 없는 곡';
     drawMu();
@@ -3805,8 +3805,7 @@ function openCharEditor(c) {
           })),
         statSetId: m.querySelector('#f-set').value,
         rank: draft.rank,
-        music: draft.music.map(t => ({ kind: t.kind, sid: t.sid,
-          title: (t.title || '').trim(), artist: (t.artist || '').trim() })),
+        music: draft.music.map(t => ({ kind: t.kind, sid: t.sid, title: (t.title || '').trim() })),
         thumb: draft.thumb || null,
         updatedAt: now,
       };
