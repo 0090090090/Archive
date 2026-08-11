@@ -268,12 +268,13 @@ details.setup-more[open] > summary::before{content:"− "}
 
 /* 음악 — 앨범아트도 바탕도 없이, 우리 활자로 만든 재생기 */
 .music{margin:4px 0 26px}
-.mu-title{display:inline-block;max-width:100%;padding:6px 15px;border-radius:var(--r);
-  background:var(--teal);color:#F7F8F8;font-family:var(--serif);font-size:15px;font-weight:400;
-  line-height:1.5;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.mu-artist{font-family:var(--mono);font-size:9.5px;letter-spacing:.2em;color:var(--faint);
-  margin-top:6px;min-height:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.mu-bar{position:relative;height:2px;background:var(--hair);margin:10px 0 7px;cursor:pointer}
+.mu-artist{font-family:var(--mono);font-size:9px;letter-spacing:.26em;color:var(--faint);
+  min-height:11px;margin-bottom:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mu-title{font-family:var(--serif);font-size:17px;font-weight:400;color:var(--ink);
+  letter-spacing:-.01em;line-height:1.4;transition:color .2s;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mu-title.on{color:var(--teal)}
+.mu-bar{position:relative;height:2px;background:var(--hair);margin:7px 0 7px;cursor:pointer}
 .mu-bar::after{content:'';position:absolute;inset:-8px 0}
 .mu-bar span{position:absolute;left:0;top:0;bottom:0;width:0;background:var(--teal);
   transition:width .25s linear}
@@ -2804,8 +2805,8 @@ function musicHTML(c) {
   const i = Math.min(musicIdx, list.length - 1);
   const t = list[i];
   return `<div class="music">
-    <div class="mu-title" id="mu-title">${esc(t.title || '이름 없는 곡')}</div>
     <div class="mu-artist" id="mu-artist">${esc(t.artist || '')}</div>
+    <div class="mu-title" id="mu-title">${esc(t.title || '이름 없는 곡')}</div>
     <div class="mu-bar" id="mu-bar" role="slider" aria-label="재생 위치"><span id="mu-fill"></span></div>
     <div class="mu-time"><span id="mu-cur">0:00</span><span id="mu-dur">—:—</span></div>
     <div class="mu-ctrl">
@@ -2868,6 +2869,7 @@ function mountMusic(c) {
     dur.textContent = len ? muTime(len) : '—:—';
     fill.style.width = len ? `${Math.min(100, (p / len) * 100)}%` : '0';
     if (ico) ico.textContent = spotifyOn ? '❚❚' : '▶';
+    $('#mu-title')?.classList.toggle('on', spotifyOn);
   };
 
   const listen = ctrl => {
