@@ -265,6 +265,25 @@ details.setup-more[open] > summary::before{content:"− "}
 .name-block h1{font-family:var(--serif);font-weight:300;font-size:33px;letter-spacing:-.025em}
 .name-block .sub{font-family:var(--mono);font-size:11.5px;color:var(--teal);letter-spacing:.1em;margin-top:9px}
 .tags{display:flex;gap:6px;flex-wrap:wrap;margin:14px 0 26px}
+
+/* 음악 — 바탕 없이 실선과 글자만 */
+.music{margin:0 0 26px;text-align:left}
+.music-head{display:flex;align-items:baseline;gap:9px;padding-bottom:7px;
+  border-bottom:1px solid var(--hair)}
+.music-head .eyebrow{flex:1}
+.music-head .n{font-family:var(--mono);font-size:10px;color:var(--faint);letter-spacing:.1em}
+.music > details > summary{display:flex;align-items:center;gap:9px;padding:11px 1px;cursor:pointer;
+  list-style:none;font-size:13.5px;color:var(--ink-2)}
+.music > details > summary::-webkit-details-marker{display:none}
+.music > details > summary .t{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.music > details > summary .arrow{color:var(--faint);font-size:9px;transition:transform .18s}
+.music > details[open] > summary .arrow{transform:rotate(180deg)}
+.music > details > summary::before{content:'▶';font-size:8px;color:var(--teal);flex:none}
+.music-list{display:grid;gap:10px;padding:2px 0 6px}
+.music-list iframe{display:block;width:100%;border:0;border-radius:var(--r)}
+.music-one{padding-top:12px}
+.mu-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,150px) 22px 30px;gap:8px;
+  align-items:center;margin-bottom:9px}
 .tag{padding:3px 9px;border-radius:var(--r);border:1px solid var(--hair);
   font-family:var(--mono);font-size:10.5px;color:var(--muted);letter-spacing:.06em}
 
@@ -2730,6 +2749,51 @@ async function exportCompare(set, labels, max, series, onBack) {
   }, 'image/png');
 }
 
+/* ════════ 음악 ════════ */
+/* 스포티파이 주소에서 종류와 아이디만 뽑아요 */
+function parseSpotify(u) {
+  const t = String(u || '').trim();
+  const kinds = 'track|album|playlist|episode|show|artist';
+  let m = t.match(new RegExp(`open\\.spotify\\.com/(?:intl-[\\w-]+/)?(${kinds})/([A-Za-z0-9]+)`));
+  if (!m) m = t.match(new RegExp(`^spotify:(${kinds}):([A-Za-z0-9]+)$`));
+  return m ? { kind: m[1], sid: m[2] } : null;
+}
+const spotifyEmbed = t =>
+  `https://open.spotify.com/embed/${t.kind}/${t.sid}?utm_source=generator`;
+const spotifyUrl = t => `https://open.spotify.com/${t.kind}/${t.sid}`;
+
+/* 제목은 스포티파이 공개 oEmbed 에서 받아와요 (실패하면 직접 적으면 돼요) */
+async function spotifyTitle(t) {
+  try {
+    const r = await fetch(`https://open.spotify.com/oembed?url=${encodeURIComponent(spotifyUrl(t))}`);
+    if (!r.ok) return '';
+    const d = await r.json();
+    return (d.title || '').trim();
+  } catch { return ''; }
+}
+
+const musicList = c => (c.music || []).filter(t => t && t.kind && t.sid);
+
+function musicHTML(c) {
+  const list = musicList(c);
+  if (!list.length) return '';
+  const frame = t => `<iframe src="${spotifyEmbed(t)}" height="152" loading="lazy"
+    frameborder="0" allowfullscreen
+    allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+    title="${esc(t.title || '스포티파이 재생기')}"></iframe>`;
+  return `<div class="music">
+    <div class="music-head"><span class="eyebrow">MUSIC</span>
+      ${list.length > 1 ? `<span class="n">${list.length}곡</span>` : ''}</div>
+    ${list.length === 1
+      ? `<div class="music-list music-one">${frame(list[0])}</div>`
+      : `<details id="music-fold">
+          <summary><span class="t">${esc(list[0].title || '이름 없는 곡')}</span>
+            <span class="arrow">▾</span></summary>
+          <div class="music-list" id="music-slot"></div>
+        </details>`}
+  </div>`;
+}
+
 /* ════════ 관계도 ════════ */
 const REL_COLORS = ['#0F4C47', '#9C5B3E', '#3F5A7A'];
 const relColor = r => REL_COLORS[Number(r?.c || 0)] || REL_COLORS[0];
@@ -2978,6 +3042,7 @@ function renderCharacter() {
           ${c.subtitle ? `<div class="sub">${esc(c.subtitle)}</div>` : ''}
         </div>
         ${(c.tags || []).length ? `<div class="tags">${c.tags.map(t => `<span class="tag">#${esc(t)}</span>`).join('')}</div>` : ''}
+        ${musicHTML(c)}
         <div class="side-actions">
           <button class="btn btn-key btn-sm" id="export-card">카드 이미지 저장</button>
           <button class="btn btn-sm" id="export-memo">메모 카드</button>
@@ -3121,6 +3186,16 @@ function renderCharacter() {
   $('#export-memo').onclick = () => openMemoCardTool(c);
   $('#manage-sets').onclick = openStatSets;
   $('#edit-rel').onclick = () => openRelations(c);
+  const fold = $('#music-fold');
+  if (fold) fold.addEventListener('toggle', () => {         // 펼칠 때 재생기를 붙여요
+    const slot = $('#music-slot');
+    if (!fold.open || !slot || slot.dataset.on) return;
+    slot.dataset.on = '1';
+    slot.innerHTML = musicList(c).map(t => `<iframe src="${spotifyEmbed(t)}" height="152"
+      frameborder="0" allowfullscreen
+      allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+      title="${esc(t.title || '스포티파이 재생기')}"></iframe>`).join('');
+  });
   $('#toggle-rel')?.addEventListener('click', () => { relMapOpen = !relMapOpen; renderCharacter(); });
   $('#export-rel')?.addEventListener('click', () =>
     exportRelMap(c, () => { closeModal(); renderCharacter(); }));
@@ -3290,6 +3365,7 @@ function openCharEditor(c) {
     details: (c?.details || []).map(d => ({ ...d, subs: (d.subs || []).map(sb => ({ ...sb })) })),
     statSetId: c?.statSetId || state.statSets[0]?.id || '',
     rank: Number(c?.rank || 0),
+    music: (c?.music || []).map(t => ({ ...t })),
     thumb: c?.thumb || null, imageId: c?.imageId || null,
     newFull: null, removedImg: false,
   };
@@ -3311,6 +3387,15 @@ function openCharEditor(c) {
         <input class="input" id="f-name" value="${esc(draft.name)}" placeholder="캐릭터 이름" maxlength="60"></label>
       <label class="field"><span>부제</span>
         <input class="input" id="f-sub" value="${esc(draft.subtitle)}" placeholder="한 줄 설명 · 이명 · 소속" maxlength="80"></label>
+      <div class="field"><span>음악 · 스포티파이</span>
+        <div id="mu-wrap"></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:2px">
+          <input class="input" id="mu-url" style="flex:1;min-width:180px"
+            placeholder="스포티파이 링크를 붙여넣으세요" >
+          <button class="btn btn-sm" type="button" id="mu-add">추가</button>
+        </div>
+        <p class="hint">곡 · 앨범 · 플레이리스트 모두 됩니다. 제목은 자동으로 받아오고 직접 고칠 수도 있어요.<br>
+          로그인하지 않은 사람에게는 30초 미리듣기로 들리고, 자동 재생은 되지 않아요.</p></div>
       <div class="field"><span>중요도</span>
         <div class="rank-seg"><div class="seg" id="f-rank">
           ${RANKS.map(([v, l]) => `<button type="button" data-rank="${v}" aria-pressed="${draft.rank === v}">${l}</button>`).join('')}
@@ -3500,6 +3585,40 @@ function openCharEditor(c) {
     });
   }
   drawKV();
+  const muWrap = m.querySelector('#mu-wrap');
+  function drawMu() {
+    muWrap.innerHTML = draft.music.map((t, i) => `
+      <div class="mu-row">
+        <input class="input" data-mut="${i}" value="${esc(t.title || '')}" placeholder="곡 제목" maxlength="80">
+        <span class="mono" style="font-size:11px;color:var(--faint);overflow:hidden;
+          text-overflow:ellipsis;white-space:nowrap">${esc(t.kind)} · ${esc(t.sid.slice(0, 10))}…</span>
+        <span class="ord">
+          <button type="button" data-muu="${i}" title="위로" ${i === 0 ? 'disabled' : ''}>▲</button>
+          <button type="button" data-mud="${i}" title="아래로" ${i === draft.music.length - 1 ? 'disabled' : ''}>▼</button>
+        </span>
+        <button class="icon-btn" type="button" data-murm="${i}" title="지우기">✕</button>
+      </div>`).join('');
+    muWrap.querySelectorAll('[data-mut]').forEach(el => el.oninput = e => draft.music[+el.dataset.mut].title = e.target.value);
+    muWrap.querySelectorAll('[data-murm]').forEach(el => el.onclick = () => { draft.music.splice(+el.dataset.murm, 1); drawMu(); });
+    muWrap.querySelectorAll('[data-muu]').forEach(el => el.onclick = () => { move(draft.music, +el.dataset.muu, -1); drawMu(); });
+    muWrap.querySelectorAll('[data-mud]').forEach(el => el.onclick = () => { move(draft.music, +el.dataset.mud, 1); drawMu(); });
+  }
+  drawMu();
+  m.querySelector('#mu-add').onclick = async () => {
+    const inp = m.querySelector('#mu-url');
+    const t = parseSpotify(inp.value);
+    if (!t) return toast('스포티파이 링크를 알아보지 못했어요', 1);
+    if (draft.music.some(o => o.sid === t.sid)) return toast('이미 담아둔 링크예요');
+    if (draft.music.length >= 12) return toast('12개까지 담을 수 있어요', 1);
+    inp.value = '';
+    const row = { ...t, title: '' };
+    draft.music.push(row); drawMu();
+    row.title = (await spotifyTitle(t)) || '이름 없는 곡';
+    drawMu();
+  };
+  m.querySelector('#mu-url').onkeydown = e => {
+    if (e.key === 'Enter') { e.preventDefault(); m.querySelector('#mu-add').click(); }
+  };
   m.querySelectorAll('[data-rank]').forEach(b => b.onclick = () => {
     draft.rank = Number(b.dataset.rank);
     m.querySelectorAll('[data-rank]').forEach(b2 => b2.setAttribute('aria-pressed', Number(b2.dataset.rank) === draft.rank));
@@ -3545,6 +3664,7 @@ function openCharEditor(c) {
           })),
         statSetId: m.querySelector('#f-set').value,
         rank: draft.rank,
+        music: draft.music.map(t => ({ kind: t.kind, sid: t.sid, title: (t.title || '').trim() })),
         thumb: draft.thumb || null,
         updatedAt: now,
       };
