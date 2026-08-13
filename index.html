@@ -2707,8 +2707,8 @@ function drawFieldLines(x, lines, left, y, lineH, faint, ink, sep = '#C3C8CB') {
 
 /* 공통 판면 */
 /* 저장용 판 — 화면 좌표는 그대로 두고 픽셀만 배로 늘려 글씨를 또렷하게 */
-function makePlate(W, H) {
-  const S = H > 2200 ? 1.5 : 1;      // 글씨가 작아지는 긴 판면만 촘촘하게
+function makePlate(W, H, scale) {
+  const S = scale || (H > 2200 ? 1.5 : 1);      // 글씨가 작아지는 긴 판면만 촘촘하게
   const cv = document.createElement('canvas');
   cv.width = Math.round(W * S); cv.height = Math.round(H * S);
   const x = cv.getContext('2d');
@@ -4452,8 +4452,7 @@ function openExcerptEditor(ex) {
         ${mdBarHTML('e-body')}
         <textarea class="textarea serif" id="e-body" style="min-height:260px;font-size:15.5px;line-height:1.95"
           placeholder="여기에 발췌한 줄글을 붙여넣어요.">${esc(ex?.body || '')}</textarea>
-        <p class="hint">위 <b>서식</b> 단추는 <b>글자를 먼저 끌어 고른 뒤</b> 누르면 그 자리에 표기를 씌워요.
-          아무것도 고르지 않고 누르면 '내용' 이라는 예시 글자가 들어갑니다. 빈 줄은 문단을 나눠요.<br>
+        <p class="hint"><b>**굵게**</b> 같은 마크다운을 쓸 수 있어요. 빈 줄은 문단을 나눕니다.<br>
           본문을 고치면 칠해둔 형광펜 위치가 어긋날 수 있어요.</p>
         <details class="setup-more" style="margin:10px 0 0"><summary>마크다운 표기법</summary>
           <p class="md-help" style="margin:12px 0 0">
@@ -5071,8 +5070,7 @@ async function exportRoster(list, opts, onBack) {
   };
 
   const y0 = 100, titleY = y0 + 62, ruleY = titleY + 28;
-  const legRows = (fkeys.length ? 1 : 0) + (mkeys.length ? 1 : 0);
-  const bodyTop = ruleY + (legRows ? legRows * 26 + 20 : 22);
+  const bodyTop = ruleY + 24;
   let h = bodyTop;
   list.forEach(c => { h += rowH(c); });
 
@@ -5082,16 +5080,20 @@ async function exportRoster(list, opts, onBack) {
   const TR = 34, HEADH = 56, THEAD = 30, AVGH = 34;
   const doStat = !!(set && labels.length);
   const doAnal = doStat && list.length > 1;
-  const ANAL_HEAD = 44, DIST = 30, SUMH = 164;
+  const ANAL_GAP = 22, ANAL_HEAD = 38, BOXH = 54, BOXGY = 9, GLINE = 21, GPAD = 10;
+  const anal = doAnal ? buildRosterAnalysis(list, labels, stats, max) : null;
   let statTop = 0, statH = 0;
   if (doStat) {
     statTop = h + 46;
     statH = HEADH + THEAD + list.length * TR + AVGH;
-    if (doAnal) statH += 26 + ANAL_HEAD + labels.length * DIST + 22 + SUMH;
+    if (anal) statH += ANAL_GAP + ANAL_HEAD + BOXH * 2 + BOXGY + 16
+      + anal.rows.reduce((n2, r) => n2 + r.lines.length * GLINE + GPAD, 0);
   }
   const H = Math.round((doStat ? statTop + statH : h) + 118);
 
-  const { cv, x } = makePlate(W, H);
+  // 명단은 글씨가 잘아서 판을 더 촘촘히 떠요 (길수록 배율은 낮춰 만들기 실패를 막아요)
+  // 명단은 글씨가 잘아 짧은 판에서도 1.5배로 떠요 (긴 판은 원래대로)
+  const { cv, x } = makePlate(W, H, 1.5);
   paperPlate(x, W, H);
   mcHead(x, W, PAD, y0, spread('ROSTER'), profile.nickname);
 
@@ -5103,29 +5105,6 @@ async function exportRoster(list, opts, onBack) {
   x.textAlign = 'left';
   x.strokeStyle = MC_LINE; x.lineWidth = 1.5;
   x.beginPath(); x.moveTo(PAD, ruleY + .5); x.lineTo(W - PAD, ruleY + .5); x.stroke();
-
-  /* 무엇이 어떤 모양으로 실렸는지 알려주는 안내줄 */
-  let ly = ruleY + 26;
-  if (fkeys.length) {
-    x.font = fMono(400, 11); x.fillStyle = MC_FAINT;
-    x.fillText('프로필', PAD, ly + 4);
-    x.strokeStyle = MC_HAIR; x.lineWidth = 1;
-    x.beginPath(); x.moveTo(PAD + 46, ly); x.lineTo(PAD + 56, ly); x.stroke();
-    x.font = fMono(400, 12); x.fillStyle = MC_MUTED;
-    x.fillText(fit(x, fkeys.join('   ·   '), W - PAD * 2 - 70), PAD + 66, ly + 4);
-    ly += 26;
-  }
-  if (mkeys.length) {
-    x.font = fMono(500, 11);
-    roundRect(x, PAD, ly - 9, 46, 19, 3);
-    x.fillStyle = 'rgba(15,76,71,.09)'; x.fill();
-    x.strokeStyle = 'rgba(15,76,71,.22)'; x.lineWidth = 1; x.stroke();
-    x.fillStyle = MC_TEAL; x.textAlign = 'center';
-    x.fillText('메모', PAD + 23, ly + 4);
-    x.textAlign = 'left';
-    x.font = fMono(400, 12); x.fillStyle = MC_MUTED;
-    x.fillText(fit(x, mkeys.join('   ·   '), W - PAD * 2 - 70), PAD + 66, ly + 4);
-  }
 
   /* ── 명단 ── */
   let y = bodyTop;
@@ -5220,6 +5199,9 @@ async function exportRoster(list, opts, onBack) {
     sy += THEAD;
 
     const colMax = labels.map((l, ci) => Math.max(...stats.map(v => v[ci])));
+    const colMin = labels.map((l, ci) => Math.min(...stats.map(v => v[ci])));
+    const nTop = labels.map((l, ci) => stats.filter(v => v[ci] === colMax[ci]).length);
+    const nBot = labels.map((l, ci) => stats.filter(v => v[ci] === colMin[ci]).length);
     const bestSum = Math.max(...sums), worstSum = Math.min(...sums);
     const sumFull = max * labels.length;
 
@@ -5233,12 +5215,31 @@ async function exportRoster(list, opts, onBack) {
         // 값이 클수록 짙어지는 칸 — 표를 읽지 않아도 결이 보여요
         x.fillStyle = `rgba(15,76,71,${(0.035 + t * 0.26).toFixed(3)})`;
         x.fillRect(cx0 + 3, ry + 3, cw - 6, TR - 6);
-        if (v === colMax[ci] && v > 0 && list.length > 1) {   // 항목 1등 표시
-          x.fillStyle = MC_TEAL;
+
+        // 항목마다 으뜸은 오른쪽 위, 끝은 왼쪽 아래.
+        // 혼자 가지면 꽉 찬 세모, 여럿이 나눠 가지면 테두리만.
+        const marked = list.length > 1 && colMax[ci] !== colMin[ci];
+        if (marked && v === colMax[ci]) {
+          const solo = nTop[ci] === 1, e = solo ? 0 : 1.2;
           x.beginPath();
-          x.moveTo(cx0 + cw - 3, ry + 3); x.lineTo(cx0 + cw - 3, ry + 11); x.lineTo(cx0 + cw - 11, ry + 3);
-          x.closePath(); x.fill();
+          x.moveTo(cx0 + cw - 4 - e, ry + 4 + e);
+          x.lineTo(cx0 + cw - 4 - e, ry + 16 - e * .4);
+          x.lineTo(cx0 + cw - 16 + e * .4, ry + 4 + e);
+          x.closePath();
+          if (solo) { x.fillStyle = MC_TEAL; x.fill(); }
+          else { x.strokeStyle = MC_TEAL; x.lineWidth = 1.3; x.stroke(); }
         }
+        if (marked && v === colMin[ci]) {
+          const solo = nBot[ci] === 1, e = solo ? 0 : 1.2;
+          x.beginPath();
+          x.moveTo(cx0 + 4 + e, ry + TR - 4 - e);
+          x.lineTo(cx0 + 4 + e, ry + TR - 16 + e * .4);
+          x.lineTo(cx0 + 16 - e * .4, ry + TR - 4 - e);
+          x.closePath();
+          if (solo) { x.fillStyle = '#8E949B'; x.fill(); }
+          else { x.strokeStyle = '#8E949B'; x.lineWidth = 1.3; x.stroke(); }
+        }
+
         x.textAlign = 'center';
         x.font = fMono(t > .6 ? 500 : 400, 14.5);
         x.fillStyle = t > .6 ? MC_TEAL : MC_INK2;
@@ -5275,111 +5276,210 @@ async function exportRoster(list, opts, onBack) {
     x.beginPath(); x.moveTo(PAD, sy + AVGH - 5.5); x.lineTo(W - PAD, sy + AVGH - 5.5); x.stroke();
     sy += AVGH;
 
-    /* ── 분석 — 이 무리가 어디에 쏠려 있고 무엇으로 갈리는지 ── */
-    if (doAnal) {
-      sy += 26;
-      x.font = fMono(500, 12); x.fillStyle = MC_TEAL;
-      x.fillText(spread('ANALYSIS'), PAD, sy + 12);
-      x.font = fMono(400, 11.5); x.fillStyle = MC_FAINT;
-      x.textAlign = 'right';
-      x.fillText('막대는 최저~최고가 걸친 폭, 눈금은 평균', W - PAD, sy + 12);
-      x.textAlign = 'left';
+    /* ── 분석표 ──
+       [묶음표] + 이름들 이라는 한 가지 말씨를 쓰되,
+       수치 넷은 낱장 카드에 앉히고, 갈래 넷은 전폭 줄로 흘려 서로 갈라 둡니다. */
+    if (anal) {
+      sy += ANAL_GAP;
+      x.strokeStyle = MC_LINE; x.lineWidth = 1.5;
+      x.beginPath(); x.moveTo(PAD, sy + .5); x.lineTo(W - PAD, sy + .5); x.stroke();
+      x.font = fMono(500, 13); x.fillStyle = MC_TEAL;
+      x.fillText(spread('ANALYSIS'), PAD, sy + 30);
       sy += ANAL_HEAD;
 
-      const trackL = PAD + 132, trackW = W - PAD - trackL - 172;
-      const lo = labels.map((l, ci) => Math.min(...stats.map(v => v[ci])));
-      const hi = labels.map((l, ci) => Math.max(...stats.map(v => v[ci])));
-      const gap = labels.map((l, ci) => hi[ci] - lo[ci]);
+      /* 묶음표와 이름을 한 줄에 앉히는 공통 붓 */
+      const drawGroups = (ln, gx0, gy) => {
+        let gx = gx0;
+        ln.forEach(g => {
+          if (g.k) {
+            x.font = fMono(500, 10.5);
+            const pw = x.measureText(g.k).width + 17;
+            roundRect(x, gx, gy - 13.5, pw, 18, 3);
+            x.fillStyle = 'rgba(15,76,71,.09)'; x.fill();
+            x.strokeStyle = 'rgba(15,76,71,.22)'; x.lineWidth = 1; x.stroke();
+            x.fillStyle = MC_TEAL;
+            x.fillText(g.k, gx + 8.5, gy - 1);
+            gx += pw + 10;
+          }
+          x.font = fSans(400, 13); x.fillStyle = MC_INK2;
+          x.fillText(g.v, gx, gy);
+          gx += x.measureText(g.v).width + 18;
+        });
+      };
 
-      labels.forEach((l, ci) => {
-        const ry = sy + ci * DIST;
-        x.font = fSans(400, 13.5); x.fillStyle = MC_INK2;
-        x.fillText(fit(x, l, 120), PAD, ry + 14);
-        // 0 ~ 만점 바탕
-        x.fillStyle = '#ECEEEF';
-        x.fillRect(trackL, ry + 7, trackW, 8);
-        // 최저 ~ 최고 폭
-        const px0 = trackL + (lo[ci] / max) * trackW;
-        const px1 = trackL + (hi[ci] / max) * trackW;
-        x.fillStyle = 'rgba(15,76,71,.22)';
-        x.fillRect(px0, ry + 7, Math.max(2, px1 - px0), 8);
-        // 평균 눈금
-        const pm = trackL + (colAvg[ci] / max) * trackW;
-        x.fillStyle = MC_TEAL;
-        x.fillRect(pm - 1.5, ry + 3, 3, 16);
-        // 오른쪽 수치
-        x.font = fMono(400, 12); x.fillStyle = MC_MUTED;
-        x.textAlign = 'right';
-        x.fillText(`평균 ${colAvg[ci]}`, W - PAD - 78, ry + 15);
-        x.fillStyle = gap[ci] === Math.max(...gap) ? MC_TEAL : MC_FAINT;
-        x.fillText(`폭 ${gap[ci]}`, W - PAD, ry + 15);
-        x.textAlign = 'left';
-      });
-      sy += labels.length * DIST + 22;
-
-      /* 아래 두 칸 — 총합 차례 · 읽어주는 요약 */
-      const half = (W - PAD * 2) / 2;
-      x.strokeStyle = MC_HAIR; x.lineWidth = 1;
-      x.beginPath(); x.moveTo(PAD, sy + .5); x.lineTo(W - PAD, sy + .5); x.stroke();
-      x.beginPath(); x.moveTo(PAD + half - 22.5, sy + 18); x.lineTo(PAD + half - 22.5, sy + SUMH - 14); x.stroke();
-      sy += 30;
-
-      // 왼쪽 — 총합 차례
-      x.font = fMono(400, 11); x.fillStyle = MC_FAINT;
-      x.fillText(spread('TOTAL RANK'), PAD, sy);
-      const order = list.map((c, i) => ({ c, v: sums[i] })).sort((a, b) => b.v - a.v);
-      const show = order.length > 4 ? [...order.slice(0, 3), order[order.length - 1]] : order.slice(0, 4);
-      show.forEach((o, i) => {
-        const ry = sy + 24 + i * 26;
-        const last = order.length > 4 && i === 3;
-        x.font = fMono(400, 11); x.fillStyle = last ? MC_FAINT : 'rgba(15,76,71,.5)';
-        x.fillText(last ? String(order.length).padStart(2, '0') : String(i + 1).padStart(2, '0'), PAD, ry);
-        x.font = fSans(400, 14); x.fillStyle = last ? MC_MUTED : MC_INK2;
-        x.fillText(fit(x, o.c.name || '이름 없음', 128), PAD + 26, ry);
-        const bx = PAD + 166, bw2 = half - 250;
-        x.fillStyle = '#ECEEEF'; x.fillRect(bx, ry - 8, bw2, 6);
-        x.fillStyle = last ? 'rgba(15,76,71,.3)' : MC_TEAL;
-        x.fillRect(bx, ry - 8, Math.max(2, bw2 * (sumFull ? o.v / sumFull : 0)), 6);
-        x.font = fMono(400, 12); x.fillStyle = MC_MUTED; x.textAlign = 'right';
-        x.fillText(String(o.v), PAD + half - 34, ry);
-        x.textAlign = 'left';
-      });
-
-      // 오른쪽 — 읽어주는 요약
-      const wideI = gap.indexOf(Math.max(...gap));
-      const flatI = gap.indexOf(Math.min(...gap));
-      const hiI = colAvg.indexOf(Math.max(...colAvg));
-      const loI = colAvg.indexOf(Math.min(...colAvg));
-      const spreads = stats.map(v => Math.max(...v) - Math.min(...v));
-      const sharpI = spreads.indexOf(Math.max(...spreads));
-      const evenI = spreads.indexOf(Math.min(...spreads));
-      const nm = i => list[i]?.name || '이름 없음';
-      const rx = PAD + half;
-      x.font = fMono(400, 11); x.fillStyle = MC_FAINT;
-      x.fillText(spread('READING'), rx, sy);
-      const many = labels.length > 1;
-      const lines = [
-        many ? ['무리가 쏠린 곳', `${labels[hiI]} 쪽 (평균 ${colAvg[hiI]}) · 가장 얇은 곳은 ${labels[loI]}`] : null,
-        ['사람을 가르는 항목', `${labels[wideI]} · 최저와 최고가 ${gap[wideI]} 벌어져요`],
-        many ? ['가려내지 못하는 항목', `${labels[flatI]} · 폭이 ${gap[flatI]} 뿐이라 견줄 거리가 안 돼요`] : null,
-        ['총합 격차', `1위와 끝이 ${bestSum - worstSum} 차이 · 평균 ${avgSum} / ${sumFull}`],
-        many ? ['생김새', `${nm(sharpI)}는 한쪽으로 뾰족하고(폭 ${spreads[sharpI]}), ${nm(evenI)}는 고릅니다(폭 ${spreads[evenI]})`] : null,
-      ].filter(Boolean);
-      lines.forEach(([k, v], i) => {
-        const ry = sy + 24 + i * 25;
+      /* 위 — 수치 넷을 낱장 카드에. 이름표가 위, 값이 아래 */
+      const BGX = 20, BW = (W - PAD * 2 - BGX) / 2;
+      anal.cells.forEach((c2, i) => {
+        const bx = PAD + (i % 2) * (BW + BGX), by = sy + Math.floor(i / 2) * (BOXH + BOXGY);
+        roundRect(x, bx, by, BW, BOXH, 3);
+        x.fillStyle = MC_WARM; x.fill();
+        x.strokeStyle = MC_HAIR; x.lineWidth = 1; x.stroke();
         x.font = fMono(400, 10.5); x.fillStyle = MC_TEAL;
-        x.fillText(fit(x, k, 128), rx, ry);
-        x.font = fSans(400, 13); x.fillStyle = MC_INK2;
-        x.fillText(fit(x, v, half - 138), rx + 136, ry + 1);
+        x.fillText(c2.k, bx + 16, by + 19);
+        drawGroups(c2.lines[0], bx + 16, by + 42);
+      });
+      sy += BOXH * 2 + BOXGY + 16;
+
+      /* 아래 — 갈래 넷, 전폭 줄 */
+      const RK = 118, RV = PAD + RK + 16;
+      anal.rows.forEach((r, ri) => {
+        const rh = r.lines.length * GLINE + GPAD;
+        x.font = fMono(500, 10.5); x.fillStyle = MC_TEAL; x.textAlign = 'right';
+        x.fillText(r.k, PAD + RK - 16, sy + 19);
+        x.textAlign = 'left';
+        x.strokeStyle = MC_HAIR; x.lineWidth = 1;
+        x.beginPath();
+        x.moveTo(PAD + RK + .5, sy + 3); x.lineTo(PAD + RK + .5, sy + rh - 3);
+        x.stroke();
+        r.lines.forEach((ln, li) => drawGroups(ln, RV, sy + 19 + li * GLINE));
+        if (ri < anal.rows.length - 1) {
+          x.strokeStyle = 'rgba(20,22,26,.05)'; x.lineWidth = 1;
+          x.beginPath();
+          x.moveTo(PAD + RK, sy + rh - .5); x.lineTo(W - PAD, sy + rh - .5);
+          x.stroke();
+        }
+        sy += rh;
       });
     }
   }
 
-  plateFooter(x, W, H, PAD, doStat ? `${set.name} · 만점 ${max}` : '', fmtDate(Date.now()));
+  plateFooter(x, W, H, PAD, '', fmtDate(Date.now()));
   cv.toBlob(b => {
     if (!b) return toast('이미지를 만들지 못했어요', 1);
     showImageModal(b, `명단비교_${list.length}명.png`, opts.title || '캐릭터 비교', onBack);
   }, 'image/png');
+}
+
+/* ── 명단 분석 — 표를 훑어서는 세어야 나오는 값들 ──
+   여덟 항목 모두 '묶음표 하나에 이름 여럿' 이라는 같은 꼴로 냅니다.
+   앞 넉 장은 수치 카드, 뒤 네 줄은 인물 묶기예요. */
+function buildRosterAnalysis(list, labels, stats, max) {
+  const p = document.createElement('canvas').getContext('2d');
+  const nm = i => list[i]?.name || '이름 없음';
+  // 명단이 길수록 한 묶음에 보이는 이름을 줄여, 분석이 아래로 늘어지지 않게 해요
+  const NCAP = list.length > 12 ? 2 : (list.length > 6 ? 3 : 4);
+  const colMax = labels.map((l, ci) => Math.max(...stats.map(v => v[ci])));
+  const colMin = labels.map((l, ci) => Math.min(...stats.map(v => v[ci])));
+  const live = labels.map((l, ci) => colMax[ci] !== colMin[ci]);   // 값이 다 같은 항목은 셈에서 빼요
+  const names = ids => ids.slice(0, NCAP).map(nm).join(' ')
+    + (ids.length > NCAP ? ` 외 ${ids.length - NCAP}` : '');
+  const push = (m, k, v) => { if (!m.has(k)) m.set(k, []); m.get(k).push(v); };
+
+  /* ① ② 항목 1위 수 · 항목 최저 수 — 같은 개수끼리 묶어요 */
+  const byCount = which => {
+    const m = new Map();
+    list.forEach((c, i) => {
+      const n = labels.filter((l, ci) => live[ci]
+        && stats[i][ci] === (which === 'top' ? colMax[ci] : colMin[ci])).length;
+      if (n > 0) push(m, n, i);
+    });
+    return [...m.entries()].sort((a, b) => b[0] - a[0])
+      .map(([n, ids]) => ({ k: n + '개', v: names(ids) }));
+  };
+
+  /* ③ 최대 낙차 — 한 사람 안에서 최고와 최저가 가장 벌어진 경우 */
+  const spreads = list.map((c, i) => Math.max(...stats[i]) - Math.min(...stats[i]));
+  const wide = spreads.indexOf(Math.max(...spreads));
+  let drop = [];
+  if (spreads[wide] > 0) {
+    const row = stats[wide];
+    const lo = row.indexOf(Math.min(...row)), hi = row.indexOf(Math.max(...row));
+    drop = [{ k: nm(wide), v: `${labels[lo]} ${row[lo]} ↔ ${labels[hi]} ${row[hi]}` }];
+  }
+
+  /* ④ 최약 항목 — 1위 값이 가장 낮은 항목 */
+  const weakI = colMax.indexOf(Math.min(...colMax));
+  const weakWho = list.map((c, i) => i).filter(i => stats[i][weakI] === colMax[weakI]);
+  const weak = [{ k: labels[weakI], v: `최고 ${colMax[weakI]} · ${names(weakWho)}` }];
+
+  /* ⑤ 항목별 상위권 — 각 항목 상위 삼분의 일 */
+  const TOPN = Math.max(1, Math.round(list.length / 3));
+  const topsOf = ci => {
+    if (!live[ci]) return [];
+    const sorted = stats.map(v => v[ci]).slice().sort((a, b) => b - a);
+    const cut = sorted[Math.min(TOPN, sorted.length) - 1];
+    return list.map((c, i) => i).filter(i => stats[i][ci] >= cut);
+  };
+  const upper = labels.map((l, ci) => ({ ci, ids: topsOf(ci) })).filter(o => o.ids.length)
+    .map(o => ({ k: labels[o.ci], v: names(o.ids) }));
+
+  /* ⑥ ⑦ 개인 최고 · 최저 항목 — 자기 값 중 어디가 꼭대기이고 바닥인지 */
+  const mBest = new Map(), mWorst = new Map();
+  list.forEach((c, i) => {
+    const row = stats[i];
+    if (Math.max(...row) === Math.min(...row)) return;
+    push(mBest, row.indexOf(Math.max(...row)), i);
+    push(mWorst, row.indexOf(Math.min(...row)), i);
+  });
+  const fromMap = m => [...m.entries()]
+    .sort((a, b) => b[1].length - a[1].length || a[0] - b[0])
+    .map(([ci, ids]) => ({ k: labels[ci], v: names(ids) }));
+
+  /* ⑧ 동반 상위 — 한 사람이 함께 쥐는 일이 가장 잦은 두 항목 */
+  let pair = [];
+  if (labels.length > 1) {
+    let best = null;
+    for (let i = 0; i < labels.length; i++) for (let j = i + 1; j < labels.length; j++) {
+      if (!live[i] || !live[j]) continue;
+      const A = topsOf(i), B = topsOf(j), both = A.filter(k => B.includes(k));
+      if (!best || both.length > best.both.length) best = { i, j, A, B, both };
+    }
+    if (best && best.both.length) {
+      pair = [{ k: `${labels[best.i]}+${labels[best.j]}`, v: names(best.both) }];
+      const onlyA = best.A.filter(k => !best.both.includes(k));
+      const onlyB = best.B.filter(k => !best.both.includes(k));
+      if (onlyA.length) pair.push({ k: labels[best.i] + '만', v: names(onlyA) });
+      if (onlyB.length) pair.push({ k: labels[best.j] + '만', v: names(onlyB) });
+    }
+  }
+
+  /* 폭을 재어 줄로 나눠요 — 카드는 한 줄, 갈래는 두 줄까지 */
+  const gw = g => {
+    let w = 0;
+    if (g.k) { p.font = fMono(500, 10.5); w += p.measureText(g.k).width + 27; }
+    p.font = fSans(400, 13);
+    return w + p.measureText(g.v).width;
+  };
+  const pack = (groups, wid, maxLines) => {
+    if (!groups.length) return [[{ k: '', v: '없음' }]];
+    const lines = [[]];
+    let used = 0, cut = 0;
+    groups.forEach(g => {
+      const w = gw(g), cur = lines[lines.length - 1];
+      if (cur.length && used + 18 + w > wid) {
+        if (lines.length >= maxLines) { cut++; return; }
+        lines.push([g]); used = w;
+      } else { used += (cur.length ? 18 : 0) + w; cur.push(g); }
+    });
+    if (cut) {
+      const last = lines[lines.length - 1];
+      const note = { k: '', v: `외 ${cut}묶음` };
+      while (last.length > 1 && used + 18 + gw(note) > wid) {
+        used -= 18 + gw(last.pop());
+        note.v = `외 ${++cut}묶음`;
+      }
+      last.push(note);
+    }
+    return lines;
+  };
+
+  const BW = (1080 - 84 * 2 - 20) / 2 - 30;
+  const cells = [
+    { k: '항목 1위 수', groups: byCount('top') },
+    { k: '항목 최저 수', groups: byCount('bot') },
+    { k: '최대 낙차', groups: drop },
+    { k: '최약 항목', groups: weak },
+  ].map(c => ({ k: c.k, lines: pack(c.groups, BW, 1) }));
+
+  const ROWW = 1080 - 84 * 2 - 134;
+  const rows = [
+    { k: '항목별 상위권', groups: upper },
+    { k: '개인 최고 항목', groups: fromMap(mBest) },
+    { k: '개인 최저 항목', groups: fromMap(mWorst) },
+    { k: '동반 상위', groups: pair },
+  ].map(r => ({ k: r.k, lines: pack(r.groups, ROWW, 2) }));
+
+  return { cells, rows };
 }
 
 /* 명단 비교 만들기 창 */
@@ -5565,8 +5665,8 @@ async function exportCard(c, set, opts = {}, onBack) {
   const rest = rels.filter(n => !prim.includes(n));
   const relPics = await Promise.all(prim.map(n => loadPhoto(n.t.thumb)));
   prim.forEach((n, i) => { n.pic = relPics[i]; });
-  const PRIM_H = 94, REST_H = 58;
-  const primRows = Math.ceil(prim.length / 2), restRows = Math.ceil(rest.length / 3);
+  const PRIM_H = 100, REST_H = 34;               // 앞자리는 판, 나머지는 색인 한 줄
+  const primRows = Math.ceil(prim.length / 2), restRows = Math.ceil(rest.length / 2);
 
   /* 자리부터 계산해요 — 이름/부제 → 사진 → 프로필 → 굵은 선 → 그래프 */
   let ly = 100;
@@ -5585,8 +5685,8 @@ async function exportCard(c, set, opts = {}, onBack) {
   else if (hasBar) { ruleY = fy + 12; barTop = ruleY + 132; bottom = barTop + barH + 82; }
   const relTop = rels.length ? bottom + 38 : 0;
   const relH = rels.length
-    ? 54 + (primRows ? primRows * PRIM_H + 6 : 0)
-      + (restRows ? (primRows ? 24 : 0) + restRows * REST_H : 0)
+    ? 54 + (primRows ? primRows * PRIM_H : 0)
+      + (restRows ? (primRows ? 22 : 0) + restRows * REST_H + 8 : 0)
     : 0;
   if (rels.length) bottom = relTop + relH;
   const H = Math.round(bottom + 128);
@@ -5825,76 +5925,101 @@ async function exportCard(c, set, opts = {}, onBack) {
     x.fillText('R E L A T I O N S', PAD, ry + 36);
     x.font = '400 15px "IBM Plex Mono", monospace';
     x.fillStyle = FAINT; x.textAlign = 'right';
-    x.fillText(`${rels.length}`, W - PAD, ry + 36);
+    x.fillText(String(rels.length).padStart(2, '0'), W - PAD, ry + 36);
     x.textAlign = 'left';
     ry += 54;
 
-    const face = (n, px, py, tw, th) => {
-      x.save();
-      x.beginPath(); x.rect(px, py, tw, th); x.clip();
-      if (n.pic) coverDraw(x, n.pic, px, py, tw, th);
-      else {
-        x.fillStyle = '#F3F2EE'; x.fillRect(px, py, tw, th);
-        x.fillStyle = '#C9CDD0'; x.textAlign = 'center';
-        x.font = `300 ${Math.round(th * .48)}px "Noto Serif KR", serif`;
-        x.fillText(String(n.t.name || '?').slice(0, 1), px + tw / 2, py + th * .64);
-        x.textAlign = 'left';
-      }
-      x.restore();
-      x.strokeStyle = 'rgba(20,22,26,.16)'; x.lineWidth = 1;
-      x.strokeRect(px + .5, py + .5, tw - 1, th - 1);
-    };
+    const CELL = (W - PAD * 2 - 24) / 2;          // 두 칸, 사이 여백 24
 
-    /* 앞자리 — 두 칸씩, 얼굴을 곁들여 크게 */
+    /* 앞자리 — 판 하나에 얼굴과 이름을 앉히고, 카드 테두리와 같은 갈고리 무늬로 묶어요 */
     if (prim.length) {
-      const cw = (W - PAD * 2) / 2, TW = 56, TH = 70;
-      x.fillStyle = 'rgba(15,76,71,.032)';
-      x.fillRect(PAD - 18, ry - 10, W - (PAD - 18) * 2, primRows * PRIM_H + 6);
-      prim.forEach((n, i) => {
-        const gx = PAD + (i % 2) * cw, gy = ry + Math.floor(i / 2) * PRIM_H;
-        face(n, gx, gy + 6, TW, TH);
-        // 얼굴 옆에 세로로 짧게 긋는 청록 선 — 앞자리라는 표시
-        x.fillStyle = 'rgba(15,76,71,.55)';
-        x.fillRect(gx + TW + 8, gy + 6, 2, TH);
-        const tx = gx + TW + 24, avail = cw - TW - 52;
+      const CH = 92, TW = 52, TH = 66, INSET = 13;
+      prim.forEach((n2, i) => {
+        const cx0 = PAD + (i % 2) * (CELL + 24), cy0 = ry + Math.floor(i / 2) * PRIM_H;
+
+        x.fillStyle = '#FFFFFF';
+        x.fillRect(cx0, cy0, CELL, CH);
+        x.strokeStyle = HAIR; x.lineWidth = 1;
+        x.strokeRect(cx0 + .5, cy0 + .5, CELL - 1, CH - 1);
+        // 카드 네 귀퉁이와 같은 갈고리 — 왼쪽 위, 오른쪽 아래
+        x.strokeStyle = TEAL; x.lineWidth = 1.5;
+        const K = 11;
+        x.beginPath();
+        x.moveTo(cx0 + .5, cy0 + K); x.lineTo(cx0 + .5, cy0 + .5); x.lineTo(cx0 + K, cy0 + .5);
+        x.moveTo(cx0 + CELL - K, cy0 + CH - .5); x.lineTo(cx0 + CELL - .5, cy0 + CH - .5);
+        x.lineTo(cx0 + CELL - .5, cy0 + CH - K);
+        x.stroke();
+
+        // 얼굴
+        const px = cx0 + INSET, py = cy0 + INSET;
+        x.save();
+        x.beginPath(); x.rect(px, py, TW, TH); x.clip();
+        if (n2.pic) coverDraw(x, n2.pic, px, py, TW, TH);
+        else {
+          x.fillStyle = '#F3F2EE'; x.fillRect(px, py, TW, TH);
+          x.fillStyle = '#C9CDD0'; x.textAlign = 'center';
+          x.font = '300 30px "Noto Serif KR", serif';
+          x.fillText(String(n2.t.name || '?').slice(0, 1), px + TW / 2, py + TH * .64);
+          x.textAlign = 'left';
+        }
+        x.restore();
+        x.strokeStyle = 'rgba(20,22,26,.2)'; x.lineWidth = 1;
+        x.strokeRect(px + .5, py + .5, TW - 1, TH - 1);
+
+        // 관계가 위, 이름이 아래
+        const tx = px + TW + 18, avail = CELL - INSET * 2 - TW - 18 - 26;
         x.font = '400 13px "IBM Plex Mono", monospace';
-        x.fillStyle = 'rgba(15,76,71,.4)';
-        x.fillText(String(i + 1).padStart(2, '0'), tx, gy + 24);
-        x.font = '400 27px "Noto Serif KR", serif';
-        x.fillStyle = INK;
-        x.fillText(fit(x, n.t.name || '이름 없음', avail), gx + TW + 24, gy + 55);
-        x.font = '400 16px "IBM Plex Mono", monospace';
         x.fillStyle = TEAL;
-        x.fillText(fit(x, n.r.label || '관계 미정', avail), gx + TW + 24, gy + 79);
+        x.fillText(fit(x, n2.r.label || '관계 미정', avail), tx, cy0 + 38);
+        x.strokeStyle = 'rgba(15,76,71,.22)'; x.lineWidth = 1;
+        x.beginPath();
+        x.moveTo(tx, cy0 + 48.5); x.lineTo(cx0 + CELL - INSET, cy0 + 48.5); x.stroke();
+        x.font = '400 26px "Noto Serif KR", serif';
+        x.fillStyle = INK;
+        x.fillText(fit(x, n2.t.name || '이름 없음', avail + 26), tx, cy0 + 76);
+
+        // 갈무리 번호는 오른쪽 위 구석에
+        x.font = '400 11px "IBM Plex Mono", monospace';
+        x.fillStyle = 'rgba(15,76,71,.38)'; x.textAlign = 'right';
+        x.fillText(String(i + 1).padStart(2, '0'), cx0 + CELL - INSET, cy0 + 28);
+        x.textAlign = 'left';
       });
-      ry += primRows * PRIM_H + 6;
+      ry += primRows * PRIM_H;
     }
 
-    /* 나머지 — 세 칸씩, 글자만으로 고르게 */
+    /* 나머지 — 이름과 관계 사이를 점으로 이은 색인 줄 */
     if (rest.length) {
-      if (prim.length) {
-        ry += 24;
-        x.strokeStyle = HAIR; x.lineWidth = 1;
-        x.beginPath(); x.moveTo(PAD, ry - 13.5); x.lineTo(W - PAD, ry - 13.5); x.stroke();
-      }
-      const cw = (W - PAD * 2) / 3;
-      rest.forEach((n, i) => {
-        const gx = PAD + (i % 3) * cw, gy = ry + Math.floor(i / 3) * REST_H;
-        x.fillStyle = 'rgba(15,76,71,.45)';
-        x.fillRect(gx, gy + 12, 5, 5);
-        const tx = gx + 17, avail = cw - 34;
-        x.font = '400 20px "Pretendard Variable", Pretendard, sans-serif';
+      if (prim.length) ry += 22;
+      rest.forEach((n2, i) => {
+        const cx0 = PAD + (i % 2) * (CELL + 24), cy0 = ry + Math.floor(i / 2) * REST_H;
+        const right = cx0 + CELL;
+
+        x.font = '400 13px "IBM Plex Mono", monospace';
+        const lab = fit(x, n2.r.label || '관계 미정', CELL * .42);
+        const lw = x.measureText(lab).width;
+        x.font = '400 19px "Pretendard Variable", Pretendard, sans-serif';
+        const nm = fit(x, n2.t.name || '이름 없음', CELL - lw - 34);
+        const nw = x.measureText(nm).width;
+
         x.fillStyle = INK2;
-        x.fillText(fit(x, n.t.name || '이름 없음', avail), tx, gy + 20);
-        x.font = '400 14px "IBM Plex Mono", monospace';
-        x.fillStyle = '#8E949B';
-        x.fillText(fit(x, n.r.label || '관계 미정', avail), tx, gy + 42);
-        if (i % 3) {
-          x.strokeStyle = HAIR; x.lineWidth = 1;
-          x.beginPath(); x.moveTo(gx - 12.5, gy + 2); x.lineTo(gx - 12.5, gy + REST_H - 14); x.stroke();
-        }
+        x.fillText(nm, cx0, cy0 + 21);
+        x.font = '400 13px "IBM Plex Mono", monospace';
+        x.fillStyle = '#7B8189'; x.textAlign = 'right';
+        x.fillText(lab, right, cy0 + 21);
+        x.textAlign = 'left';
+
+        x.save();
+        x.setLineDash([1.5, 4.5]);
+        x.strokeStyle = '#CDD1D4'; x.lineWidth = 1;
+        x.beginPath();
+        x.moveTo(cx0 + nw + 10, cy0 + 17.5); x.lineTo(right - lw - 10, cy0 + 17.5);
+        x.stroke();
+        x.restore();
+
+        x.strokeStyle = HAIR; x.lineWidth = 1;
+        x.beginPath(); x.moveTo(cx0, cy0 + 33.5); x.lineTo(right, cy0 + 33.5); x.stroke();
       });
-      ry += restRows * REST_H;
+      ry += restRows * REST_H + 8;
     }
   }
 
