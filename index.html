@@ -5415,21 +5415,27 @@ function buildRosterAnalysis(list, labels, stats, max) {
     .sort((a, b) => b[1].length - a[1].length || a[0] - b[0])
     .map(([ci, ids]) => ({ k: labels[ci], v: names(ids) }));
 
-  /* ⑧ 동반 상위 — 한 사람이 함께 쥐는 일이 가장 잦은 두 항목 */
+  /* ⑧ 양립 불가 — 한쪽이 그 사람의 꼭대기이고 다른 쪽이 바닥인 일이 가장 잦은 두 항목.
+     위의 개인 최고 · 최저 항목을 그대로 겹쳐 본 것이라, 근거가 아래 두 줄에 그대로 있어요. */
   let pair = [];
   if (labels.length > 1) {
-    let best = null;
-    for (let i = 0; i < labels.length; i++) for (let j = i + 1; j < labels.length; j++) {
-      if (!live[i] || !live[j]) continue;
-      const A = topsOf(i), B = topsOf(j), both = A.filter(k => B.includes(k));
-      if (!best || both.length > best.both.length) best = { i, j, A, B, both };
-    }
-    if (best && best.both.length) {
-      pair = [{ k: `${labels[best.i]}+${labels[best.j]}`, v: names(best.both) }];
-      const onlyA = best.A.filter(k => !best.both.includes(k));
-      const onlyB = best.B.filter(k => !best.both.includes(k));
-      if (onlyA.length) pair.push({ k: labels[best.i] + '만', v: names(onlyA) });
-      if (onlyB.length) pair.push({ k: labels[best.j] + '만', v: names(onlyB) });
+    const m = new Map();
+    list.forEach((c, k) => {
+      const row = stats[k];
+      if (Math.max(...row) === Math.min(...row)) return;
+      const bi = row.indexOf(Math.max(...row)), wi = row.indexOf(Math.min(...row));
+      if (bi === wi) return;
+      push(m, bi < wi ? `${bi}-${wi}` : `${wi}-${bi}`, { k, bi });
+    });
+    const ent = [...m.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+    if (ent.length) {
+      const top = Math.max(...ent.map(e => e[1].length));
+      pair = ent.filter(e => e[1].length === top).slice(0, 3).map(([key, arr]) => {
+        const [a, b] = key.split('-').map(Number);
+        const aTop = arr.filter(o => o.bi === a).length;          // 더 자주 꼭대기인 쪽을 앞에
+        const hi = aTop * 2 >= arr.length ? a : b, lo = hi === a ? b : a;
+        return { k: `${labels[hi]}+${labels[lo]}`, v: names(arr.map(o => o.k)) };
+      });
     }
   }
 
@@ -5476,7 +5482,7 @@ function buildRosterAnalysis(list, labels, stats, max) {
     { k: '항목별 상위권', groups: upper },
     { k: '개인 최고 항목', groups: fromMap(mBest) },
     { k: '개인 최저 항목', groups: fromMap(mWorst) },
-    { k: '동반 상위', groups: pair },
+    { k: '양립 불가', groups: pair },
   ].map(r => ({ k: r.k, lines: pack(r.groups, ROWW, 2) }));
 
   return { cells, rows };
